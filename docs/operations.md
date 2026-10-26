@@ -18,6 +18,8 @@ Local snapshot files are ignored and never used by production, even if the local
 
 User-selected target: **hazard-intelligence**. Set project Root Directory to `apps/web`; tracked `apps/web/vercel.json` installs/builds from the monorepo root. Use Node 22.x (or the project's eligible supported LTS version). Next.js target and lockfile versions are pinned.
 
+The user confirmed this is a personal, non-commercial project shared publicly (2026-10-26). This matches the use category documented for Vercel Hobby and the Open-Meteo free API; retain attribution and stay within usage quotas. Re-evaluate the plans if the intended use changes. References: https://vercel.com/docs/plans/hobby and https://open-meteo.com/en/pricing.
+
 Import the user-selected repository `tordave1150/hazard-intelligence` from Vercel's Add New → Project screen, and enable **Include source files outside of the Root Directory in the Build Step** because the app imports shared contracts. Creating a project requires an Owner or Member role, or a Developer role with the Create Project extended permission. Reference: https://vercel.com/docs/projects/managing-projects and https://vercel.com/docs/monorepos/monorepo-faq.
 
 Set `MONGODB_URI` and `MONGODB_DB_NAME` in the project's server environment. Use an Atlas database user restricted to read access for Vercel; never prefix credentials with `NEXT_PUBLIC_`. Do not store source keys in the browser. Atlas network access must explicitly permit the selected runtime's egress path. Choose static egress/private networking where available; do not automatically open Atlas to all IPs.
