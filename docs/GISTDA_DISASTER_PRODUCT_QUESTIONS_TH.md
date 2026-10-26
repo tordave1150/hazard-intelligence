@@ -12,6 +12,8 @@
 
 ได้อ่าน [คู่มือ API](https://disaster.gistda.or.th/manual_api.pdf) และทดสอบ GET `/api/2.0/resources/features/flood/1day` ผ่าน `API-Key` header จาก backend ของโครงการแล้ว คำขอ `limit=1&offset=0&ap_idn=2604` (องครักษ์) ตอบ HTTP 200, `numberMatched=0`, `numberReturned=0`, `features=[]` เวลา API ตอบคือ 27 ตุลาคม 2569 00:03:33.525 ICT เรายังไม่ตีความว่าเป็นการยืนยันว่าไม่มีน้ำท่วม และไม่ใช้ `timeStamp` เป็นเวลาที่ดาวเทียมถ่ายภาพ
 
+ต่อมาคำขอ 30days แบบไม่กรองอำเภอ limit=1 ตอบ HTTP 200 โดยรายงาน 184,323 รายการและคืนมา 1 รายการ เราตรวจเฉพาะชื่อ/ชนิดของ properties ทั้ง 29 ฟิลด์ ไม่ได้เผยแพร่ geometry หรือเก็บทั้ง dataset พบฟิลด์ _createdAt/_updatedAt และ _area/f_area/h3_area/rice_area แต่ยังไม่ยืนยันว่าเป็นเวลาหรือหน่วยใด จึงไม่ได้ใช้แทนเวลาถ่ายภาพหรือคำนวณพื้นที่
+
 ขอรายละเอียดเพื่อใช้ข้อมูลให้ถูกต้องดังนี้:
 
 1. **สิทธิ์เผยแพร่และ attribution:** [resource พื้นที่น้ำท่วมหนึ่งวัน](https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a) ระบุ License not specified ขอทราบเงื่อนไขแสดง geometry/แผนที่บนเว็บไซต์สาธารณะฟรี เก็บ snapshot ล่าสุด ประมวลผลสรุปพื้นที่ และให้ดาวน์โหลดผล พร้อมข้อความ attribution และข้อยกเว้นที่ต้องใช้

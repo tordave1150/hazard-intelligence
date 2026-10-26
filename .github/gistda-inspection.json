@@ -1,5 +1,6 @@
 {
-  "request_id": "2026-10-27-02",
-  "window": "30days",
+  "request_id": "2026-10-27-03",
+  "service": "stac",
+  "window": "1day",
   "ap_idn": ""
 }

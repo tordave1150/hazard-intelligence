@@ -147,3 +147,57 @@ def test_reviewed_request_selects_explicit_window_without_manual_environment_fal
     with pytest.raises(SystemExit) as exit:probe.main(reviewed_request=True)
     assert exit.value.code==1 and len(calls)==1
     assert json.loads(capsys.readouterr().out)=={'result':'INVALID_REVIEWED_REQUEST'}
+
+
+def stac_item(**times):
+    return {'type':'Feature','stac_version':'1.0.0','id':'not-logged','geometry':None,
+            'properties':{'datetime':'2026-10-26T00:00:00Z',**times},
+            'links':[{'href':'https://example.invalid/?api_key='+KEY}],
+            'assets':{'raster':{'href':'https://example.invalid/?api_key='+KEY}}}
+
+
+def test_documented_stac_item_is_one_header_request_without_asset_or_link_following():
+    calls=[]
+    def get(url,**kwargs):calls.append((url,kwargs));return Response(stac_item())
+    report,code=probe.inspect_features(KEY,'1day','',get=get,service='stac')
+    assert code==0 and report['result']=='STAC_ITEM_OBSERVED_SCHEMA_UNVERIFIED' and len(calls)==1
+    assert calls[0][0]=='https://api-gateway.gistda.or.th/api/2.0/resources/stac/flood/collections/flood1day_r2/items/items_flood1day_r2'
+    assert calls[0][1]['params']=={} and calls[0][1]['headers']['API-Key']==KEY
+    assert not calls[0][1]['allow_redirects']
+    assert not {'links','assets'}&set(report['response_structure']['fields'])
+    metadata=report['stac_metadata']
+    assert metadata['item_temporal_metadata']['datetime']=='2026-10-26T00:00:00Z'
+    assert metadata['acquisition_time_status']=='UNVERIFIED' and 'nominal' in metadata['temporal_meaning']
+    assert metadata['returned_assets_not_followed']==metadata['returned_links_discarded']==1
+    assert KEY not in json.dumps(report) and 'example.invalid' not in json.dumps(report) and 'not-logged' not in json.dumps(report)
+
+
+@pytest.mark.parametrize('change',[{'datetime':KEY},{'datetime':'2026-10-26T07:00:00+07:00'},
+    {'datetime':'2026-10-26T00:00:00-00:00'},{'datetime':'2026-10-26'},
+    {'datetime':None,'start_datetime':'2026-10-26T00:00:00Z'},
+    {'datetime':None,'start_datetime':'2026-10-26T00:00:00Z','end_datetime':'2026-10-25T00:00:00Z'}])
+def test_stac_time_errors_do_not_publish_dates_or_expose_values(change):
+    report,code=probe.inspect_features(KEY,'1day','',get=lambda *a,**k:Response(stac_item(**change)),service='stac')
+    assert code==1 and report['result']=='STAC_ITEM_SCHEMA_UNVERIFIED' and 'stac_metadata' not in report
+    assert KEY not in json.dumps(report)
+
+
+def test_stac_interval_is_reported_as_item_metadata_not_feature_acquisition():
+    payload=stac_item(datetime=None,start_datetime='2026-09-27T00:00:00Z',end_datetime='2026-10-26T23:59:59Z')
+    report,code=probe.inspect_features(KEY,'30days','',get=lambda *a,**k:Response(payload),service='stac')
+    assert code==0 and report['product_window']=='30days'
+    assert report['stac_metadata']['temporal_status']=='PRESENT_MEANING_UNVERIFIED'
+    assert report['stac_metadata']['acquisition_time_status']=='UNVERIFIED'
+
+
+def test_service_and_stac_filter_validation_prevent_network_and_arbitrary_targets(tmp_path):
+    def forbidden(*a,**k):raise AssertionError('must not call network')
+    for service,ap_idn in [('https://example.invalid/',''),('stac','2604')]:
+        report,code=probe.inspect_features(KEY,ap_idn=ap_idn,service=service,get=forbidden)
+        assert code==1 and report['result'] in ['INVALID_SERVICE','INVALID_STAC_FILTER']
+    path=tmp_path/'request.json'
+    request={'request_id':'2026-10-27-03','service':'stac','window':'1day','ap_idn':''}
+    path.write_text(json.dumps(request),encoding='utf-8');assert probe.load_reviewed_request(path)==request
+    for change in [{'service':'https://example.invalid/'},{'ap_idn':'2604'}]:
+        path.write_text(json.dumps({**request,**change}),encoding='utf-8')
+        with pytest.raises(ValueError):probe.load_reviewed_request(path)

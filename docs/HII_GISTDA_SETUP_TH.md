@@ -8,9 +8,11 @@
 
 Endpoint คือ `https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day` ใช้ **header `API-Key`** และ query รหัสพื้นที่ ต่างจาก point route เก่าที่ใช้ lat/lon/area และตอบ 404 ดู [ผลตรวจปัจจุบัน](gistda-disaster-features-review-2026-10-26.md) สำหรับหลักฐานแยกแต่ละ route
 
-ขั้นต่อไปคือตรวจหา sample จากช่วงย้อนหลังที่กว้างขึ้นเพียง 1 รายการ โดยบันทึกคำขอ `2026-10-27-01` ใน `.github/gistda-inspection.json` ให้ใช้ **window=30days**, **ap_idn ว่าง** เมื่อ push ไฟล์นี้บน main จะเริ่ม workflow ให้เอง ใช้ secret เดิม ไม่มี schedule หรือการดึงหลายหน้า จึงไม่ต้องให้ผู้ใช้กด Run ซ้ำเพื่อคำขอนี้
+ตรวจช่วง **30days แบบไม่กรองอำเภอสำเร็จแล้ว** ใน run 40371542079/40372062673 ได้ HTTP 200 และอ่านมาเพียง **1 รายการจากที่ API รายงาน 184,323 รายการ** ตรวจชื่อ/ชนิดของ properties ครบ 29 ฟิลด์ แต่ยังไม่ยืนยันหน่วยพื้นที่หรือฟิลด์เวลาถ่ายภาพ จึงไม่ใช้ข้อมูลนี้แทน 1day และไม่เผยแพร่ geometry
 
-ไฟล์คำขอมีเพียง request_id, window, ap_idn ไม่รับ key หรือ URL เปลี่ยนได้เฉพาะผลิตภัณฑ์ที่เอกสารระบุและรหัสอำเภอจริง การ push ไฟล์อื่นหรือ pull request ไม่เริ่ม diagnostic นี้ ข้อมูล 30days ใช้ตรวจโครงสร้างตัวอย่างและไม่ถูกเรียกหรือเผยแพร่แทนข้อมูล 1day
+ขั้นถัดไปบันทึกคำขอ `2026-10-27-03` ใน `.github/gistda-inspection.json`: **service=stac, window=1day, ap_idn ว่าง** เพื่ออ่าน metadata ของ STAC item ที่ catalog ทางการเชื่อมไว้ โดยไม่ดาวน์โหลดภาพ อ่าน key จาก secret เดิม และเริ่มเองเมื่อ push คำขอบน main ไม่ต้องให้ผู้ใช้กด Run ซ้ำ
+
+ไฟล์คำขอต้องมี request_id, window, ap_idn และเลือก service=features/stac เพิ่มได้ ไม่รับ key หรือ URL เปลี่ยนได้เฉพาะผลิตภัณฑ์ที่เอกสารระบุ การ push ไฟล์อื่นหรือ pull request ไม่เริ่ม diagnostic นี้ ค่า datetime ของ STAC อาจเป็นเวลาตัวแทนของภาพรวม จึงยังไม่ถือเป็นเวลาถ่ายภาพของทุกพื้นที่
 
 หากผู้ใช้ต้องการเริ่มเอง ยังใช้ [Inspect GISTDA Disaster Features](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → Run workflow รอบใหม่ → main → เลือก window/ap_idn อย่างชัดเจนได้ ไม่ใช้ Re-run jobs ของรอบเก่าเพราะจะใช้ commit/พารามิเตอร์เดิม
 

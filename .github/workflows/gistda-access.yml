@@ -6,6 +6,14 @@ on:
       - '.github/gistda-inspection.json'
   workflow_dispatch:
     inputs:
+      service:
+        description: 'Features page or documented STAC item metadata; no asset downloads.'
+        required: true
+        default: features
+        type: choice
+        options:
+          - features
+          - stac
       window:
         description: 'Separate documented product windows. Default is one day; no automatic fallback to another window.'
         required: true
@@ -17,7 +25,7 @@ on:
           - 7days
           - 30days
       ap_idn:
-        description: 'Four-digit district ID: 2604 = Ongkharak. Clear for an unfiltered service page. No keys or URLs.'
+        description: 'Features: 2604 = Ongkharak; clear for unfiltered page. STAC: must be blank. No keys or URLs.'
         required: false
         default: '2604'
         type: string
@@ -45,6 +53,7 @@ jobs:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           GISTDA_FEATURE_WINDOW: ${{ inputs.window }}
           GISTDA_FEATURE_AP_IDN: ${{ inputs.ap_idn }}
+          GISTDA_INSPECTION_SERVICE: ${{ inputs.service }}
         run: python -m scripts.probe_gistda_features
       - name: Inspect the versioned main request without database writes
         if: github.event_name == 'push'
