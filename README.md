@@ -32,6 +32,8 @@ Open http://127.0.0.1:3000. The local snapshot contains real API output, is igno
 
 User-selected Vercel target: **hazard-intelligence**. The connected team's project list did not contain that project, and creating it returned a **403 permission error**. Deployment and live Atlas publication remain blocked. See the [execution record](docs/execution-status.md) and [operations runbook](docs/operations.md).
 
+คู่มือตั้งค่า Vercel ภาษาไทย: [วิธี Import repo และตั้งค่าโปรเจกต์](docs/VERCEL_SETUP_TH.md).
+
 ## Verify
 
 ```powershell

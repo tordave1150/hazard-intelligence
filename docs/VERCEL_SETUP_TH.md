@@ -1,0 +1,63 @@
+# ตั้งค่า Vercel สำหรับ Thailand Hazard Intelligence
+
+โค้ดอยู่ที่ https://github.com/tordave1150/hazard-intelligence บน branch `main` แล้ว โดย CI ตรวจ Python และเว็บผ่านในการเผยแพร่ครั้งแรก
+
+## 1. เปิดหน้าสร้างโปรเจกต์
+
+เปิด https://vercel.com/new แล้วเลือกทีม `jedsadaporn231043-6773s-projects` ให้ถูกต้อง
+
+การสร้างโปรเจกต์ต้องใช้สิทธิ์ Owner หรือ Member หรือ Developer ที่ได้รับสิทธิ์เสริม Create Project หากหน้าเว็บไม่อนุญาต ให้ Owner ของทีมสร้างโปรเจกต์ให้หรือเพิ่มสิทธิ์นี้ การตอบกลับ 403 จากการเชื่อมต่อของ agent ยังไม่บอกว่าบัญชีที่คุณใช้ผ่านหน้าเว็บมีสิทธิ์อะไร
+
+คู่มือสิทธิ์และการสร้างโปรเจกต์: https://vercel.com/docs/projects/managing-projects
+
+## 2. Import GitHub repository
+
+เลือก Import ของ `tordave1150/hazard-intelligence` หากยังไม่เห็น repo ให้ตรวจการเชื่อมต่อ GitHub และอนุญาต Vercel GitHub App เฉพาะ repo นี้ บัญชีที่ import repository ของบัญชีบุคคลต้องเป็นเจ้าของ repo ตามเงื่อนไข Vercel
+
+คู่มือ: https://vercel.com/docs/git/vercel-for-github
+
+## 3. ตั้งค่าโครงสร้างโปรเจกต์
+
+| รายการ | ค่า |
+|---|---|
+| Project Name | `hazard-intelligence` |
+| Framework | Next.js |
+| Production Branch | `main` |
+| Root Directory | `apps/web` |
+| Node.js | 22.x |
+| Include source files outside of the Root Directory | เปิดใช้งาน |
+
+ไฟล์ `apps/web/vercel.json` กำหนดคำสั่งไว้แล้ว:
+
+- Install Command: `cd ../.. && npm ci`
+- Build Command: `cd ../.. && npm run build`
+- Output Directory: `.next`
+
+แอปใช้ shared contracts จากนอก `apps/web` จึงต้องเปิดการรวม source นอก Root Directory หากตัวเลือกไม่แสดงในหน้า Import ให้ตรวจการตั้งค่า Root Directory ของโปรเจกต์ก่อนสั่ง deploy ใหม่
+
+คู่มือ monorepo: https://vercel.com/docs/monorepos/monorepo-faq
+
+## 4. ตั้งค่า MongoDB อย่างปลอดภัย
+
+เพิ่ม environment variables ฝั่ง server ในโปรเจกต์ Vercel:
+
+- `MONGODB_URI` — ใช้ credential ของ Atlas ที่มีสิทธิ์อ่านข้อมูลสำหรับเว็บไซต์
+- `MONGODB_DB_NAME` — ชื่อฐานข้อมูลจริง
+
+ห้ามเติม prefix `NEXT_PUBLIC_` และไม่ต้องส่ง URI หรือรหัสผ่านในแชต
+
+ฝั่ง GitHub ให้เพิ่มใน repository Settings → Secrets and variables → Actions:
+
+- `MONGODB_URI` — credential สำหรับ ETL ที่เขียน latest collections ได้
+- `MONGODB_DB_NAME`
+- `OPEN_METEO_API_KEY` — เฉพาะกรณีใช้ commercial/customer endpoint
+
+Secrets ของ repo เดิมไม่ได้ถูกคัดลอกอัตโนมัติ Workflow จะข้าม ingestion พร้อมแจ้งว่ายังไม่ตั้งค่า จนกว่าจะมี MongoDB secrets ครบ เว็บไซต์ที่ไม่มี snapshot จะขึ้น Unavailable และไม่สร้างค่าตัวอย่างขึ้นมาแทนข้อมูลจริง
+
+## 5. Deploy และตรวจข้อมูล
+
+กด Deploy หลังตั้งค่าครบ แล้วเปิดหน้าโปรเจกต์และ URL ที่ได้รับ การตรวจ Atlas, การเผยแพร่ snapshot ครั้งแรก และการยืนยันว่า deployment อ่าน snapshot ได้จริงยังต้องดำเนินการต่อ
+
+หากต้องให้ agent ตรวจและทำขั้นตอนต่อ ส่งเฉพาะ URL หน้าโปรเจกต์ Vercel หรือ URL deployment กลับมาได้ ไม่ต้องส่ง secrets
+
+RID, TMD, HII/ThaiWater, GISTDA และ basin layers ยังมี source acceptance gates ตาม `source-acceptance.md` จึงยังไม่ถือว่าทุกส่วนของ roadmap พร้อมใช้งาน production
