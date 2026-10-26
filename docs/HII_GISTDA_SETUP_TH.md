@@ -2,14 +2,20 @@
 
 ตรวจหน้าเว็บทางการวันที่ 26 ตุลาคม 2569 โครงการนี้ใช้ส่วนตัว เผยแพร่ฟรี และไม่เชิงพาณิชย์ ตามที่ผู้ใช้ยืนยัน ผู้ใช้มี GISTDA key และยืนยันว่าเปลี่ยน key/อัปเดต GitHub Secret หลังภาพล่าสุดแล้ว ยังไม่ได้เผยแพร่ข้อมูล GISTDA หรือ HII เข้า production
 
-## ตอนนี้: ตรวจ Disaster Platform Features ตามคู่มือใหม่
+## ผลตรวจแล้วและขั้นตอนถัดไป
 
-คู่มือและภาพผลทดสอบล่าสุดใช้ **Features API** ซึ่งต่างจาก point route #25 ที่ตอบ 404 ทั้งสามรอบเดิม: endpoint ใหม่คือ `https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day` ใช้ **header `API-Key`** และ query รหัสพื้นที่ ไม่ใช้ `lat`, `lon`, `area` รายละเอียดอยู่ใน [ผลตรวจปัจจุบัน](gistda-disaster-features-review-2026-10-26.md) และ [คู่มือทางการ](https://disaster.gistda.or.th/manual_api.pdf)
+ผล [run 40364997446](https://github.com/tordave1150/hazard-intelligence/actions/runs/40364997446) บน `9659197` ยืนยันว่า client ใหม่เรียก **Features API** ได้สำเร็จ: **HTTP 200**, `window=1day`, `ap_idn=2604` (องครักษ์), **numberMatched=0 / numberReturned=0** เวลาตอบ API คือ **27 ต.ค. 2569 เวลา 00:03:33.525 ICT** ไม่ใช่เวลาถ่ายภาพ ทุก step ผ่านและไม่ได้เขียนข้อมูลลง Atlas
 
-1. Secret `GISTDA_API_KEY` ที่ [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) ใช้ค่า key ใหม่ที่อัปเดตแล้ว ไม่ต้องเพิ่ม secret หรือส่งค่าในแชต
+Endpoint คือ `https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day` ใช้ **header `API-Key`** และ query รหัสพื้นที่ ต่างจาก point route เก่าที่ใช้ lat/lon/area และตอบ 404 ดู [ผลตรวจปัจจุบัน](gistda-disaster-features-review-2026-10-26.md) สำหรับหลักฐานแยกแต่ละ route
+
+ขั้นต่อไปคือตรวจหา sample โครงสร้างข้อมูลจากผลิตภัณฑ์ย้อนหลังที่กว้างขึ้นเพียง 1 รายการ:
+
+1. ใช้ Secret `GISTDA_API_KEY` ใหม่ที่ตั้งไว้แล้ว ไม่ต้องเพิ่มหรือส่งค่าในแชต
 2. เปิด [Inspect GISTDA Disaster Features](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow รอบใหม่ → main**
-3. เลือก **window: 1day**, **ap_idn: 2604** สำหรับอำเภอองครักษ์ จังหวัดนครนายก (`TH-D-2604`) แล้วกด **Run workflow** ถ้าต้องการตรวจทั้ง service แบบภาพตัวอย่างให้ล้าง ap_idn เป็นช่องว่าง ทั้งสองแบบขอเพียงหน้าแรก limit=1 ไม่ใช่การดึง geometry ทั้งประเทศ
-4. แจ้งว่าเริ่มรันแล้วเพื่อให้ตรวจผลผ่านตัวเชื่อมต่อ ไม่ใช้ Re-run jobs ของรอบเก่า เพราะจะใช้โค้ด/พารามิเตอร์เดิม ตัวเชื่อมต่อยังเริ่ม workflow ใหม่แทนผู้ใช้ไม่ได้
+3. เลือก **window: 30days** และ **ล้าง ap_idn ให้เป็นช่องว่าง** → **Run workflow** เพื่อขอหน้าแรก limit=1 แบบไม่กรองอำเภอ ยังไม่ใช่การดึง geometry ทั้งประเทศ
+4. แจ้งว่าเริ่มรันแล้วเพื่อให้ตรวจผล ไม่ใช้ Re-run jobs ของรอบเก่าเพราะจะใช้โค้ด/พารามิเตอร์เดิม ตัวเชื่อมต่อยังเริ่ม workflow ใหม่แทนผู้ใช้ไม่ได้
+
+ช่วง 30days ใช้ตรวจโครงสร้างตัวอย่างเท่านั้น จะไม่ถูกเผยแพร่หรือเรียกแทนข้อมูล 1day ถ้าต้องการตรวจ one-day query เดิมให้เลือก window=1day และ ap_idn=2604 อย่างชัดเจน
 
 นี่เป็น workflow manual ไม่มี schedule ไม่เขียน Atlas และไม่เปิด layer เอง อ่าน key จาก Actions เท่านั้น แล้วส่งผ่าน header โดยไม่พิมพ์ค่าลับ โปรแกรมทิ้ง `links` จาก response ก่อนรายงาน เพราะ upstream อาจแนบ key กลับมาใน href แม้ request จะใช้ header ห้ามคัดลอก response ทั้งก้อนหรือภาพที่มี key มาเผยแพร่
 
@@ -18,6 +24,8 @@ HTTP 200 พร้อม FeatureCollection ที่มี numberMatched=0 / num
 window 3days / 7days / 30days เป็นผลิตภัณฑ์คนละช่วงเวลาที่เอกสารระบุ ต้องเลือกเองและติดป้ายตามจริง ไม่มีการสลับอัตโนมัติหรือเอาข้อมูลหลายวันมาเรียกว่าหนึ่งวัน
 
 [Resource หนึ่งวันของ Disaster Platform](https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a) ระบุ **License not specified** จึงยังต้องยืนยันสิทธิ์เผยแพร่/attribution และ sample ที่มี acquisition time, geometry, CRS, quality/coverage ก่อนทำ layer สาธารณะ ไม่ใช้ Open Data Common ของ catalog point route เก่าแทนผลิตภัณฑ์นี้
+
+เตรียม [ร่างคำถามสำหรับผู้ดูแลผลิตภัณฑ์ปัจจุบัน](GISTDA_DISASTER_PRODUCT_QUESTIONS_TH.md) ไว้แล้ว ครอบคลุมเงื่อนไขเผยแพร่ เวลา/คุณภาพ ผลลัพธ์ว่าง/coverage และ quota ยังไม่ได้ส่งให้หน่วยงาน
 
 หากเผลอเผย key อีก ให้เพิกถอนและสร้างใหม่ใน GISTDA จากนั้น GitHub Actions secrets → `GISTDA_API_KEY` → Edit → แทนค่าด้วย key ใหม่ → Update secret แจ้งเพียงว่าเปลี่ยนแล้ว การเปลี่ยน credential ต้องทำในบัญชีผู้ใช้เอง
 

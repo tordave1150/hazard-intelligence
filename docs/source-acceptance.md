@@ -22,7 +22,7 @@ Follow-up on 26 October found a separate official [HII water-level archive catal
 
 ## GISTDA — Disaster Platform Features access found; scientific/permission acceptance open
 
-The user supplied the [official Disaster Platform manual](https://disaster.gistda.or.th/manual_api.pdf) and successful Swagger screenshots. Read-only inspection of the live form confirms `/features/flood/1day` and optional `bbox`, `limit`, `offset`, `pv_idn`, `ap_idn`, `tb_idn`. The screenshot uses an `API-Key` header and shows HTTP 200 with zero matched/returned features. Its `timeStamp` is response time, not satellite acquisition time. A valid empty response does not establish complete coverage or no flooding. This is user-supplied access evidence; the rewritten Actions client still needs a fresh main run.
+The user supplied the [official Disaster Platform manual](https://disaster.gistda.or.th/manual_api.pdf) and successful Swagger screenshots. Read-only inspection of the live form confirms `/features/flood/1day` and optional `bbox`, `limit`, `offset`, `pv_idn`, `ap_idn`, `tb_idn`. The screenshot uses an `API-Key` header and shows HTTP 200 with zero matched/returned features. Its `timeStamp` is response time, not satellite acquisition time. A valid empty response does not establish complete coverage or no flooding. This initial user evidence was independently followed by successful Actions run [40364997446](https://github.com/tordave1150/hazard-intelligence/actions/runs/40364997446) on `9659197`: the one-day Ongkharak filter `ap_idn=2604` returned HTTP 200 and zero matched/returned features. Response time was 27 October 2026 00:03:33.525 ICT, not acquisition time. Access for this client/request combination is now verified; product acceptance remains open.
 
 The [specific one-day Disaster Platform resource](https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a) explicitly says **License not specified**. Key configuration and a technical web-map manual do not settle redistribution/attribution terms, quota, actual acquisition/publication fields, geometry/CRS, units, empty-result/coverage semantics or quality. A real nonempty feature sample and those definitions remain necessary before public layer acceptance. No daily observations are fabricated from the product label or response time.
 
@@ -38,7 +38,7 @@ Earlier legacy point probes, v1.1/v1.0 at Bangkok and v1.1 at Ongkharak, returne
 | RID daily storage | Yes | 35 verified daily reports and matching published point coordinates | Published and verified on production; flows remain excluded pending definitions |
 | TMD public CAP | Yes | Six verified Actual/Public CAP messages and official polygons | Published and verified on production; registered forecast/radar remain outside accepted scope |
 | HII / ThaiWater | Exchange standard | No authorized live product sample | Agency endpoint/access agreement, datum and product acceptance |
-| GISTDA | Yes | User screenshot: HTTP 200 empty Features response; no acquisition sample | New client workflow verification, specific reuse terms and acquisition/product acceptance |
+| GISTDA | Yes | Independently verified HTTP 200 empty one-day Ongkharak response, run 40364997446; no acquisition sample | Nonempty schema sample, specific reuse terms and acquisition/product acceptance |
 
 These unresolved gates are concrete dependencies. Do not populate production layers with guessed coordinates, units, credentials or illustrative measurements.
 

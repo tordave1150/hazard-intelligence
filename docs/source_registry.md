@@ -2,13 +2,13 @@
 
 Machine-readable registry: `apps/web/data/source-registry.json`. It records endpoint/product reference, source category, authentication, licence, commercial and redistribution permission, quota, cadence/latency, coverage/resolution, units/CRS, fallback and terms-review date. `/sources` presents it; the map separately presents actual data age.
 
-| Source | Evidence at 2026-10-26 | Release state |
+| Source | Evidence (dated per source; latest update 2026-10-27) | Release state |
 |---|---|---|
 | Open-Meteo daily forecast | Production run 40257438014 published and served 1,005/1,005 validated points, four daily periods, FRESH/SUCCESS on 2026-10-26; user confirmed non-commercial use | Connected on production; source attribution retained |
 | RID daily dam storage | Documented GET, 35 matched identities and official published coordinates, date-only precision, capacities/percent semantics and linked DGA catalog reuse reviewed | Connected on production: run 40287126263 published 35/35 reports; unique indexes and retention verified. Flows remain excluded |
 | TMD public CAP | Official public RSS and linked CAP documents, public-domain feed declaration and attributed non-commercial reuse reviewed; six real expired messages verified | Connected on production: run 40294693768 published six CAP messages, all expired by retrieval. Registered radar/forecast remain separate |
 | HII / ThaiWater gauges | Official public monthly archives, CC BY-NC catalog, 1,396 metadata rows and one real September station sample inspected; October directory empty | Live layer planned/disabled; current API, datum/timezone/quality and product acceptance pending |
-| GISTDA Disaster Platform flood Features | Official manual/live form and user HTTP 200 empty response identify the Features route and API-Key header; specific one-day resource says License not specified | Layer disabled pending new client workflow verification, resource-specific reuse terms and actual acquisition/geometry/coverage acceptance; historical point-route 404s are separate |
+| GISTDA Disaster Platform flood Features | Run 40364997446 verified the one-day Ongkharak request with API-Key header: HTTP 200, zero matched/returned features; specific one-day resource says License not specified | Access verified; layer disabled pending resource-specific reuse terms and actual acquisition/geometry/coverage acceptance. Broader-window schema sample pending; legacy point-route 404s are separate |
 | Administrative boundaries | Pinned attributed geometry plus official downloadable DOPA code/name comparison: 77 provinces/928 districts; one code and six Thai names corrected | Directory reference is 2023-09-01, reviewed 2026-10-26; later registry changes and legal boundary accuracy unverified |
 | OpenFreeMap basemap | Public Positron style loaded in the deployed browser; provider attribution preserved | Production browser verified; current public hosting terms apply |
 | Mapterhorn DEM | Public TileJSON and terrain loaded in the deployed browser; provider/source attribution linked | Production 3D verified; provider source licences and service availability apply |
