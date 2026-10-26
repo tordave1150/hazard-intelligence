@@ -12,10 +12,13 @@ let cached: {until: number; value: Snapshot} | null=null;
 export function resetSnapshotCache() {cached=null;}
 export async function readSnapshot(): Promise<Snapshot> {
   if(cached && cached.until>Date.now()) return cached.value;
+  // Vercel's storage integration creates <CUSTOM_PREFIX>_URL. Keep the
+  // original URI setting supported, with explicit URI taking precedence.
+  const mongoUri=process.env.MONGODB_URI || process.env.MONGODB_URL;
   let result: Snapshot;
   try {
-    if(process.env.MONGODB_URI) {
-      const connection = globalMongo.hazardMongo ??= new MongoClient(process.env.MONGODB_URI,{
+    if(mongoUri) {
+      const connection = globalMongo.hazardMongo ??= new MongoClient(mongoUri,{
         maxPoolSize:5,serverSelectionTimeoutMS:5000,connectTimeoutMS:5000,socketTimeoutMS:10000
       }).connect().catch(error=>{globalMongo.hazardMongo=undefined;throw error;});
       const db=(await connection).db(process.env.MONGODB_DB_NAME || 'weather_db');
@@ -41,7 +44,7 @@ export async function readSnapshot(): Promise<Snapshot> {
     } else result={records:[],status:null,storage:'unconfigured',error:'Weather snapshot is not connected',freshness:'UNAVAILABLE'};
     if(result.records.some(r=>!areaById.has(r.location_id)) || new Set(result.records.map(r=>r.location_id)).size!==result.records.length) throw new Error('Invalid location coverage');
   } catch {
-    result={records:[],status:null,storage:process.env.MONGODB_URI?'mongo':'unconfigured',error:'Latest weather snapshot is temporarily unavailable',freshness:'UNAVAILABLE'};
+    result={records:[],status:null,storage:mongoUri?'mongo':'unconfigured',error:'Latest weather snapshot is temporarily unavailable',freshness:'UNAVAILABLE'};
   }
   cached={until:Date.now()+(result.error?10000:60000),value:result};
   return result;

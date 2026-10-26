@@ -44,6 +44,12 @@
 - `MONGODB_URI` — ใช้ credential ของ Atlas ที่มีสิทธิ์อ่านข้อมูลสำหรับเว็บไซต์
 - `MONGODB_DB_NAME` — ชื่อฐานข้อมูลจริง
 
+หากติดตั้ง MongoDB Atlas ผ่าน Vercel Integration ตามหน้า Connect a Project ให้เลือก Project `hazard-intelligence`, Environments `Production, Preview`, Custom Prefix `MONGODB` และเปิด Sensitive ระบบจะใช้ชื่อตัวแปร `MONGODB_URL` ตาม suffix ที่แสดงในหน้าติดตั้ง แอปรองรับทั้ง `MONGODB_URI` และ `MONGODB_URL` โดย URI มีลำดับความสำคัญก่อน ส่วนชื่อฐานข้อมูลใช้ `MONGODB_DB_NAME` หรือค่าเริ่มต้น `weather_db` หากไม่ได้ตั้งไว้
+
+ตัวแปร URL/URI เป็นความลับและใช้เฉพาะฝั่ง server ไม่ต้องเปลี่ยนชื่อหรือคัดลอกค่าไปใส่ในแชต การตั้งค่า GitHub Actions สำหรับ ETL เป็นอีกส่วนหนึ่งและไม่ถูกคัดลอกมาจาก Integration อัตโนมัติ
+
+การติดตั้งแบบ Native Integration จะสร้าง Atlas Organization และ Project ใหม่ที่ผูกกับทีม Vercel ผู้ติดตั้งคนแรกเป็น Organization Owner ตรวจบัญชีและ Organization จริงได้จาก Vercel → Storage → เลือก MongoDB → Open in MongoDB Atlas หากมีบัญชี Atlas เดิม ระบบอาจให้เชื่อมบัญชีเมื่อเปิดครั้งแรก จึงไม่ควรเดาว่าใช้บัญชี GitHub หรือ Google ใดจากภาพติดตั้งเพียงอย่างเดียว คู่มือทางการ: https://www.mongodb.com/docs/atlas/reference/partner-integrations/vercel/
+
 ห้ามเติม prefix `NEXT_PUBLIC_` และไม่ต้องส่ง URI หรือรหัสผ่านในแชต
 
 ฝั่ง GitHub ให้เพิ่มใน repository Settings → Secrets and variables → Actions:
