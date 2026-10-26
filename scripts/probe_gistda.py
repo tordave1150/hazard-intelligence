@@ -12,6 +12,8 @@ import time
 import requests
 
 ENDPOINT='https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.1/disasters/flood-extent-1day'
+ENDPOINTS={'v1.1':ENDPOINT,
+           'v1.0':'https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.0/disasters/flood-extent-1day'}
 MAX_BYTES=2*1024*1024
 FIELD=re.compile(r'^[A-Za-z_][A-Za-z0-9_]{0,63}$')
 
@@ -35,10 +37,21 @@ def structure(value,secret,depth=0):
     return {'type':'string'}
 
 
-def inspect(api_key,area='',get=None,clock=time.monotonic,lat='',lon=''):
+def error_hints(payload):
+    """Classify fixed error signals without exposing an upstream request URL."""
+    if not isinstance(payload,dict):return None
+    message=payload.get('message')
+    if not isinstance(message,str):return None
+    return {'kind':'ROUTE_NOT_FOUND' if re.match(r'^Cannot\s+(GET|POST)\s',message,re.I) else 'UNCLASSIFIED',
+            'undefined_parameters':[name for name in ['lat','lon','area'] if re.search(r'(?<![A-Za-z0-9_])'+name+r'=undefined(?:[&#\s]|$)',message)]}
+
+
+def inspect(api_key,area='',get=None,clock=time.monotonic,lat='',lon='',version='v1.1'):
     api_key=api_key.strip();area=area.strip()
     if len(api_key)<8 or len(api_key)>4096 or any(c in api_key for c in '\r\n') or api_key.lower().startswith(('http:','https:','gistda_api_key=')):
         return {'result':'INVALID_OR_MISSING_SECRET'},1
+    if version not in ENDPOINTS:return {'result':'INVALID_ENDPOINT_VERSION'},1
+    endpoint=ENDPOINTS[version]
     if area and (len(area)>8192 or area.lower() in ['undefined','null'] or api_key in area or
                  re.search(r'https?://|api[_-]?key\s*=',area,re.I)):
         return {'result':'INVALID_AREA_INPUT'},1
@@ -58,11 +71,11 @@ def inspect(api_key,area='',get=None,clock=time.monotonic,lat='',lon=''):
     params={'api_key':api_key}
     if area:params['area']=area
     if point:params.update(point)
-    report={'product_number':25,'endpoint':ENDPOINT,'area_supplied':bool(area),'point_supplied':point is not None,
+    report={'product_number':25,'endpoint':endpoint,'endpoint_version':version,'area_supplied':bool(area),'point_supplied':point is not None,
             'scope':'Response structure inspection only; no data acceptance or publication'}
     deadline=clock()+45
     try:
-        with (get or requests.get)(ENDPOINT,params=params,headers={'Accept':'application/json'},
+        with (get or requests.get)(endpoint,params=params,headers={'Accept':'application/json'},
                                    timeout=(5,25),allow_redirects=False,stream=True) as response:
             status=response.status_code
             report['http_status']=status
@@ -79,6 +92,8 @@ def inspect(api_key,area='',get=None,clock=time.monotonic,lat='',lon=''):
             except (UnicodeDecodeError,ValueError):
                 return {**report,'result':'NON_JSON_RESPONSE'},1
             report['response_structure']=structure(payload,api_key)
+            hints=error_hints(payload)
+            if hints is not None:report['provider_error_hints']=hints
             if status in [401,403,407]:return {**report,'result':'AUTHENTICATION_OR_ENTITLEMENT_NOT_VERIFIED'},1
             if not 200<=status<300:return {**report,'result':'HTTP_ERROR_REQUIRES_PARAMETER_OR_PROVIDER_REVIEW'},1
             # A JSON error can be wrapped in HTTP 200 by an upstream service.
@@ -97,7 +112,8 @@ def inspect(api_key,area='',get=None,clock=time.monotonic,lat='',lon=''):
 
 def main():
     report,code=inspect(os.getenv('GISTDA_API_KEY',''),os.getenv('GISTDA_PROBE_AREA',''),
-                        lat=os.getenv('GISTDA_PROBE_LAT',''),lon=os.getenv('GISTDA_PROBE_LON',''))
+                        lat=os.getenv('GISTDA_PROBE_LAT',''),lon=os.getenv('GISTDA_PROBE_LON',''),
+                        version=os.getenv('GISTDA_PROBE_VERSION','v1.1'))
     print(json.dumps(report,ensure_ascii=True,allow_nan=False))
     raise SystemExit(code)
 

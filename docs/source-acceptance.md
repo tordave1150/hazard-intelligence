@@ -26,6 +26,8 @@ The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/f
 
 The user subsequently reported obtaining a credential for the separate **product #25, flood extent one day**, and supplied its v1.1 endpoint. An unauthenticated GET returned 407. Its indexed official catalog describes Open Data Common and point/geometry variants, while current direct catalog/documentation access redirects to login/403. Product scope, current terms, area syntax and actual v1.1 response remain unverified. A manual single-request structure-only diagnostic is prepared; it never publishes or writes Atlas. See [product #25 review](gistda-product-25-review-2026-10-26.md) and the updated [Thai setup steps](HII_GISTDA_SETUP_TH.md). The source is not yet integrated, and the separate catalog licenses are not treated as interchangeable.
 
+Follow-up: after the user confirmed credential replacement and secret update, run 40340511359 reached the v1.1 service and received HTTP 404 rather than flood data. The equivalent [DGA catalog](https://data.go.th/dataset/disasters-03) was successfully read directly and identifies Open Data Common with a v1.0 point endpoint. The linked Postman collection currently renders different recurrence products. A bounded selected-version diagnostic is prepared to distinguish the catalog/portal version discrepancy; it does not infer a safe/no-flood result from 404 or import multi-year recurrence as daily flood extent. Current source acceptance remains open pending an actual successful sample and product/time semantics.
+
 ## Gate result
 
 | Source | Official reference found | Actual product sample | Remaining dependency |

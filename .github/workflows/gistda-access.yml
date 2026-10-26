@@ -2,6 +2,14 @@ name: Inspect GISTDA flood API response
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'v1.0 is the endpoint in the official DGA catalog; the portal v1.1 returned 404 in the first probe.'
+        required: true
+        default: 'v1.0'
+        type: choice
+        options:
+          - v1.0
+          - v1.1
       lat:
         description: 'Query latitude in degrees. Default is the project public Bangkok representative point, not a station or flood measurement.'
         required: false
@@ -40,4 +48,5 @@ jobs:
           GISTDA_PROBE_AREA: ${{ inputs.area }}
           GISTDA_PROBE_LAT: ${{ inputs.lat }}
           GISTDA_PROBE_LON: ${{ inputs.lon }}
+          GISTDA_PROBE_VERSION: ${{ inputs.version }}
         run: python -m scripts.probe_gistda

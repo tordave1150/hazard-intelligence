@@ -49,6 +49,25 @@ def test_valid_coordinate_pair_is_sent_without_inventing_area():
     assert '13.719961' not in json.dumps(report)
 
 
+def test_only_the_two_published_versions_can_receive_the_secret():
+    calls=[]
+    def get(url,**kwargs):calls.append(url);return Response({'data':[]})
+    report,code=probe.inspect(KEY,get=get,version='v1.0')
+    assert code==0 and calls==[probe.ENDPOINTS['v1.0']] and report['endpoint_version']=='v1.0'
+    for version in ['https://example.invalid/','v2.2','../v1.0']:
+        report,code=probe.inspect(KEY,get=get,version=version)
+        assert code==1 and report['result']=='INVALID_ENDPOINT_VERSION'
+    assert len(calls)==1
+
+
+def test_error_hints_classify_missing_route_without_exposing_an_upstream_key():
+    payload={'message':'Cannot GET /internal/path?lat=13&lon=100&area=undefined&key='+KEY,'statusCode':404}
+    report,code=probe.inspect(KEY,get=lambda *a,**k:Response(payload,404))
+    assert code==1 and report['provider_error_hints']=={'kind':'ROUTE_NOT_FOUND','undefined_parameters':['area']}
+    assert KEY not in json.dumps(report) and '/internal/path' not in json.dumps(report)
+    assert probe.error_hints({'message':{'untrusted':KEY}}) is None
+
+
 def test_undefined_missing_nonfinite_and_out_of_range_points_never_call_provider():
     def forbidden(*a,**k):raise AssertionError('must not call network')
     for lat,lon in [('undefined','undefined'),('13',''),('','100'),('nan','100'),('13','inf'),
