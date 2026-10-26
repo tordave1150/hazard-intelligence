@@ -1,0 +1,43 @@
+{
+  "captured_date": "2026-10-26",
+  "publisher": "Thai Meteorological Department",
+  "feed_copyright": "public domain",
+  "terms_url": "https://www.tmd.go.th/content/copyright",
+  "files": [
+    {
+      "file": "feed-2026-10-26.xml",
+      "source_url": "https://www.tmd.go.th/api/xml/CAP",
+      "sha256": "3e7e4678ac5065e6696a8466d58ef5b71104acc1072824f773c111fdec5b8b6d"
+    },
+    {
+      "file": "alert-0.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261025055042_2.xml",
+      "sha256": "80818ed17452b54fd2ea3f1477f4812b8e2a1dd2487fb50f176e44d60108f9db"
+    },
+    {
+      "file": "alert-1.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261025054755_2.xml",
+      "sha256": "c510ee5df841e2b51769f0a8245e08b7097276e7113bbec84775845665994c92"
+    },
+    {
+      "file": "alert-2.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261024165136_2.xml",
+      "sha256": "ff0107135f072fc28e6565bcca85d050cf6f27baadfc5df600b9a135ced0efa1"
+    },
+    {
+      "file": "alert-3.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261024164911_2.xml",
+      "sha256": "6459f5979e4304483a02d87663afec7f16ff1d67ae5bd4522d9556292db6c4fc"
+    },
+    {
+      "file": "alert-4.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261024063005_2.xml",
+      "sha256": "93deb06a49350f6f57bf7840a8852fd0f843f995046cb39220b7f2342b0e3e45"
+    },
+    {
+      "file": "alert-5.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261023164718_2.xml",
+      "sha256": "cec51ac00ca664cd47df4f5845e85cc022381c68d19cca6ab0053528be5392fe"
+    }
+  ]
+}

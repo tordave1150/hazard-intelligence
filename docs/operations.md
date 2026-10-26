@@ -9,6 +9,7 @@ Real local previews (each source can be fetched independently):
 ```powershell
 .\.venv\Scripts\python.exe -m pipelines.open_meteo.run --level all --export apps/web/data/local/weather.json
 .\.venv\Scripts\python.exe -m pipelines.rid.run --export apps/web/data/local/dams.json
+.\.venv\Scripts\python.exe -m pipelines.tmd.run --export apps/web/data/local/warnings.json
 $env:HAZARD_LOCAL_SNAPSHOT='1'
 npm run dev
 ```
@@ -53,7 +54,7 @@ The current GitHub connector can read workflow status/logs but its re-run mutati
 
 Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. RID run 40287126263 captured post-publication measurements and verified both active products and their unique indexes/retention; see execution-status.md. Deployed restart/failover checks remain outstanding.
 
-No migration deletes legacy collections. The new publishers write only weather_latest, dam_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
+No migration deletes legacy collections. The new publishers write only weather_latest, dam_latest, agency_warning_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
 
 ## RID daily-storage ingestion
 
@@ -97,3 +98,26 @@ Browser regression specification: `apps/web/tests/e2e_national_to_local_drilldow
 For RID, TMD, HII/ThaiWater and GISTDA, record official documented endpoint, auth, permission, commercial/redistribution rights, quota, real sample fetch, IDs, units, timestamps, latency and coverage. Add provider transform, validation/publication and failure tests; only then activate a layer. Official website links alone are not integration evidence. Basin data requires independently verified geometry and spatial intersections.
 
 Review Open-Meteo API eligibility, Vercel plan eligibility and Atlas capacity for intended public/commercial use. The free Open-Meteo endpoint is non-commercial. Data attribution does not grant commercial free-endpoint access.
+
+
+## TMD public CAP ingestion
+
+`.github/workflows/tmd.yml` is **Latest TMD CAP messages**, scheduled hourly at minute 37 UTC (also minute 37 ICT), with manual Run workflow on main. It uses the existing database-scoped `MONGODB_URI` and `MONGODB_DB_NAME` secrets. No TMD API key or registration is needed for this explicitly published public CAP channel. Registered forecast/radar APIs are separate and must not use a borrowed or demo credential.
+
+The job audits first, retrieves the RSS index and every listed CAP document sequentially, validates complete feed accounting, then publishes one bounded envelope into the inactive slot. It verifies all three products and audits storage afterward. The two `agency_warning_latest` envelopes each have a 50-message and 2 MiB JSON/BSON bound. Empty successful feeds are published as an envelope with zero records; unavailable reads have no feed. The verifier's active_records=1 means one complete envelope, not one active warning.
+
+Use `python -m pipelines.tmd.run --publish` for an authorized writer, and `python -m scripts.mongo_admin rollback --source tmd` only when an intact prior generation and an appropriate maintenance decision exist. Stopped-worker recovery uses `unlock --source tmd --stopped-run-token <exact-token>`, with the same prior confirmation of process termination as other products. Failures retain the last complete feed; the UI pauses current colors when a refresh fails or the feed is delayed/stale.
+
+The existing GitHub connector cannot start Actions (403). For first publication, open Actions → Latest TMD CAP messages → Run workflow → main. This is a fresh workflow run, not a re-run of an old commit. Do not send secrets through chat. See [TMD CAP acceptance](tmd-cap-acceptance-2026-10-26.md) for attribution, timestamp discrepancy, message lifecycle and scope limitations.
+
+## Isolated real MongoDB qualification
+
+`scripts/qualify_local_mongo.py` starts only owned loopback MongoDB/Next.js processes on ports 27028 and 3002, uses a unique disposable `hazard_qualification_*` database under ignored artifacts, and overrides/removes inherited MongoDB settings. It does not accept an Atlas URI, call providers, change Atlas networking or mutate production data.
+
+Provide an official checksum-verified MongoDB executable and the three real ignored local preview captures, build the web app, then run:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.qualify_local_mongo --mongod <official-local-mongod.exe>
+```
+
+The 26 October run used MongoDB 8.0.34 from MongoDB's official Windows archive, SHA-256 `6b021a0864494e4decf278b36477a29eb36072432773e4e62c2f42c302630db0`. It passed actual publication, CLI rollback for weather/RID/CAP, a synthetic empty CAP feed, interrupted candidate retention, rejected rollback into an overwritten slot, hard-process-exit orphan-lock recovery, production-mode HTTP outage responses without local fallback, and recovery of exact data/indexes after a database restart. Evidence is saved in ignored `artifacts/mongo-qualification-report.json`. This qualifies the local real-engine path; deployed Vercel rollback and Atlas infrastructure failover remain separate release checks. Test processes are stopped in a finally block.

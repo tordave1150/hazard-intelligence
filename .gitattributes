@@ -7,3 +7,5 @@
 *.md text eol=lf whitespace=-blank-at-eol
 # Preserve downloaded source bytes for reproducible SHA-256 verification.
 data/boundaries/raw/** -text
+# Preserve public CAP captures, including upstream text whitespace.
+tests/fixtures/tmd/*.xml -text whitespace=-blank-at-eol

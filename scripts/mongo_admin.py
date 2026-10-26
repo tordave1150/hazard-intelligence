@@ -9,13 +9,15 @@ from pipelines.shared.locations import weather_locations
 from pipelines.shared.quality import check_batch as check_weather
 from pipelines.rid.data import DAMS, PRODUCT, check_batch as check_dams
 from pipelines.rid.publication import DamPublisher
+from pipelines.tmd.publication import WarningPublisher,check_envelope
 
 
 def verify_database(db):
     """Read-only active-generation, index and retention audit; no index creation."""
     specs=[('open_meteo','daily_forecast','weather_latest','location_id','Forecast',
             [a['id'] for a in weather_locations('all')],check_weather),
-           ('rid',PRODUCT,'dam_latest','dam_id','DamObservation',[a['dam_id'] for a in DAMS.values()],check_dams)]
+           ('rid',PRODUCT,'dam_latest','dam_id','DamObservation',[a['dam_id'] for a in DAMS.values()],check_dams),
+           ('tmd','cap_warnings','agency_warning_latest','snapshot_id','WarningFeed',['latest'],check_envelope)]
     result=[]
     for source,product,collection,identity,kind,expected,check in specs:
         store=db[collection]
@@ -42,7 +44,7 @@ def verify_database(db):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('command',choices=['audit','verify','rollback','unlock'])
-    parser.add_argument('--source',choices=['open_meteo','rid'],default='open_meteo')
+    parser.add_argument('--source',choices=['open_meteo','rid','tmd'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     args=parser.parse_args()
     with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
@@ -59,11 +61,11 @@ def main():
         elif args.command=='verify':
             print(json.dumps(verify_database(db),default=str,indent=2))
         elif args.command=='rollback':
-            (DamPublisher(db) if args.source=='rid' else Publisher(db)).rollback()
+            {'open_meteo':Publisher,'rid':DamPublisher,'tmd':WarningPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')
         else:
             if not args.stopped_run_token:parser.error('Recovery requires exact --stopped-run-token after the worker is confirmed stopped')
-            key=f'rid:{PRODUCT}' if args.source=='rid' else 'open_meteo:daily_forecast'
+            key={'rid':f'rid:{PRODUCT}','tmd':'tmd:cap_warnings','open_meteo':'open_meteo:daily_forecast'}[args.source]
             result=db.etl_locks.delete_one({'_id':key,'token':args.stopped_run_token})
             print(json.dumps({'recovered_locks':result.deleted_count}))
 

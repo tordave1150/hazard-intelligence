@@ -1,6 +1,6 @@
 # Data contract 2.0
 
-The active machine-readable contract is `packages/contracts/schema.json`, generated reproducibly by `python scripts/create_contracts.py`. Python ingestion and Next.js reads both validate against it. JSON Schema draft 2020-12 defines Area, Forecast, WeatherObservation, WaterGauge, DamObservation, SatelliteFloodProduct, AgencyWarning and SourceStatus. Forecast and DamObservation have accepted adapters; the other product contracts remain reserved. Defining a contract does not activate a provider.
+The active machine-readable contract is `packages/contracts/schema.json`, generated reproducibly by `python scripts/create_contracts.py`. Python ingestion and Next.js reads both validate against it. JSON Schema draft 2020-12 defines Area, Forecast, WeatherObservation, WaterGauge, DamObservation, SatelliteFloodProduct, AgencyWarning and SourceStatus. Forecast, DamObservation and AgencyWarning/WarningFeed have accepted adapters; other product contracts remain reserved. Defining a contract does not activate a provider.
 
 ## Identity
 
@@ -29,3 +29,12 @@ Forecast freshness uses the older of first valid start and retrieval time: ≤30
 RID freshness additionally checks report calendar age: today's report retrieved within 30 hours is FRESH; at most two calendar days old and retrieved within 48 hours is DELAYED; otherwise STALE. Future/invalid timestamps are UNKNOWN. A newly retrieved old report cannot become FRESH. Changing the selected forecast date does not change the RID report date.
 
 Satellite contracts require acquisition time, retrieval time, processing method and licensed external product reference. No raster scenes are stored in MongoDB. Gauge contracts preserve station datum and published threshold definitions. Agency warnings preserve issuer categories and effective/expiry windows. No composite flood-risk score, flood ETA or depth is defined.
+
+
+## TMD CAP warnings
+
+`AgencyWarning` preserves the TMD sender/identifier, Actual/Public status, Alert/Update/Cancel type, exact references, CAP issue/effective/expiry instants, agency classification, plain source text, explicit province codes and original polygon rings. Missing expiry is null. `WarningFeed` wraps complete item accounting and at most 50 messages, allowing an explicitly empty valid feed. RSS assembly and retrieval times are separate from CAP message issuance.
+
+`agency_warning_latest` uses unique `(source_id, product_id, slot, snapshot_id)` keys, with snapshot_id=latest and at most two complete envelopes of up to 2 MiB each. Its independent control/status/lock key is `tmd:cap_warnings`. Completeness means processing of the feed's listed items, not complete national coverage. Public API responses separate envelope metadata from records to avoid duplicate payloads and expose message_states computed with global update/cancel references.
+
+Feed freshness is FRESH through two hours, DELAYED through six, then STALE, using the older of assembly/retrieval. Failure downgrades a fresh prior feed to DELAYED. Message lifecycle is independent: current validity window, upcoming, expired, cancelled, superseded or time unknown. Only currently valid messages from a FRESH feed receive current thematic outlines. Explicit historical inspection uses gray reference outlines; a fresh retrieval never extends expiry or implies safe conditions.

@@ -24,13 +24,13 @@ def test_read_endpoints(route):
     assert 'mongodb://' not in response.text and 'mongodb+srv://' not in response.text
 
 
-@pytest.mark.parametrize('route',['/api/areas?level=bogus','/api/weather?metric=flood_probability','/api/gauges?kind=wrong','/api/dams?date=2026-10-27'])
+@pytest.mark.parametrize('route',['/api/areas?level=bogus','/api/weather?metric=flood_probability','/api/gauges?kind=wrong','/api/dams?date=2026-10-27','/api/warnings?date=2026-10-27'])
 def test_bad_queries_rejected(route):
     response=requests.get(BASE+route,timeout=15)
     assert response.status_code==400 and response.headers['Cache-Control']=='no-store'
 
 
-@pytest.mark.parametrize('route',['/api/gauges','/api/warnings','/api/flood-products'])
+@pytest.mark.parametrize('route',['/api/gauges','/api/flood-products'])
 def test_planned_sources_are_never_normal(route):
     value=requests.get(BASE+route,timeout=15).json()
     assert value['status']=='UNAVAILABLE' and value['records']==[]
@@ -46,6 +46,17 @@ def test_dam_endpoint_has_independent_report_semantics():
         assert all(r['observed_at'] is None and r['time_precision']=='date' for r in data['records'])
     else:
         assert data['status']=='UNAVAILABLE'
+
+
+def test_cap_messages_keep_expiry_separate_from_feed_freshness():
+    response=requests.get(BASE+'/api/warnings',timeout=15);assert response.status_code==200
+    value=response.json();assert value['source_id']=='tmd'
+    assert set(value['message_states'])=={r['warning_id'] for r in value['records']}
+    assert 'absence does not establish safe conditions' in value['coverage']
+    assert all(r['status']=='Actual' and r['scope']=='Public' and r['source_url']=='https://www.tmd.go.th/api/xml/CAP' for r in value['records'])
+    if value['feed']:
+        assert value['feed']['feed_item_count']==len(value['records'])+value['feed']['ignored_item_count']
+    else:assert value['status']=='UNAVAILABLE'
 
 
 def test_area_identity_and_unknown_area():

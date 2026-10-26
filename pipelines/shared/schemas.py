@@ -41,4 +41,7 @@ def validate_record(kind, record):
             raise ValueError('RID maximum capacity below normal capacity')
         if normal is not None and normal>0 and volume is not None and percent is not None and abs(percent-volume/normal*100)>.08:
             raise ValueError('Invalid RID percentage denominator')
+    if kind in ['AgencyWarning','WarningFeed']:
+        from pipelines.tmd.data import check_warning,check_feed
+        (check_warning if kind=='AgencyWarning' else check_feed)(record)
     return record

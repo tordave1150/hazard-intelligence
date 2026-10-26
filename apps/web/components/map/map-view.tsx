@@ -1,16 +1,18 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import maplibregl,{type Map as MapType} from 'maplibre-gl';
 import {MapboxOverlay} from '@deck.gl/mapbox';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import type {Feature,FeatureCollection,Geometry} from 'geojson';
-import type {Area,DamObservation,Forecast,Freshness,Metric} from '@/lib/types';
+import type {Area,DamObservation,Forecast,Freshness,Metric,WarningDisplay} from '@/lib/types';
+import {warningColor} from '@/lib/warnings';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 
 type Props={area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;
   rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void;
-  dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void};
+  dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void;
+  warnings:WarningDisplay[];onSelectWarning:(id:string)=>void};
 export default function MapView(props:Props){
   const stale=['STALE','UNKNOWN','UNAVAILABLE'].includes(props.freshness);
   const container=useRef<HTMLDivElement>(null),map=useRef<MapType|null>(null),overlay=useRef<MapboxOverlay|null>(null);
@@ -18,8 +20,13 @@ export default function MapView(props:Props){
   const latest=useRef(props);latest.current=props;
   const [ready,setReady]=useState(false),[error,setError]=useState(''),[baseError,setBaseError]=useState(false);
   const [geometry,setGeometry]=useState<FeatureCollection>({type:'FeatureCollection',features:[]});
+  const warningGeometry=useMemo<FeatureCollection>(()=>({type:'FeatureCollection',features:props.warnings.map(row=>({
+    type:'Feature',geometry:row.geometry!,properties:{source_id:'tmd',warning_id:row.warning_id,headline:row.headline,
+      state:row.display_state,archived:row.archived,color:warningColor(row),severity:row.agency_severity,issued_at:row.issued_at,expires_at:row.expires_at}
+  }))}),[props.warnings]);
   useEffect(()=>{
     if(!container.current)return;
+    setReady(false);
     let instance:MapType;
     try {
       instance=new maplibregl.Map({container:container.current,style:'https://tiles.openfreemap.org/styles/positron',
@@ -48,10 +55,18 @@ export default function MapView(props:Props){
           paint:{'line-color':'#597e7b','line-width':1}},label);
         instance.addLayer({id:'weather-native-extrusion',type:'fill-extrusion',source:'weather-native',layout:{visibility:'none'},
           paint:{'fill-extrusion-color':['get','color'],'fill-extrusion-height':['get','height'],'fill-extrusion-base':0,'fill-extrusion-opacity':.65}});
+        instance.addSource('warning-cap',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        instance.addLayer({id:'warning-cap-fill',type:'fill',source:'warning-cap',layout:{visibility:'none'},
+          paint:{'fill-color':['get','color'],'fill-opacity':['case',['get','archived'],.05,.16]}});
+        instance.addLayer({id:'warning-cap-line',type:'line',source:'warning-cap',layout:{visibility:'none'},
+          paint:{'line-color':['get','color'],'line-width':2}});
         const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false});
         hoverPopup.current=popup;
         instance.on('mousemove',event=>{
           if(!latest.current.is3d){popup.remove();return;}
+          const warning=instance.queryRenderedFeatures(event.point,{layers:['warning-cap-fill']})[0];
+          if(warning?.properties){const p=warning.properties;instance.getCanvas().style.cursor='pointer';
+            popup.setLngLat(event.lngLat).setText(`TMD CAP · ${p.state} · ${p.headline} · issued ${p.issued_at} · expires ${p.expires_at??'not supplied'}`).addTo(instance);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           instance.getCanvas().style.cursor=feature?'pointer':'';
           if(feature?.properties){const p=feature.properties;
@@ -60,6 +75,8 @@ export default function MapView(props:Props){
         });
         instance.on('click',event=>{
           if(!latest.current.is3d)return;
+          const warning=instance.queryRenderedFeatures(event.point,{layers:['warning-cap-fill']})[0];
+          if(warning?.properties){latest.current.onSelectWarning(warning.properties.warning_id);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           if(feature?.properties)latest.current.onSelect(latest.current.area.level==='national'?feature.properties.region_id:feature.properties.id);
         });
@@ -132,9 +149,15 @@ export default function MapView(props:Props){
       pitch:props.is3d?52:0,bearing:props.is3d?-12:0});
   },[props.area.id,props.is3d,ready]);
   useEffect(()=>{
-    if(!ready||!map.current)return;
+    if(!ready||!map.current?.getSource('terrain-dem'))return;
     map.current.setTerrain(props.is3d&&props.terrain?{source:'terrain-dem',exaggeration:1.2}:null);
   },[props.is3d,props.terrain,ready]);
+  useEffect(()=>{
+    if(!ready||!map.current?.getSource('warning-cap'))return;
+    (map.current.getSource('warning-cap') as maplibregl.GeoJSONSource).setData(warningGeometry);
+    for(const id of ['warning-cap-fill','warning-cap-line'])map.current.setLayoutProperty(id,'visibility',props.is3d?'visible':'none');
+    hoverPopup.current?.remove();
+  },[ready,warningGeometry,props.is3d]);
   useEffect(()=>{
     if(!ready||!overlay.current)return;
     const lookup=new Map(props.records.map(r=>[r.location_id,r]));
@@ -153,6 +176,7 @@ export default function MapView(props:Props){
     map.current?.setPaintProperty('weather-native-extrusion','fill-extrusion-opacity',props.opacity/100);
     // MapLibre drapes its own fill/extrusion geometry on DEM terrain. The deck
     // layer handles 2D, where a flat z=0 mesh cannot be buried below terrain.
+    const warningRgb=(f:Feature):[number,number,number,number]=>{const hex=String(f.properties?.color??'#7a8088');return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255];};
     overlay.current.setProps({layers:props.is3d?[]:[new GeoJsonLayer({id:'weather-geography',data:{type:'FeatureCollection',features} as FeatureCollection,
       pickable:true,filled:true,stroked:true,extruded:extrusion,
       getFillColor:(f:Feature)=>props.rainfall?metricColor(f.properties?.value??null,props.metric):[228,236,232,190],
@@ -166,8 +190,12 @@ export default function MapView(props:Props){
         const id=object.properties.id;
         latest.current.onSelect(latest.current.area.level==='national'?object.properties.region_id:id);
       }
-    })],getTooltip:({object})=>object?{text:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
-  },[ready,geometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,stale]);
+    }),new GeoJsonLayer({id:'tmd-cap-polygons',data:warningGeometry,pickable:true,filled:true,stroked:true,
+      getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
+      getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
+      onClick:({object})=>{if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
+    })],getTooltip:({object})=>object?{text:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
+  },[ready,geometry,warningGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>
     <div className="map-context"><span className="map-context-icon"><MapIcon size={15}/></span><div><strong>{props.area.level==='national'?'Thailand · national view':props.area.name}</strong><span>{props.area.level==='national'?'Select a region to explore':'Select an area for local intelligence'}</span></div></div>

@@ -27,3 +27,18 @@ export type DamObservation=DamMeta & {schema_version:'2.0';source_id:'rid';produ
   source_url:string;metadata_url:string;license_url:string};
 export type DamSnapshot={records:DamObservation[];health:Record<string,unknown>|null;freshness:Freshness;
   storage:'mongo'|'local'|'unconfigured';error:string|null};
+export type AgencyWarning={schema_version:'2.0';source_id:'tmd';product_id:'cap_warnings';data_state:'agency_warning';
+  warning_id:string;sender:'TMD';message_type:'Alert'|'Update'|'Cancel';status:'Actual';scope:'Public';
+  references:{sender:string;warning_id:string;issued_at:string}[];issued_at:string;fetched_at:string;ingested_at:string;
+  effective_start:string|null;expires_at:string|null;effective_time_source:'CAP effective'|'CAP sent'|'not supplied';
+  language:string|null;event:string|null;headline:string|null;description:string|null;instruction:string|null;
+  agency_severity:'Extreme'|'Severe'|'Moderate'|'Minor'|'Unknown'|null;urgency:string|null;certainty:string|null;
+  area_ids:string[];source_areas:{description:string;geocodes:{value_name:string;value:string}[]}[];
+  geometry:import('geojson').MultiPolygon|null;content_ref:string;source_url:string;terms_url:string};
+export type WarningFeed={schema_version:'2.0';source_id:'tmd';product_id:'cap_warnings';data_state:'agency_warning';
+  snapshot_id:'latest';fetched_at:string;ingested_at:string;feed_generated_at:string;feed_url:string;feed_copyright:'public domain';
+  feed_item_count:number;ignored_item_count:number;records:AgencyWarning[]};
+export type WarningSnapshot={feed:Omit<WarningFeed,'records'>|null;records:AgencyWarning[];health:Record<string,unknown>|null;
+  freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null};
+export type WarningState='CURRENT'|'UPCOMING'|'EXPIRED'|'SUPERSEDED'|'CANCELLED'|'TIME_UNKNOWN';
+export type WarningDisplay=AgencyWarning & {display_state:WarningState;archived:boolean};

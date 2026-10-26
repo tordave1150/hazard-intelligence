@@ -94,7 +94,7 @@ def test_read_only_live_verifier_enforces_identity_index_and_retention(monkeypat
     DamPublisher(db).publish(rid_records,expected)
     before={name:list(db[name].find()) for name in db.list_collection_names()}
     report=mongo_admin.verify_database(db)
-    assert all(r['status']=='VERIFIED' and r['unique_index_verified'] for r in report)
+    assert {r['source_id'] for r in report if r['status']=='VERIFIED' and r['unique_index_verified']}=={'open_meteo','rid'}
     assert before=={name:list(db[name].find()) for name in db.list_collection_names()}
     index=next(i for i in db.dam_latest.list_indexes() if i.get('unique'))
     db.dam_latest.drop_index(index['name'])

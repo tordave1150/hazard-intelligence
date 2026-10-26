@@ -746,8 +746,7 @@
           "const": "2.0"
         },
         "source_id": {
-          "type": "string",
-          "minLength": 1
+          "const": "tmd"
         },
         "data_state": {
           "const": "agency_warning"
@@ -757,46 +756,258 @@
           "format": "date-time",
           "pattern": "(Z|\\+00:00)$"
         },
+        "product_id": {
+          "const": "cap_warnings"
+        },
         "warning_id": {
           "type": "string",
           "minLength": 1
         },
-        "area_ids": {
+        "sender": {
+          "const": "TMD"
+        },
+        "message_type": {
+          "enum": [
+            "Alert",
+            "Update",
+            "Cancel"
+          ]
+        },
+        "status": {
+          "const": "Actual"
+        },
+        "scope": {
+          "const": "Public"
+        },
+        "references": {
           "type": "array",
+          "maxItems": 100,
           "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "minItems": 1,
-          "maxItems": 1200
+            "type": "object",
+            "properties": {
+              "sender": {
+                "type": "string",
+                "minLength": 1
+              },
+              "warning_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "issued_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|\\+00:00)$"
+              }
+            },
+            "required": [
+              "sender",
+              "warning_id",
+              "issued_at"
+            ],
+            "additionalProperties": false
+          }
         },
         "issued_at": {
           "type": "string",
           "format": "date-time",
           "pattern": "(Z|\\+00:00)$"
         },
-        "effective_start": {
+        "fetched_at": {
           "type": "string",
           "format": "date-time",
           "pattern": "(Z|\\+00:00)$"
+        },
+        "effective_start": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "expires_at": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "(Z|\\+00:00)$"
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_time_source": {
+          "enum": [
+            "CAP effective",
+            "CAP sent",
+            "not supplied"
+          ]
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "headline": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instruction": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "agency_severity": {
-          "type": "string",
-          "minLength": 1
+          "enum": [
+            "Extreme",
+            "Severe",
+            "Moderate",
+            "Minor",
+            "Unknown",
+            null
+          ]
+        },
+        "urgency": {
+          "enum": [
+            "Immediate",
+            "Expected",
+            "Future",
+            "Past",
+            "Unknown",
+            null
+          ]
+        },
+        "certainty": {
+          "enum": [
+            "Observed",
+            "Likely",
+            "Possible",
+            "Unlikely",
+            "Unknown",
+            null
+          ]
+        },
+        "area_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 77,
+          "items": {
+            "type": "string",
+            "pattern": "^TH-P-[0-9]{2}$"
+          }
+        },
+        "source_areas": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "geocodes": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value_name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "value": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "value_name",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "description",
+              "geocodes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "geometry": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "MultiPolygon"
+                },
+                "coordinates": {
+                  "type": "array",
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 1,
+                    "items": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 20000,
+                      "items": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "coordinates"
+              ],
+              "additionalProperties": false
+            }
+          ]
         },
         "content_ref": {
           "type": "string",
           "format": "uri"
         },
-        "last_updated_at": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "(Z|\\+00:00)$"
+        "source_url": {
+          "const": "https://www.tmd.go.th/api/xml/CAP"
+        },
+        "terms_url": {
+          "const": "https://www.tmd.go.th/content/copyright"
         }
       },
       "required": [
@@ -804,14 +1015,106 @@
         "source_id",
         "data_state",
         "ingested_at",
+        "product_id",
         "warning_id",
-        "area_ids",
+        "sender",
+        "message_type",
+        "status",
+        "scope",
+        "references",
         "issued_at",
+        "fetched_at",
         "effective_start",
         "expires_at",
+        "effective_time_source",
+        "language",
+        "event",
+        "headline",
+        "description",
+        "instruction",
         "agency_severity",
+        "urgency",
+        "certainty",
+        "area_ids",
+        "source_areas",
+        "geometry",
         "content_ref",
-        "last_updated_at"
+        "source_url",
+        "terms_url"
+      ],
+      "additionalProperties": false
+    },
+    "WarningFeed": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "const": "tmd"
+        },
+        "data_state": {
+          "const": "agency_warning"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "product_id": {
+          "const": "cap_warnings"
+        },
+        "snapshot_id": {
+          "const": "latest"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "feed_generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "feed_url": {
+          "const": "https://www.tmd.go.th/api/xml/CAP"
+        },
+        "feed_copyright": {
+          "const": "public domain"
+        },
+        "feed_item_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "ignored_item_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "records": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/AgencyWarning"
+          }
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "product_id",
+        "snapshot_id",
+        "fetched_at",
+        "feed_generated_at",
+        "feed_url",
+        "feed_copyright",
+        "feed_item_count",
+        "ignored_item_count",
+        "records"
       ],
       "additionalProperties": false
     },
