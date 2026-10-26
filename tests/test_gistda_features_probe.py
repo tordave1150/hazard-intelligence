@@ -57,6 +57,18 @@ def test_nonempty_page_is_not_claimed_complete_or_source_accepted():
     assert '2026-10-25' not in json.dumps(report)
 
 
+def test_full_observed_property_count_stays_bounded_without_exposing_values_or_secret_names():
+    properties={f'field_{i}':i for i in range(27)}
+    properties.update({'survey_date':'2026-10-25',KEY:KEY,'api_key':KEY})
+    properties.update({f'extra_{i}':KEY for i in range(50)})
+    row={'type':'Feature','properties':properties,'geometry':None}
+    report,code=probe.inspect_features(KEY,get=lambda *a,**k:Response(page([row],matched=184323)))
+    assert code==0
+    fields=report['response_structure']['fields']['features']['first_item']['fields']['properties']['fields']
+    assert fields['survey_date']=={'type':'string'} and len(fields)<=48
+    assert 'api_key' not in fields and KEY not in json.dumps(report) and '2026-10-25' not in json.dumps(report)
+
+
 @pytest.mark.parametrize('change',[{'numberReturned':True},{'numberMatched':-1},{'numberMatched':False},
     {'numberReturned':1},{'features':'bad'},{'type':'error'},{'timeStamp':'2026-10-26T16:22:22'},
     {'timeStamp':KEY},{'links':KEY}])

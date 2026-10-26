@@ -18,19 +18,19 @@ MAX_BYTES=2*1024*1024
 FIELD=re.compile(r'^[A-Za-z_][A-Za-z0-9_]{0,63}$')
 
 
-def structure(value,secret,depth=0):
+def structure(value,secret,depth=0,max_fields=24):
     """Expose schema hints, never values or reflected request URLs/credentials."""
     if isinstance(value,dict):
         if depth>=4:return {'type':'object'}
         fields={}
-        for key,item in list(value.items())[:24]:
+        for key,item in list(value.items())[:max_fields]:
             # Unknown field names can themselves be reflected URLs or secrets.
             if not FIELD.fullmatch(key) or secret.lower() in key.lower():continue
             if any(word in key.lower() for word in ['key','token','password','secret','authorization']):continue
-            fields[key]=structure(item,secret,depth+1)
+            fields[key]=structure(item,secret,depth+1,max_fields)
         return {'type':'object','fields':fields,'field_count':len(value)}
     if isinstance(value,list):
-        return {'type':'array','count':len(value),'first_item':structure(value[0],secret,depth+1) if value and depth<4 else None}
+        return {'type':'array','count':len(value),'first_item':structure(value[0],secret,depth+1,max_fields) if value and depth<4 else None}
     if value is None:return {'type':'null'}
     if isinstance(value,bool):return {'type':'boolean'}
     if isinstance(value,(int,float)):return {'type':'number'}

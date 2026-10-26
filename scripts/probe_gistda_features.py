@@ -101,7 +101,7 @@ def inspect_features(api_key,window='1day',ap_idn='2604',get=None,clock=time.mon
             # Drop links BEFORE schema inspection. The real service can echo
             # api_key inside href even when authentication used only a header.
             safe={k:v for k,v in payload.items() if k!='links'} if isinstance(payload,dict) else payload
-            report['response_structure']=structure(safe,api_key)
+            report['response_structure']=structure(safe,api_key,max_fields=48)
             try:report['page_metadata']=page_metadata(payload)
             except (ValueError,TypeError,OverflowError):return {**report,'result':'FEATURE_COLLECTION_SCHEMA_UNVERIFIED'},1
             if api_key in report['page_metadata']['response_timestamp']:
