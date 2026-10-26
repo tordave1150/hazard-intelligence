@@ -49,3 +49,9 @@ jobs:
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
           OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
         run: python -m pipelines.open_meteo.run --level all --publish
+      - name: Verify active generations and bounded retention
+        if: steps.configuration.outputs.configured == 'true'
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m scripts.mongo_admin verify

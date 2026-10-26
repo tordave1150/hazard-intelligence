@@ -4,10 +4,11 @@
 
 From the repository root, run `npm ci`. Create an isolated Python venv and install `tests/requirements.txt`. The Python runner does not auto-load `.env`; set credentials through the shell or an approved secret manager.
 
-Real local weather preview:
+Real local previews (each source can be fetched independently):
 
 ```powershell
 .\.venv\Scripts\python.exe -m pipelines.open_meteo.run --level all --export apps/web/data/local/weather.json
+.\.venv\Scripts\python.exe -m pipelines.rid.run --export apps/web/data/local/dams.json
 $env:HAZARD_LOCAL_SNAPSHOT='1'
 npm run dev
 ```
@@ -52,7 +53,23 @@ The current GitHub connector can read workflow status/logs but its re-run mutati
 
 Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. Post-publication measurements and deployed restart/failover checks still need to be captured.
 
-No migration deletes legacy collections. The new publisher writes only weather_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
+No migration deletes legacy collections. The new publishers write only weather_latest, dam_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
+
+## RID daily-storage ingestion
+
+`.github/workflows/rid.yml` is **Latest RID reservoir report**. It runs independently at 01:15 UTC / 08:15 Asia/Bangkok or via Run workflow → main. It uses the existing repository secrets `MONGODB_URI` and `MONGODB_DB_NAME=weather_db`; no new provider credential is needed for this public documented GET. The writer must have permission for `dam_latest` and the shared control/status/lock collections in that database. Do not broaden permissions if the existing database-scoped readWrite user already supplies this.
+
+The sequence is configuration check → read-only database audit → one 35-dam report fetch/validation/publication → read-only `verify` → actual post-write storage audit. The verifier checks both products' active coverage, schema, identity indexes and two-slot bounds, while allowing an unpublished product to remain UNAVAILABLE. It never creates indexes. The publisher creates its own required indexes only when publishing. RID and weather use separate concurrency groups and product locks; neither fetch is part of a website request.
+
+```powershell
+.\.venv\Scripts\python.exe -m pipelines.rid.run --publish
+.\.venv\Scripts\python.exe -m scripts.mongo_admin verify
+.\.venv\Scripts\python.exe -m scripts.mongo_admin rollback --source rid
+```
+
+Rollback requires an intact previous generation. For a confirmed stopped RID writer use `unlock --source rid --stopped-run-token <exact-token>` under the same stopped-process requirements as weather. Do not run recovery or rollback merely to test production without an agreed maintenance window.
+
+The accepted storage product excludes inflow/outflow. Its report date is independent of the forecast date; exact observation time is unavailable. Freshness cannot be reset by retrieving an old report. See [RID acceptance](rid-acceptance-2026-10-26.md) for measurement, coordinate and reuse evidence. The live page shows awaiting publication until the first complete Atlas report exists; local captures are never a production fallback.
 
 ## Rollback and interrupted runs
 

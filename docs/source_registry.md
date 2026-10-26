@@ -2,10 +2,10 @@
 
 Machine-readable registry: `apps/web/data/source-registry.json`. It records endpoint/product reference, source category, authentication, licence, commercial and redistribution permission, quota, cadence/latency, coverage/resolution, units/CRS, fallback and terms-review date. `/sources` presents it; the map separately presents actual data age.
 
-| Source | Evidence at 2026-10-25 | Release state |
+| Source | Evidence at 2026-10-26 | Release state |
 |---|---|---|
 | Open-Meteo daily forecast | Production run 40257438014 published and served 1,005/1,005 validated points, four daily periods, FRESH/SUCCESS on 2026-10-26; user confirmed non-commercial use | Connected on production; source attribution retained |
-| RID reservoirs | Documented public endpoint probed: HTTP 200, 35/35 records and unique IDs; coordinates, flow units/window and reuse terms unresolved | Planned, disabled |
+| RID daily dam storage | Documented GET, 35 matched identities and official published coordinates, date-only precision, capacities/percent semantics and linked DGA catalog reuse reviewed | Initial storage product accepted and tested; first Atlas publication pending. Flows remain excluded |
 | TMD warnings/radar | Official portal and registration links verified; authenticated products and terms pending | Planned, disabled |
 | HII / ThaiWater gauges | Official exchange standard reviewed; agency endpoint/access and live sample pending | Planned, disabled |
 | GISTDA flood products | Official flood catalog reviewed; key required and dataset license unspecified; acquisition sample pending | Planned, disabled |
@@ -19,3 +19,5 @@ References checked: [Open-Meteo API](https://open-meteo.com/en/docs), [terms](ht
 No source is declared production-ready based solely on appearing in the roadmap. Unconnected water/satellite/agency products are not shown as observations, warnings or safe conditions.
 
 See [source acceptance investigation](source-acceptance.md) for actual probe results, official references and remaining dependencies.
+
+The [RID acceptance record](rid-acceptance-2026-10-26.md) documents the narrower daily-storage scope, metadata capture and license interpretation. It does not grant acceptance to every RID product.

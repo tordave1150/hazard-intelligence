@@ -1,5 +1,10 @@
 import type {Area, Forecast, Freshness, Metric} from './types';
 
+export const bangkokDate=(now=Date.now())=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+export function chooseForecastDate(dates:string[],current:string,now=Date.now()){
+  return dates.includes(current)?current:dates.includes(bangkokDate(now))?bangkokDate(now):dates[0]??'';
+}
+
 export function freshness(records: Forecast[], now = Date.now()): Freshness {
   if (!records.length) return 'UNAVAILABLE';
   const times = records.flatMap(r => [Date.parse(r.valid_periods[0]?.valid_start), Date.parse(r.fetched_at)]);

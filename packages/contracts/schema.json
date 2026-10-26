@@ -475,8 +475,7 @@
           "const": "2.0"
         },
         "source_id": {
-          "type": "string",
-          "minLength": 1
+          "const": "rid"
         },
         "data_state": {
           "const": "observed"
@@ -486,7 +485,22 @@
           "format": "date-time",
           "pattern": "(Z|\\+00:00)$"
         },
+        "product_id": {
+          "const": "daily_dam_storage"
+        },
         "dam_id": {
+          "type": "string",
+          "pattern": "^RID-DAM-[0-9]{6}$"
+        },
+        "source_dam_id": {
+          "type": "string",
+          "pattern": "^[0-9]{6}$"
+        },
+        "name_th": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
           "type": "string",
           "minLength": 1
         },
@@ -510,62 +524,101 @@
           ],
           "additionalProperties": false
         },
+        "province_id": {
+          "type": "string",
+          "pattern": "^TH-P-[0-9]{2}$"
+        },
+        "district_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^TH-D-[0-9]{4}$"
+        },
+        "region_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_region": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normal_capacity_mcm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "maximum_capacity_mcm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "storage_volume_mcm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
         "storage_pct": {
           "type": [
             "number",
             "null"
           ],
-          "minimum": 0,
-          "maximum": 100
-        },
-        "storage_volume": {
-          "type": [
-            "number",
-            "null"
-          ],
           "minimum": 0
         },
-        "inflow": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0
-        },
-        "outflow": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0
-        },
-        "unit_metadata": {
-          "type": "object",
-          "properties": {
-            "volume": {
-              "type": "string",
-              "minLength": 1
-            },
-            "flow": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": [
-            "volume",
-            "flow"
-          ],
-          "additionalProperties": false
+        "report_date": {
+          "type": "string",
+          "format": "date"
         },
         "observed_at": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "(Z|\\+00:00)$"
+          "type": "null"
+        },
+        "time_precision": {
+          "const": "date"
         },
         "fetched_at": {
           "type": "string",
           "format": "date-time",
           "pattern": "(Z|\\+00:00)$"
+        },
+        "quality_status": {
+          "enum": [
+            "valid",
+            "partial"
+          ]
+        },
+        "unit_metadata": {
+          "type": "object",
+          "properties": {
+            "volume": {
+              "const": "million m³"
+            },
+            "percentage": {
+              "const": "% of normal storage capacity"
+            }
+          },
+          "required": [
+            "volume",
+            "percentage"
+          ],
+          "additionalProperties": false
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "metadata_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "license_url": {
+          "type": "string",
+          "format": "uri"
         }
       },
       "required": [
@@ -573,15 +626,29 @@
         "source_id",
         "data_state",
         "ingested_at",
+        "product_id",
         "dam_id",
+        "source_dam_id",
+        "name_th",
+        "owner",
         "point",
+        "province_id",
+        "district_id",
+        "region_id",
+        "source_region",
+        "normal_capacity_mcm",
+        "maximum_capacity_mcm",
+        "storage_volume_mcm",
         "storage_pct",
-        "storage_volume",
-        "inflow",
-        "outflow",
-        "unit_metadata",
+        "report_date",
         "observed_at",
-        "fetched_at"
+        "time_precision",
+        "fetched_at",
+        "quality_status",
+        "unit_metadata",
+        "source_url",
+        "metadata_url",
+        "license_url"
       ],
       "additionalProperties": false
     },

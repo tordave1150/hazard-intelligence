@@ -16,11 +16,15 @@ from .time_units import utc_now
 
 
 class Publisher:
+    collection_name = 'weather_latest'
+    identity_field = 'location_id'
+    schema_name = 'Forecast'
+
     def __init__(self, db):
         self.db = db
-        self.records = db.weather_latest
+        self.records = db[self.collection_name]
         self.control = db.snapshot_control
-        self.records.create_index([('source_id', 1), ('product_id', 1), ('slot', 1), ('location_id', 1)], unique=True)
+        self.records.create_index([('source_id', 1), ('product_id', 1), ('slot', 1), (self.identity_field, 1)], unique=True)
         self.records.create_index([('source_id', 1), ('product_id', 1), ('slot', 1), ('etl_run_id', 1)])
 
     @contextmanager
@@ -35,10 +39,14 @@ class Publisher:
         finally:
             self.db.etl_locks.delete_one({'_id': key, 'token': token})
 
-    def publish(self, records, expected_ids):
+    def validate(self, records, expected_ids):
         quality = check_batch(records, expected_ids)
         for record in records:
-            validate_record('Forecast', record)
+            validate_record(self.schema_name, record)
+        return quality
+
+    def publish(self, records, expected_ids):
+        quality = self.validate(records, expected_ids)
         source, product = records[0]['source_id'], records[0]['product_id']
         if any((r['source_id'], r['product_id']) != (source, product) for r in records):
             raise ValueError('A snapshot must contain one source/product')

@@ -1,0 +1,430 @@
+{
+  "metadata_version": "2026-10-26",
+  "source_page": "https://app.rid.go.th/reservoir/rsvmiddle",
+  "catalog_url": "https://data.go.th/th/dataset/reservoir2",
+  "license_url": "https://data.go.th/th/pages/dga-open-government-license",
+  "source_response_sha256": "01316e6e737fe272302ab44086f22edda39644640681b4d57f4e865ad08fd3a2",
+  "coordinate_method": "Coordinates published by RID reservoir map; canonical areas joined by point-in-polygon, without moving points.",
+  "dams": [
+    {
+      "dam_id": "RID-DAM-100104",
+      "source_dam_id": "100104",
+      "name_th": "เขื่อนแม่กวงอุดมธารา",
+      "point": {
+        "lat": 18.92348,
+        "lon": 99.121978
+      },
+      "province_id": "TH-P-50",
+      "district_id": "TH-D-5014",
+      "region_id": "TH-R-NORTH"
+    },
+    {
+      "dam_id": "RID-DAM-100105",
+      "source_dam_id": "100105",
+      "name_th": "เขื่อนกิ่วลม",
+      "point": {
+        "lat": 18.5239,
+        "lon": 99.6239
+      },
+      "province_id": "TH-P-52",
+      "district_id": "TH-D-5201",
+      "region_id": "TH-R-NORTH"
+    },
+    {
+      "dam_id": "RID-DAM-100106",
+      "source_dam_id": "100106",
+      "name_th": "เขื่อนกิ่วคอหมา",
+      "point": {
+        "lat": 18.8,
+        "lon": 99.64
+      },
+      "province_id": "TH-P-52",
+      "district_id": "TH-D-5206",
+      "region_id": "TH-R-NORTH"
+    },
+    {
+      "dam_id": "RID-DAM-100107",
+      "source_dam_id": "100107",
+      "name_th": "เขื่อนแควน้อยบำรุงแดน",
+      "point": {
+        "lat": 17.023,
+        "lon": 100.327
+      },
+      "province_id": "TH-P-65",
+      "district_id": "TH-D-6507",
+      "region_id": "TH-R-CENTRAL"
+    },
+    {
+      "dam_id": "RID-DAM-100108",
+      "source_dam_id": "100108",
+      "name_th": "เขื่อนแม่มอก",
+      "point": {
+        "lat": 17.20818657,
+        "lon": 99.42361467
+      },
+      "province_id": "TH-P-64",
+      "district_id": "TH-D-6402",
+      "region_id": "TH-R-CENTRAL"
+    },
+    {
+      "dam_id": "RID-DAM-100201",
+      "source_dam_id": "100201",
+      "name_th": "เขื่อนห้วยหลวง",
+      "point": {
+        "lat": 17.364,
+        "lon": 102.583
+      },
+      "province_id": "TH-P-41",
+      "district_id": "TH-D-4102",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100202",
+      "source_dam_id": "100202",
+      "name_th": "เขื่อนน้ำอูน",
+      "point": {
+        "lat": 17.3095,
+        "lon": 103.7428
+      },
+      "province_id": "TH-P-47",
+      "district_id": "TH-D-4705",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100206",
+      "source_dam_id": "100206",
+      "name_th": "เขื่อนลำปาว",
+      "point": {
+        "lat": 16.602595,
+        "lon": 103.441
+      },
+      "province_id": "TH-P-46",
+      "district_id": "TH-D-4601",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100207",
+      "source_dam_id": "100207",
+      "name_th": "เขื่อนลำตะคอง",
+      "point": {
+        "lat": 14.8652,
+        "lon": 101.5604
+      },
+      "province_id": "TH-P-30",
+      "district_id": "TH-D-3020",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100208",
+      "source_dam_id": "100208",
+      "name_th": "เขื่อนลำพระเพลิง",
+      "point": {
+        "lat": 14.5944,
+        "lon": 101.8401
+      },
+      "province_id": "TH-P-30",
+      "district_id": "TH-D-3014",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100209",
+      "source_dam_id": "100209",
+      "name_th": "เขื่อนมูลบน",
+      "point": {
+        "lat": 14.484,
+        "lon": 102.1474
+      },
+      "province_id": "TH-P-30",
+      "district_id": "TH-D-3002",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100210",
+      "source_dam_id": "100210",
+      "name_th": "เขื่อนลำแชะ",
+      "point": {
+        "lat": 14.4084,
+        "lon": 102.2836
+      },
+      "province_id": "TH-P-30",
+      "district_id": "TH-D-3002",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100211",
+      "source_dam_id": "100211",
+      "name_th": "เขื่อนลำนางรอง",
+      "point": {
+        "lat": 14.3012,
+        "lon": 102.764
+      },
+      "province_id": "TH-P-31",
+      "district_id": "TH-D-3120",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-100301",
+      "source_dam_id": "100301",
+      "name_th": "เขื่อนป่าสักชลสิทธิ์",
+      "point": {
+        "lat": 14.8613,
+        "lon": 101.06615
+      },
+      "province_id": "TH-P-16",
+      "district_id": "TH-D-1602",
+      "region_id": "TH-R-CENTRAL"
+    },
+    {
+      "dam_id": "RID-DAM-100302",
+      "source_dam_id": "100302",
+      "name_th": "เขื่อนทับเสลา",
+      "point": {
+        "lat": 15.54369,
+        "lon": 99.4482
+      },
+      "province_id": "TH-P-61",
+      "district_id": "TH-D-6107",
+      "region_id": "TH-R-CENTRAL"
+    },
+    {
+      "dam_id": "RID-DAM-100303",
+      "source_dam_id": "100303",
+      "name_th": "เขื่อนกระเสียว",
+      "point": {
+        "lat": 14.835957,
+        "lon": 99.6645
+      },
+      "province_id": "TH-P-72",
+      "district_id": "TH-D-7203",
+      "region_id": "TH-R-CENTRAL"
+    },
+    {
+      "dam_id": "RID-DAM-100501",
+      "source_dam_id": "100501",
+      "name_th": "เขื่อนขุนด่านปราการชล",
+      "point": {
+        "lat": 14.312,
+        "lon": 101.319
+      },
+      "province_id": "TH-P-26",
+      "district_id": "TH-D-2602",
+      "region_id": "TH-R-CENTRAL"
+    },
+    {
+      "dam_id": "RID-DAM-100502",
+      "source_dam_id": "100502",
+      "name_th": "เขื่อนคลองสียัด",
+      "point": {
+        "lat": 13.45,
+        "lon": 101.65
+      },
+      "province_id": "TH-P-24",
+      "district_id": "TH-D-2410",
+      "region_id": "TH-R-EAST"
+    },
+    {
+      "dam_id": "RID-DAM-100503",
+      "source_dam_id": "100503",
+      "name_th": "เขื่อนบางพระ",
+      "point": {
+        "lat": 13.2148,
+        "lon": 100.9632
+      },
+      "province_id": "TH-P-20",
+      "district_id": "TH-D-2007",
+      "region_id": "TH-R-EAST"
+    },
+    {
+      "dam_id": "RID-DAM-100504",
+      "source_dam_id": "100504",
+      "name_th": "เขื่อนหนองปลาไหล",
+      "point": {
+        "lat": 12.969,
+        "lon": 101.251
+      },
+      "province_id": "TH-P-21",
+      "district_id": "TH-D-2106",
+      "region_id": "TH-R-EAST"
+    },
+    {
+      "dam_id": "RID-DAM-100505",
+      "source_dam_id": "100505",
+      "name_th": "เขื่อนประแสร์",
+      "point": {
+        "lat": 13.028,
+        "lon": 101.57
+      },
+      "province_id": "TH-P-21",
+      "district_id": "TH-D-2104",
+      "region_id": "TH-R-EAST"
+    },
+    {
+      "dam_id": "RID-DAM-100514",
+      "source_dam_id": "100514",
+      "name_th": "เขื่อนนฤบดินทรจินดา",
+      "point": {
+        "lat": 14.0446,
+        "lon": 102.0149
+      },
+      "province_id": "TH-P-25",
+      "district_id": "TH-D-2503",
+      "region_id": "TH-R-EAST"
+    },
+    {
+      "dam_id": "RID-DAM-100602",
+      "source_dam_id": "100602",
+      "name_th": "เขื่อนปราณบุรี",
+      "point": {
+        "lat": 12.462558,
+        "lon": 99.79311
+      },
+      "province_id": "TH-P-77",
+      "district_id": "TH-D-7706",
+      "region_id": "TH-R-WEST"
+    },
+    {
+      "dam_id": "RID-DAM-200101",
+      "source_dam_id": "200101",
+      "name_th": "เขื่อนภูมิพล",
+      "point": {
+        "lat": 17.247,
+        "lon": 98.971
+      },
+      "province_id": "TH-P-63",
+      "district_id": "TH-D-6303",
+      "region_id": "TH-R-WEST"
+    },
+    {
+      "dam_id": "RID-DAM-200102",
+      "source_dam_id": "200102",
+      "name_th": "เขื่อนสิริกิติ์",
+      "point": {
+        "lat": 17.7656,
+        "lon": 100.5646
+      },
+      "province_id": "TH-P-53",
+      "district_id": "TH-D-5303",
+      "region_id": "TH-R-NORTH"
+    },
+    {
+      "dam_id": "RID-DAM-200103",
+      "source_dam_id": "200103",
+      "name_th": "เขื่อนแม่งัดสมบูรณ์ชล",
+      "point": {
+        "lat": 19.16138,
+        "lon": 99.04011
+      },
+      "province_id": "TH-P-50",
+      "district_id": "TH-D-5006",
+      "region_id": "TH-R-NORTH"
+    },
+    {
+      "dam_id": "RID-DAM-200203",
+      "source_dam_id": "200203",
+      "name_th": "เขื่อนน้ำพุง",
+      "point": {
+        "lat": 16.977,
+        "lon": 103.9707
+      },
+      "province_id": "TH-P-47",
+      "district_id": "TH-D-4718",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-200204",
+      "source_dam_id": "200204",
+      "name_th": "เขื่อนจุฬาภรณ์",
+      "point": {
+        "lat": 16.533333333,
+        "lon": 101.65
+      },
+      "province_id": "TH-P-36",
+      "district_id": "TH-D-3613",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-200205",
+      "source_dam_id": "200205",
+      "name_th": "เขื่อนอุบลรัตน์",
+      "point": {
+        "lat": 16.774,
+        "lon": 102.619
+      },
+      "province_id": "TH-P-40",
+      "district_id": "TH-D-4008",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-200212",
+      "source_dam_id": "200212",
+      "name_th": "เขื่อนสิรินธร",
+      "point": {
+        "lat": 15.207,
+        "lon": 105.428
+      },
+      "province_id": "TH-P-34",
+      "district_id": "TH-D-3425",
+      "region_id": "TH-R-NORTHEAST"
+    },
+    {
+      "dam_id": "RID-DAM-200401",
+      "source_dam_id": "200401",
+      "name_th": "เขื่อนศรีนครินทร์",
+      "point": {
+        "lat": 14.4091,
+        "lon": 99.1284
+      },
+      "province_id": "TH-P-71",
+      "district_id": "TH-D-7104",
+      "region_id": "TH-R-WEST"
+    },
+    {
+      "dam_id": "RID-DAM-200402",
+      "source_dam_id": "200402",
+      "name_th": "เขื่อนวชิราลงกรณ",
+      "point": {
+        "lat": 14.7982,
+        "lon": 98.5929
+      },
+      "province_id": "TH-P-71",
+      "district_id": "TH-D-7107",
+      "region_id": "TH-R-WEST"
+    },
+    {
+      "dam_id": "RID-DAM-200601",
+      "source_dam_id": "200601",
+      "name_th": "เขื่อนแก่งกระจาน",
+      "point": {
+        "lat": 12.93162,
+        "lon": 99.62814
+      },
+      "province_id": "TH-P-76",
+      "district_id": "TH-D-7608",
+      "region_id": "TH-R-WEST"
+    },
+    {
+      "dam_id": "RID-DAM-200603",
+      "source_dam_id": "200603",
+      "name_th": "เขื่อนรัชชประภา",
+      "point": {
+        "lat": 8.9726,
+        "lon": 98.806
+      },
+      "province_id": "TH-P-84",
+      "district_id": "TH-D-8409",
+      "region_id": "TH-R-SOUTH"
+    },
+    {
+      "dam_id": "RID-DAM-200604",
+      "source_dam_id": "200604",
+      "name_th": "เขื่อนบางลาง",
+      "point": {
+        "lat": 6.155,
+        "lon": 101.268
+      },
+      "province_id": "TH-P-95",
+      "district_id": "TH-D-9503",
+      "region_id": "TH-R-SOUTH"
+    }
+  ]
+}

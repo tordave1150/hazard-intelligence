@@ -22,4 +22,23 @@ def validate_record(kind, record):
                 raise ValueError('Daily period must follow Asia/Bangkok local date')
         if instant(record['fetched_at']) > instant(record['ingested_at']):
             raise ValueError('Ingestion cannot precede retrieval')
+    if kind == 'DamObservation':
+        from datetime import date
+        from pipelines.shared.time_units import BANGKOK
+        from pipelines.rid.data import DAMS, METADATA, SOURCE
+        meta=DAMS.get(record['source_dam_id'])
+        if meta is None or any(record[key]!=value for key,value in meta.items()):
+            raise ValueError('Unverified RID identity or point metadata')
+        if record['source_url']!=SOURCE or record['metadata_url']!=METADATA['source_page'] or record['license_url']!=METADATA['license_url']:
+            raise ValueError('Unverified RID provenance')
+        if instant(record['fetched_at'])>instant(record['ingested_at']):
+            raise ValueError('Ingestion cannot precede retrieval')
+        if date.fromisoformat(record['report_date'])>instant(record['fetched_at']).astimezone(BANGKOK).date():
+            raise ValueError('Future RID report date')
+        normal=record['normal_capacity_mcm'];maximum=record['maximum_capacity_mcm']
+        volume=record['storage_volume_mcm'];percent=record['storage_pct']
+        if normal is not None and maximum is not None and maximum<normal:
+            raise ValueError('RID maximum capacity below normal capacity')
+        if normal is not None and normal>0 and volume is not None and percent is not None and abs(percent-volume/normal*100)>.08:
+            raise ValueError('Invalid RID percentage denominator')
     return record

@@ -18,3 +18,12 @@ export type Source = {id: string; name: string; organization: string; state: str
 export type Snapshot = {records: Forecast[]; status: Record<string, unknown> | null;
   storage: 'mongo' | 'local' | 'unconfigured'; error: string | null; freshness: Freshness};
 export type Metric = 'rainfall_mm' | 'rain_probability_pct';
+export type DamMeta={dam_id:string;source_dam_id:string;name_th:string;point:{lat:number;lon:number};
+  province_id:string;district_id:string|null;region_id:string};
+export type DamObservation=DamMeta & {schema_version:'2.0';source_id:'rid';product_id:'daily_dam_storage';
+  data_state:'observed';owner:string;source_region:string;normal_capacity_mcm:number|null;maximum_capacity_mcm:number|null;
+  storage_volume_mcm:number|null;storage_pct:number|null;report_date:string;observed_at:null;time_precision:'date';
+  fetched_at:string;ingested_at:string;quality_status:'valid'|'partial';unit_metadata:{volume:'million m³';percentage:'% of normal storage capacity'};
+  source_url:string;metadata_url:string;license_url:string};
+export type DamSnapshot={records:DamObservation[];health:Record<string,unknown>|null;freshness:Freshness;
+  storage:'mongo'|'local'|'unconfigured';error:string|null};

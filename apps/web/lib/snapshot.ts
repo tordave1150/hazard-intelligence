@@ -1,27 +1,23 @@
 import 'server-only';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
-import {MongoClient} from 'mongodb';
+import {mongoDatabase,mongoUri as configuredMongoUri} from './mongo';
 import {validatedForecast} from './contracts';
 import {freshness} from './semantics';
 import type {Snapshot} from './types';
 import {areaById} from './geography';
 
-const globalMongo=globalThis as unknown as {hazardMongo?: Promise<MongoClient>};
 let cached: {until: number; value: Snapshot} | null=null;
 export function resetSnapshotCache() {cached=null;}
 export async function readSnapshot(): Promise<Snapshot> {
   if(cached && cached.until>Date.now()) return cached.value;
   // Vercel's storage integration creates <CUSTOM_PREFIX>_URL. Keep the
   // original URI setting supported, with explicit URI taking precedence.
-  const mongoUri=process.env.MONGODB_URI || process.env.MONGODB_URL;
+  const mongoUri=configuredMongoUri();
   let result: Snapshot;
   try {
     if(mongoUri) {
-      const connection = globalMongo.hazardMongo ??= new MongoClient(mongoUri,{
-        maxPoolSize:5,serverSelectionTimeoutMS:5000,connectTimeoutMS:5000,socketTimeoutMS:10000
-      }).connect().catch(error=>{globalMongo.hazardMongo=undefined;throw error;});
-      const db=(await connection).db(process.env.MONGODB_DB_NAME || 'weather_db');
+      const db=await mongoDatabase();
       let records: Snapshot['records'] | null=null;
       for(let attempt=0;attempt<3;attempt++) {
         const control=await db.collection('snapshot_control').findOne({_id:'open_meteo:daily_forecast' as never},{maxTimeMS:5000});

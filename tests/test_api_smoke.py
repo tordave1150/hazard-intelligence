@@ -24,22 +24,43 @@ def test_read_endpoints(route):
     assert 'mongodb://' not in response.text and 'mongodb+srv://' not in response.text
 
 
-@pytest.mark.parametrize('route',['/api/areas?level=bogus','/api/weather?metric=flood_probability','/api/gauges?kind=wrong'])
+@pytest.mark.parametrize('route',['/api/areas?level=bogus','/api/weather?metric=flood_probability','/api/gauges?kind=wrong','/api/dams?date=2026-10-27'])
 def test_bad_queries_rejected(route):
     response=requests.get(BASE+route,timeout=15)
     assert response.status_code==400 and response.headers['Cache-Control']=='no-store'
 
 
-@pytest.mark.parametrize('route',['/api/dams','/api/gauges','/api/warnings','/api/flood-products'])
+@pytest.mark.parametrize('route',['/api/gauges','/api/warnings','/api/flood-products'])
 def test_planned_sources_are_never_normal(route):
     value=requests.get(BASE+route,timeout=15).json()
     assert value['status']=='UNAVAILABLE' and value['records']==[]
+
+
+def test_dam_endpoint_has_independent_report_semantics():
+    response=requests.get(BASE+'/api/dams',timeout=15)
+    assert response.status_code==200
+    data=response.json()
+    assert data['source_id']=='rid' and data['status'] in ['FRESH','DELAYED','STALE','UNKNOWN','UNAVAILABLE']
+    if data['records']:
+        assert data['total_count']==35
+        assert all(r['observed_at'] is None and r['time_precision']=='date' for r in data['records'])
+    else:
+        assert data['status']=='UNAVAILABLE'
 
 
 def test_area_identity_and_unknown_area():
     data=requests.get(BASE+'/api/areas?parent_id=TH-P-57&level=district',timeout=15).json()
     assert len(data['areas'])==18 and all(a['parent_id']=='TH-P-57' for a in data['areas'])
     assert requests.get(BASE+'/api/weather?area_id=TH-P-99',timeout=15).status_code==404
+    assert requests.get(BASE+'/api/dams?area_id=TH-P-99',timeout=15).status_code==404
+
+
+def test_dams_filter_by_point_scope_without_changing_report_date():
+    national=requests.get(BASE+'/api/dams',timeout=15).json()
+    subset=requests.get(BASE+'/api/dams?area_id=TH-P-21',timeout=15).json()
+    assert all(r['province_id']=='TH-P-21' for r in subset['records'])
+    assert subset['report_date']==national['report_date']
+    assert subset['total_count']==national['total_count']
 
 
 def test_no_write_or_ingestion_route():

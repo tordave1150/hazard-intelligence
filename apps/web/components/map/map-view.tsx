@@ -4,12 +4,13 @@ import maplibregl,{type Map as MapType} from 'maplibre-gl';
 import {MapboxOverlay} from '@deck.gl/mapbox';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import type {Feature,FeatureCollection,Geometry} from 'geojson';
-import type {Area,Forecast,Freshness,Metric} from '@/lib/types';
+import type {Area,DamObservation,Forecast,Freshness,Metric} from '@/lib/types';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 
 type Props={area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;
-  rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void};
+  rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void;
+  dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void};
 export default function MapView(props:Props){
   const stale=['STALE','UNKNOWN','UNAVAILABLE'].includes(props.freshness);
   const container=useRef<HTMLDivElement>(null),map=useRef<MapType|null>(null),overlay=useRef<MapboxOverlay|null>(null);
@@ -84,6 +85,47 @@ export default function MapView(props:Props){
     return ()=>controller.abort();
   },[props.area.id,props.area.level,props.area.province_id]);
   useEffect(()=>{hoverPopup.current?.remove();},[props.area.id,props.is3d,props.metric,props.date]);
+  useEffect(()=>{
+    if(!ready||!map.current||!props.showDams)return;
+    const instance=map.current;
+    let markers:maplibregl.Marker[]=[];
+    const makeDamMarker=(dam:DamObservation)=>{
+      const button=document.createElement('button');
+      button.type='button';button.className='dam-marker';button.textContent='◆';
+      button.dataset.stale=String(!['FRESH','DELAYED'].includes(props.damFreshness));
+      button.setAttribute('aria-label',`${dam.name_th}, RID report ${dam.report_date}, ${dam.storage_pct===null?'percentage unavailable':dam.storage_pct.toFixed(2)+'% of normal capacity'}`);
+      button.dataset.damId=dam.dam_id;
+      button.setAttribute('aria-pressed',String(latest.current.selectedDam===dam.dam_id));
+      const show=()=>{hoverPopup.current?.setLngLat([dam.point.lon,dam.point.lat]).setText(`${dam.name_th} · RID daily report ${dam.report_date} · ${dam.storage_pct===null?'No percentage':dam.storage_pct.toFixed(2)+'% of normal capacity'}`).addTo(map.current!);};
+      button.addEventListener('mouseenter',show);button.addEventListener('focus',show);
+      button.addEventListener('mouseleave',()=>hoverPopup.current?.remove());button.addEventListener('blur',()=>hoverPopup.current?.remove());
+      button.addEventListener('click',event=>{event.stopPropagation();hoverPopup.current?.remove();latest.current.onSelectDam(dam.dam_id);});
+      return new maplibregl.Marker({element:button,anchor:'center'}).setLngLat([dam.point.lon,dam.point.lat]).addTo(instance);
+    };
+    const draw=()=>{
+      markers.forEach(marker=>marker.remove());
+      if(props.area.level==='national'&&instance.getZoom()<6){
+        const groups=new Map<string,DamObservation[]>();
+        for(const dam of props.dams)groups.set(dam.region_id,[...(groups.get(dam.region_id)??[]),dam]);
+        markers=[...groups].map(([region,rows])=>{
+          if(rows.length===1)return makeDamMarker(rows[0]);
+          const name=props.areas.find(a=>a.id===region)?.name??region;
+          const center:[number,number]=[rows.reduce((sum,d)=>sum+d.point.lon,0)/rows.length,rows.reduce((sum,d)=>sum+d.point.lat,0)/rows.length];
+          const button=document.createElement('button');button.type='button';button.className='dam-marker dam-cluster';button.textContent=String(rows.length);
+          button.dataset.stale=String(!['FRESH','DELAYED'].includes(props.damFreshness));
+          button.setAttribute('aria-label',`Explore ${rows.length} RID reservoirs in ${name}`);
+          button.title=`${rows.length} RID reservoir reports · ${name}`;
+          button.addEventListener('click',event=>{event.stopPropagation();hoverPopup.current?.remove();latest.current.onSelect(region);});
+          return new maplibregl.Marker({element:button,anchor:'center'}).setLngLat(center).addTo(instance);
+        });
+      }else markers=props.dams.map(makeDamMarker);
+    };
+    draw();instance.on('zoomend',draw);
+    return()=>{instance.off('zoomend',draw);hoverPopup.current?.remove();markers.forEach(marker=>marker.remove());};
+  },[ready,props.dams,props.showDams,props.damFreshness,props.area.level,props.areas]);
+  useEffect(()=>{
+    container.current?.querySelectorAll<HTMLButtonElement>('[data-dam-id]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.damId===props.selectedDam)));
+  },[props.selectedDam,props.dams,props.showDams,ready]);
   useEffect(()=>{
     if(!ready||!map.current)return;
     map.current.fitBounds(props.area.bbox,{padding:props.area.level==='national'?35:55,maxZoom:props.area.level==='district'?11:9,duration:650,
