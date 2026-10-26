@@ -4,6 +4,8 @@
 
 ## ตอนนี้: ตรวจ API #25 ด้วย key ของโครงการ
 
+**ผลล่าสุด:** ทดสอบ v1.1 และ v1.0 แล้ว ทั้งคู่ตอบ HTTP 404 ยังไม่มีข้อมูลน้ำท่วมที่ผ่าน acceptance ไม่ต้องหมุน key หรือกดรันซ้ำจากผลนี้เพียงอย่างเดียว ขั้นถัดไปคือยืนยัน endpoint/parameters/สิทธิ์ปัจจุบันกับ GISTDA ใช้[ข้อความสอบถามที่เตรียมไว้](GISTDA_PRODUCT25_SUPPORT_REQUEST_TH.md) ซึ่งไม่มี key และยังไม่ได้ส่งให้หน่วยงาน ขั้นตอนรันด้านล่างเก็บไว้สำหรับใช้เมื่อได้เอกสารที่แก้ปัญหาแล้ว
+
 1. เปิด [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) → **New repository secret**
 2. ช่อง **Name** ใส่ `GISTDA_API_KEY` และช่อง **Secret** วางเฉพาะค่าของ key ไม่ต้องใส่ `GISTDA_API_KEY=` ไม่ต้องวาง URL ทั้งเส้น แล้วกด **Add secret**
 3. เปิด [Inspect GISTDA flood API response](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow → main** เลือก **version: v1.0** ตามบัญชีข้อมูล DGA (v1.1 ที่ portal ให้ตอบ 404 ในรอบแรก) ค่า `lat=13.719961`, `lon=100.602017` ที่เตรียมให้เป็นจุดตัวแทนกรุงเทพฯ จากข้อมูลพื้นที่ที่ตรวจแล้ว ใช้เป็นจุดทดสอบคำขอ ไม่ใช่สถานีหรือจุดที่ยืนยันว่าท่วม หากมีค่า `area` ที่เอกสาร #25 ระบุชัดเจนจึงใส่ค่านั้น ถ้ายังไม่ทราบให้เว้นว่าง แล้วกด **Run workflow**

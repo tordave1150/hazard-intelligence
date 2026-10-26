@@ -28,6 +28,8 @@ The user subsequently reported obtaining a credential for the separate **product
 
 Follow-up: after the user confirmed credential replacement and secret update, run 40340511359 reached the v1.1 service and received HTTP 404 rather than flood data. The equivalent [DGA catalog](https://data.go.th/dataset/disasters-03) was successfully read directly and identifies Open Data Common with a v1.0 point endpoint. The linked Postman collection currently renders different recurrence products. A bounded selected-version diagnostic is prepared to distinguish the catalog/portal version discrepancy; it does not infer a safe/no-flood result from 404 or import multi-year recurrence as daily flood extent. Current source acceptance remains open pending an actual successful sample and product/time semantics.
 
+The fresh v1.0 run 40343281341 also returned HTTP 404, with `status`/`detail` fields rather than data. Both verified requests supplied paired public coordinates and omitted unverified area; neither yielded an accepted empty/valid observation. The provider's current endpoint, required parameters and product entitlement must now be confirmed. The selected product registry reflects the actual configured-key/404 situation. A credential-free [support draft](GISTDA_PRODUCT25_SUPPORT_REQUEST_TH.md) is saved for the user; no agency message has been sent and the layer remains unavailable.
+
 ## Gate result
 
 | Source | Official reference found | Actual product sample | Remaining dependency |
