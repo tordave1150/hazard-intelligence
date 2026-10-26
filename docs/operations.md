@@ -42,6 +42,8 @@ Publication requires `--level all`; a province-only export cannot replace nation
 
 If transient transport, rate-limit or upstream failures leave gaps, the collector keeps successful batches and retries only failed batches in at most two recovery passes, each after a 60-second cooldown. Normal batch pacing still applies. Recovery does not relax schema, units, time, coverage or matching-period checks. Logs expose fixed reason codes and HTTP status only. A re-run from GitHub's failed-job action uses the original run commit; use a fresh manual run on main to exercise newly committed recovery code.
 
+The current GitHub connector can read workflow status/logs but its re-run mutation returned 403 `Resource not accessible by integration`. Until Actions write access is available, start a fresh run through the repository's Actions → Latest weather snapshot → Run workflow → main. The agent can then inspect its results through the read connector without retrieving secrets.
+
 ## Audit and migration
 
 Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. Post-publication measurements and deployed restart/failover checks still need to be captured.
