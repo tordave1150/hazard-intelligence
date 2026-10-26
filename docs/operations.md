@@ -51,7 +51,7 @@ The current GitHub connector can read workflow status/logs but its re-run mutati
 
 ## Audit and migration
 
-Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. Post-publication measurements and deployed restart/failover checks still need to be captured.
+Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. RID run 40287126263 captured post-publication measurements and verified both active products and their unique indexes/retention; see execution-status.md. Deployed restart/failover checks remain outstanding.
 
 No migration deletes legacy collections. The new publishers write only weather_latest, dam_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
 

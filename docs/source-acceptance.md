@@ -6,7 +6,7 @@ These are actual discovery/probe results. They do not mark a source integrated o
 
 [RID API documentation](https://app.rid.go.th/reservoir/api/document/dam) identifies `https://app.rid.go.th/reservoir/api/dam/public`. A read-only request returned HTTP 200, application/json, report date 2026-10-25, 35 declared and actual records, and 35 unique source IDs. Fields include capacity, storage, active/dead storage, volume, percent_storage, inflow and outflow. No coordinates are returned by that product.
 
-The follow-up matched all 35 identities and published point coordinates from the official linked reservoir interface. The official RID catalog on data.go.th links to that same interface under DGA reuse terms. Capacity semantics and date-only precision are now explicit; inflow/outflow accumulation window and units remain unresolved and those fields are excluded. The initial daily-storage adapter, contracts, A/B publication, read API and layer are implemented and tested. See the [dated acceptance record](rid-acceptance-2026-10-26.md) for exact evidence, license-scope interpretation and limitations. First Atlas publication remains an operational step; no local capture is served in production.
+The follow-up matched all 35 identities and published point coordinates from the official linked reservoir interface. The official RID catalog on data.go.th links to that same interface under DGA reuse terms. Capacity semantics and date-only precision are now explicit; inflow/outflow accumulation window and units remain unresolved and those fields are excluded. The initial daily-storage adapter, contracts, A/B publication, read API and layer are implemented and tested. See the [dated acceptance record](rid-acceptance-2026-10-26.md) for exact evidence, license-scope interpretation and limitations. Run 40287126263 published all 35 reports to Atlas, and the production API passed shared validation; no local capture is served in production.
 
 ## TMD — official registration path found
 
@@ -25,7 +25,7 @@ The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/f
 | Source | Official reference found | Actual product sample | Remaining dependency |
 |---|---|---|---|
 | Open-Meteo | Yes | 1,005 validated point forecasts published to Atlas and read from production on 2026-10-26 | Non-commercial use confirmed; remaining live restart/failover qualification is operational |
-| RID daily storage | Yes | 35 verified daily reports and matching published point coordinates | First Atlas publication; flows remain excluded pending definitions |
+| RID daily storage | Yes | 35 verified daily reports and matching published point coordinates | Published and verified on production; flows remain excluded pending definitions |
 | TMD | Yes | No authenticated product sample | Registered access, terms and product acceptance |
 | HII / ThaiWater | Exchange standard | No authorized live product sample | Agency endpoint/access agreement, datum and product acceptance |
 | GISTDA | Yes | No authenticated acquisition sample | Key, reuse license and acquisition/product acceptance |
