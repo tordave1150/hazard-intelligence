@@ -4,13 +4,14 @@ import maplibregl,{type Map as MapType} from 'maplibre-gl';
 import {MapboxOverlay} from '@deck.gl/mapbox';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import type {Feature,FeatureCollection,Geometry} from 'geojson';
-import type {Area,Forecast,Metric} from '@/lib/types';
+import type {Area,Forecast,Freshness,Metric} from '@/lib/types';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 
 type Props={area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;
-  rainfall:boolean;extrude:boolean;opacity:number;stale:boolean;onSelect:(id:string)=>void};
+  rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void};
 export default function MapView(props:Props){
+  const stale=['STALE','UNKNOWN','UNAVAILABLE'].includes(props.freshness);
   const container=useRef<HTMLDivElement>(null),map=useRef<MapType|null>(null),overlay=useRef<MapboxOverlay|null>(null);
   const hoverPopup=useRef<maplibregl.Popup|null>(null);
   const latest=useRef(props);latest.current=props;
@@ -96,8 +97,8 @@ export default function MapView(props:Props){
     if(!ready||!overlay.current)return;
     const lookup=new Map(props.records.map(r=>[r.location_id,r]));
     const features=geometry.features.map(f=>({...f,properties:{...f.properties,
-      value:props.stale?null:metricValue(lookup.get(f.properties?.id),props.date,props.metric)}}));
-    const extrusion=props.is3d&&props.extrude&&['province','district'].includes(props.area.level)&&props.rainfall&&!props.stale;
+      value:stale?null:metricValue(lookup.get(f.properties?.id),props.date,props.metric)}}));
+    const extrusion=props.is3d&&props.extrude&&['province','district'].includes(props.area.level)&&props.rainfall&&!stale;
     const native=map.current?.getSource('weather-native') as maplibregl.GeoJSONSource|undefined;
     native?.setData({type:'FeatureCollection',features:features.map(f=>{
       const color=props.rainfall?metricColor(f.properties.value,props.metric):[228,236,232,190];
@@ -124,12 +125,12 @@ export default function MapView(props:Props){
         latest.current.onSelect(latest.current.area.level==='national'?object.properties.region_id:id);
       }
     })],getTooltip:({object})=>object?{text:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
-  },[ready,geometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,props.stale]);
+  },[ready,geometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>
     <div className="map-context"><span className="map-context-icon"><MapIcon size={15}/></span><div><strong>{props.area.level==='national'?'Thailand · national view':props.area.name}</strong><span>{props.area.level==='national'?'Select a region to explore':'Select an area for local intelligence'}</span></div></div>
     <div className="map-actions"><button title="Zoom in" aria-label="Zoom in" onClick={()=>map.current?.zoomIn()}><Plus size={18}/></button><button title="Zoom out" aria-label="Zoom out" onClick={()=>map.current?.zoomOut()}><Minus size={18}/></button><button title="Fit selected area" aria-label="Fit selected area" onClick={()=>map.current?.fitBounds(props.area.bbox,{padding:40})}><LocateFixed size={18}/></button></div>
     {(error||baseError)&&<div className="map-error" role="status">{error||'Basemap connection unavailable · local boundary view'}</div>}
-    <div className="map-caption">{props.stale?'Stale snapshot · thematic colors paused':props.rainfall?'Open-Meteo · model forecast':'Administrative geography'}<span>{props.is3d?'3D view':'2D view'}</span></div>
+    <div className="map-caption">{!props.rainfall?'Administrative geography':props.freshness==='UNAVAILABLE'?'Weather snapshot unavailable':props.freshness==='UNKNOWN'?'Snapshot timing unknown · thematic colors paused':stale?'Stale snapshot · thematic colors paused':'Open-Meteo · model forecast'}<span>{props.is3d?'3D view':'2D view'}</span></div>
   </div>;
 }

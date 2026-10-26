@@ -14,7 +14,13 @@ pytestmark=pytest.mark.skipif(not BASE,reason='Set HAZARD_TEST_URL for running-a
 def test_read_endpoints(route):
     response=requests.get(BASE+route,timeout=15)
     assert response.status_code==200
-    assert 's-maxage=60' in response.headers['Cache-Control']
+    # Vercel consumes s-maxage / stale-while-revalidate at its edge and strips
+    # them from the client response. A direct origin must still emit the TTL.
+    if 'x-vercel-id' in response.headers:
+        assert response.headers['Cache-Control']=='public'
+        assert response.headers['x-vercel-cache'] in {'HIT','MISS','STALE','REVALIDATED'}
+    else:
+        assert 's-maxage=60' in response.headers['Cache-Control']
     assert 'mongodb://' not in response.text and 'mongodb+srv://' not in response.text
 
 

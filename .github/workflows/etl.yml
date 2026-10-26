@@ -13,7 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Check ingestion configuration
         id: configuration
         env:
@@ -26,7 +28,7 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Ingestion not configured. Add MONGODB_URI and MONGODB_DB_NAME repository secrets before running the pipeline."
           fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         if: steps.configuration.outputs.configured == 'true'
         with:
           python-version: '3.13'
@@ -34,6 +36,12 @@ jobs:
           cache-dependency-path: pipelines/requirements.txt
       - run: pip install -r pipelines/requirements.txt
         if: steps.configuration.outputs.configured == 'true'
+      - name: Audit database capacity and indexes before publication
+        if: steps.configuration.outputs.configured == 'true'
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m scripts.mongo_admin audit
       - name: Fetch, validate and promote a complete national snapshot
         if: steps.configuration.outputs.configured == 'true'
         env:

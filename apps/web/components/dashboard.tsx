@@ -38,7 +38,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
     }).catch(()=>{if(active)setSnapshot({...empty,error:'Weather snapshot is temporarily unavailable',freshness:'UNAVAILABLE'});}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;};
   },[refresh]);
-  const status=freshness(snapshot.records,clock),stale=status==='STALE'||status==='UNKNOWN'||status==='UNAVAILABLE';
+  const status=freshness(snapshot.records,clock);
   const recordsById=useMemo(()=>new Map(snapshot.records.map(r=>[r.location_id,r])),[snapshot.records]);
   const current=recordsById.get(area.id);
   const scope=useMemo(()=>snapshot.records.filter(r=>{const a=lookup.get(r.location_id);return a&&contains(area,a);}),[snapshot.records,area,lookup]);
@@ -87,7 +87,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
           </div>
           <div className="left-footer"><a href="/methodology"><Info size={13}/> Data & methodology <ArrowUpRight size={12}/></a></div>
         </aside>
-        <div className="map-column"><MapView area={area} areas={areas} records={snapshot.records} date={date} metric={metric} is3d={is3d} terrain={terrain} rainfall={rainfall} extrude={extrude} opacity={opacity} stale={stale} onSelect={select}/>
+        <div className="map-column"><MapView area={area} areas={areas} records={snapshot.records} date={date} metric={metric} is3d={is3d} terrain={terrain} rainfall={rainfall} extrude={extrude} opacity={opacity} freshness={status} onSelect={select}/>
           <div className="legend"><div><b>{metricLabel(metric)}</b><span>{metricUnit(metric)} · representative point</span></div><div className="legend-scale">{(metric==='rainfall_mm'?[0,1,10,25,50]:[0,20,40,60,80]).map(v=><span key={v}><i style={{background:`rgba(${metricColor(v,metric).slice(0,3).join(',')},1)`}}/>{v}{v===(metric==='rainfall_mm'?50:80)?'+':''}</span>)}<span><i className="no-data"/>No data / stale</span></div></div>
         </div>
         <aside className={`right-panel ${rightOpen?'mobile-open':''}`} aria-label="Area intelligence"><div className="panel-heading"><h2>Area intelligence</h2><button className="mobile-close" aria-label="Close area intelligence" onClick={()=>setRightOpen(false)}><X size={16}/></button></div>

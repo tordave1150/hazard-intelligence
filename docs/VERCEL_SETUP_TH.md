@@ -60,9 +60,22 @@
 
 Secrets ของ repo เดิมไม่ได้ถูกคัดลอกอัตโนมัติ Workflow จะข้าม ingestion พร้อมแจ้งว่ายังไม่ตั้งค่า จนกว่าจะมี MongoDB secrets ครบ เว็บไซต์ที่ไม่มี snapshot จะขึ้น Unavailable และไม่สร้างค่าตัวอย่างขึ้นมาแทนข้อมูลจริง
 
+### การตั้ง GitHub Actions secrets ครั้งแรก
+
+1. เปิด Vercel → Storage → MongoDB → Open in MongoDB Atlas แล้วเลือก Project/Cluster ที่เชื่อมกับเว็บนี้
+2. หากยังไม่มี database user สำหรับ ETL ที่ทราบรหัสผ่าน ให้สร้างผู้ใช้ใหม่ เช่น `hazard_etl` ใน Security → Database Access → Add New Database User กำหนดรหัสผ่าน และสิทธิ์ `readWrite` เฉพาะฐานข้อมูล `weather_db` ผ่าน Specific Privileges ไม่ใช้รหัสผ่านบัญชีที่ล็อกอิน Atlas
+3. ในหน้า Cluster กด Connect → Drivers แล้วคัดลอก connection string สำหรับ database user ข้างต้น แทน placeholder รหัสผ่านด้วยค่าจริง และ URL-encode อักขระพิเศษของ username/password ตามคู่มือ MongoDB: https://www.mongodb.com/docs/atlas/driver-connection/
+4. เปิด https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions กด New repository secret เพิ่ม Name `MONGODB_URI` โดยช่อง Secret เป็น connection string ที่สมบูรณ์ ไม่ใส่เครื่องหมายคำพูด จากนั้นเพิ่มอีกตัว Name `MONGODB_DB_NAME` และ Secret `weather_db`
+5. เปิด https://github.com/tordave1150/hazard-intelligence/actions เลือก Latest weather snapshot → Run workflow → branch `main` → Run workflow ระบบจะ audit ฐานข้อมูลก่อน หาก audit ไม่ผ่านจะไม่เริ่มเผยแพร่ข้อมูล
+6. หลัง workflow สำเร็จ เปิด https://hazard-intelligence-lime.vercel.app/ แล้วกด Reload snapshot ข้อมูลอาจค้างใน cache ชั่วครู่ ควรเห็น snapshot ครบ 1,005 จุดพร้อมวันพยากรณ์จริง
+
+URI และรหัสผ่านให้ป้อนตรงใน Atlas/GitHub เท่านั้น ไม่ต้องส่งให้ agent ในแชต หาก workflow มีปัญหา แจ้งชื่อขั้นตอนที่ล้มเหลวโดยไม่คัดลอก secrets
+
 ## 5. Deploy และตรวจข้อมูล
 
 กด Deploy หลังตั้งค่าครบ แล้วเปิดหน้าโปรเจกต์และ URL ที่ได้รับ การตรวจ Atlas, การเผยแพร่ snapshot ครั้งแรก และการยืนยันว่า deployment อ่าน snapshot ได้จริงยังต้องดำเนินการต่อ
+
+สถานะปัจจุบัน: deploy ที่ https://hazard-intelligence-lime.vercel.app/ แล้ว เว็บอ่าน MongoDB ได้แต่ยังไม่มี published snapshot ผู้ใช้กำลังตั้ง GitHub Actions secrets สำหรับ ETL ครั้งแรก
 
 หากต้องให้ agent ตรวจและทำขั้นตอนต่อ ส่งเฉพาะ URL หน้าโปรเจกต์ Vercel หรือ URL deployment กลับมาได้ ไม่ต้องส่ง secrets
 

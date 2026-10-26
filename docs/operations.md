@@ -24,13 +24,15 @@ Set `MONGODB_URI` and `MONGODB_DB_NAME` in the project's server environment. Use
 
 The website also accepts `MONGODB_URL`, matching Vercel's storage-integration output when Custom Prefix is `MONGODB`. `MONGODB_URI` takes precedence if both are present. This alias is for the server reader; the independent Python/Actions ingestion still uses its separately configured `MONGODB_URI` writer credential.
 
-The user's dashboard screenshot now confirms successful creation of `hazard-intelligence` from the intended repository and addition of MongoDB Atlas, with Deploy still offered. The connected plugin still cannot see that project: its selected team `jedsadaporn231043-6773s-projects` (`team_V0dZUHXqiEyo9Tu4vJN3gCoO`) returns 404 for project lookup and an empty name search. Verify the dashboard project's actual team and connector access before attempting configuration or deployment through the connector. Do not repeat project creation. There is no installed/authenticated Vercel CLI fallback. Atlas credentials and live publication remain unconfigured in this workspace.
+Production is deployed at https://hazard-intelligence-lime.vercel.app/. GitHub's Vercel commit status confirms the intended team/project and successful deployment of `468a5c4`. The public overview API reports MongoDB storage with no error, but zero records and no source status: first publication is pending. The connected plugin still cannot see that project: its selected team `jedsadaporn231043-6773s-projects` (`team_V0dZUHXqiEyo9Tu4vJN3gCoO`) returns 404 for project/deployment lookup and an empty name search. Resolve connector visibility before platform changes; do not repeat project creation. There is no installed/authenticated Vercel CLI fallback. The user confirmed GitHub ingestion secrets are not yet configured.
 
 ## Scheduled ingestion
 
 `.github/workflows/etl.yml` runs once daily at 01:00 UTC / 08:00 Asia/Bangkok, or manually. It needs Actions secrets `MONGODB_URI` (write-capable, restricted to the latest collections), `MONGODB_DB_NAME`, and optionally `OPEN_METEO_API_KEY` for commercial/customer access. No workflow writes the Git repository, appends legacy history, or depends on Vercel uptime. Concurrency is serialized with cancellation disabled.
 
 In the new repository, the job explicitly skips ingestion with a notice until both MongoDB secrets are configured. Secrets are not copied from the legacy repository. Add them in GitHub repository Settings → Secrets and variables → Actions; add the server's read-only MongoDB credential separately in Vercel project Settings → Environment Variables. Never paste credentials into an issue, PR, chat or source file.
+
+Once configured, each run executes the read-only `scripts.mongo_admin audit` before fetching or publishing. A failed audit stops the job. The checkout and Python setup actions are pinned to verified official commit SHAs. First-run instructions for Atlas users and repository secrets are in `VERCEL_SETUP_TH.md`.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pipelines.open_meteo.run --level all --publish
