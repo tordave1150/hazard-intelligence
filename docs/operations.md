@@ -24,7 +24,7 @@ Set `MONGODB_URI` and `MONGODB_DB_NAME` in the project's server environment. Use
 
 The website also accepts `MONGODB_URL`, matching Vercel's storage-integration output when Custom Prefix is `MONGODB`. `MONGODB_URI` takes precedence if both are present. This alias is for the server reader; the independent Python/Actions ingestion still uses its separately configured `MONGODB_URI` writer credential.
 
-Production is deployed at https://hazard-intelligence-lime.vercel.app/. GitHub's Vercel commit status confirms the intended team/project and successful deployment of `468a5c4`. The public overview API reports MongoDB storage with no error, but zero records and no source status: first publication is pending. The connected plugin still cannot see that project: its selected team `jedsadaporn231043-6773s-projects` (`team_V0dZUHXqiEyo9Tu4vJN3gCoO`) returns 404 for project/deployment lookup and an empty name search. Resolve connector visibility before platform changes; do not repeat project creation. There is no installed/authenticated Vercel CLI fallback. The user confirmed GitHub ingestion secrets are not yet configured.
+Production is deployed at https://hazard-intelligence-lime.vercel.app/. GitHub's Vercel commit status confirms the intended team/project. GitHub ingestion secrets are now configured and the first live audit passed. The first national fetch stopped at the completeness gate after one upstream request batch failed, so first publication is pending and the public API reports FAILED ingestion with zero records. The connected plugin still cannot see that project: its selected team `jedsadaporn231043-6773s-projects` (`team_V0dZUHXqiEyo9Tu4vJN3gCoO`) returns 404 for project/deployment lookup and an empty name search. Resolve connector visibility before platform changes; do not repeat project creation. There is no installed/authenticated Vercel CLI fallback.
 
 ## Scheduled ingestion
 
@@ -40,9 +40,11 @@ Once configured, each run executes the read-only `scripts.mongo_admin audit` bef
 
 Publication requires `--level all`; a province-only export cannot replace national Atlas coverage. Four daily variables × four forecast days for 1,005 locations are fetched in groups of 25, pausing three seconds per group. Coordinate accounting still applies; batching is not a quota bypass. Retry 429/5xx responses with capped backoff and Retry-After. Raw response/key/URI is not logged. Failed runs exit nonzero and retain last-success metadata and last-good published data.
 
+If transient transport, rate-limit or upstream failures leave gaps, the collector keeps successful batches and retries only failed batches in at most two recovery passes, each after a 60-second cooldown. Normal batch pacing still applies. Recovery does not relax schema, units, time, coverage or matching-period checks. Logs expose fixed reason codes and HTTP status only. A re-run from GitHub's failed-job action uses the original run commit; use a fresh manual run on main to exercise newly committed recovery code.
+
 ## Audit and migration
 
-Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. Capture actual deployment behavior and current Atlas capacity. Those live checks have not been performed without access.
+Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. Post-publication measurements and deployed restart/failover checks still need to be captured.
 
 No migration deletes legacy collections. The new publisher writes only weather_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
 

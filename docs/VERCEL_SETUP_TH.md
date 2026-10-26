@@ -75,7 +75,7 @@ URI และรหัสผ่านให้ป้อนตรงใน Atlas/
 
 กด Deploy หลังตั้งค่าครบ แล้วเปิดหน้าโปรเจกต์และ URL ที่ได้รับ การตรวจ Atlas, การเผยแพร่ snapshot ครั้งแรก และการยืนยันว่า deployment อ่าน snapshot ได้จริงยังต้องดำเนินการต่อ
 
-สถานะปัจจุบัน: deploy ที่ https://hazard-intelligence-lime.vercel.app/ แล้ว เว็บอ่าน MongoDB ได้แต่ยังไม่มี published snapshot ผู้ใช้กำลังตั้ง GitHub Actions secrets สำหรับ ETL ครั้งแรก
+สถานะปัจจุบัน: deploy ที่ https://hazard-intelligence-lime.vercel.app/ แล้ว และ GitHub Actions secrets ถูกตั้งแล้ว รอบแรก audit ฐานข้อมูลผ่าน แต่คำขอ Open-Meteo หนึ่งชุดล้มเหลว ทำให้ได้ 980/1,005 จุด ระบบจึงหยุดก่อนเผยแพร่ โค้ดเพิ่มการ retry เฉพาะชุดที่ขาดแล้ว โดยยังต้องผ่านเกณฑ์ครบทุกจุด
 
 หากต้องให้ agent ตรวจและทำขั้นตอนต่อ ส่งเฉพาะ URL หน้าโปรเจกต์ Vercel หรือ URL deployment กลับมาได้ ไม่ต้องส่ง secrets
 
