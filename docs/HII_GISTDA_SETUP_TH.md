@@ -4,7 +4,7 @@
 
 ## ตอนนี้: ตรวจ API #25 ด้วย key ของโครงการ
 
-**ผลที่ยืนยันแล้ว:** ทดสอบจุดกรุงเทพฯ ด้วย v1.1 และ v1.0 แล้ว ทั้งคู่ตอบ HTTP 404 ยังไม่มีข้อมูลน้ำท่วมที่ผ่าน acceptance ผู้ใช้ขอทดลองจุดอำเภอองครักษ์เพิ่มเติม จึงตั้งค่ารอบถัดไปตามด้านล่าง ผลรอบใหม่นี้ยังไม่ทราบ หากยังมีปัญหา ใช้[ข้อความสอบถามที่เตรียมไว้](GISTDA_PRODUCT25_SUPPORT_REQUEST_TH.md) ยืนยัน endpoint/parameters/สิทธิ์กับ GISTDA ข้อความยังไม่ได้ส่งให้หน่วยงาน
+**ผลที่ยืนยันแล้ว:** จุดกรุงเทพฯ ทั้ง v1.1/v1.0 และจุดองครักษ์ v1.1 ตอบ HTTP 404 ทั้งสามรอบ รอบองครักษ์ยืนยันว่าพิกัดถูกส่งเป็นตัวเลขแล้ว และพบ `ROUTE_NOT_FOUND` โดย `undefined_parameters: []` ยังไม่มีข้อมูลน้ำท่วมที่ผ่าน acceptance ขั้นถัดไปคือใช้[ข้อความสอบถามที่เตรียมไว้](GISTDA_PRODUCT25_SUPPORT_REQUEST_TH.md) ยืนยัน endpoint/parameters/สิทธิ์กับ GISTDA ข้อความยังไม่ได้ส่งให้หน่วยงาน ขั้นตอนด้านล่างเก็บไว้สำหรับอ้างอิงเมื่อมีเอกสารหรือการแก้ไขจากผู้ให้บริการ ก่อนทดสอบรอบถัดไป
 
 1. เปิด [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) → **New repository secret**
 2. ช่อง **Name** ใส่ `GISTDA_API_KEY` และช่อง **Secret** วางเฉพาะค่าของ key ไม่ต้องใส่ `GISTDA_API_KEY=` ไม่ต้องวาง URL ทั้งเส้น แล้วกด **Add secret**
@@ -13,7 +13,7 @@
 
 นี่เป็น workflow ตรวจการเข้าถึง/รูปแบบ response เพียงครั้งเดียว ไม่มี schedule และไม่เขียนข้อมูลลง Atlas ไม่ทำให้ layer เปิดเอง โปรแกรมไม่ส่ง `area=undefined` และไม่เดารูปแบบพื้นที่จากชื่อผลิตภัณฑ์ หาก API ต้องการพารามิเตอร์ที่ยังไม่ครบ อาจตอบ 400/404 ได้ ซึ่งต้องเทียบกับเอกสารก่อนสรุปว่าปัญหาอยู่ที่ key หรือคำขอ
 
-Endpoint ที่ผู้ใช้ระบุคือ `https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.1/disasters/flood-extent-1day` การตรวจแบบไม่มี key ตอบ HTTP 407 `Authentication Required` ยังไม่มีการทดสอบด้วย key จริง
+Endpoint ที่ผู้ใช้ระบุคือ `https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.1/disasters/flood-extent-1day` การตรวจแบบไม่มี key ตอบ HTTP 407 `Authentication Required` ต่อมาทดสอบผ่าน repository secret แล้วสามรอบตามหลักฐานด้านบน ทั้งหมดตอบ 404 โดยไม่แสดงค่า key
 
 Workflow ใช้ชื่อ query `api_key` ที่บัญชี API ทางการเคยระบุสำหรับผลิตภัณฑ์นี้ เพื่อทดสอบการใช้กับ v1.1; ยังไม่ถือว่ารูปแบบ authentication/parameters ของ v1.1 ผ่านการยืนยัน การรายงานจะแสดงเฉพาะโครงสร้างชื่อฟิลด์/ชนิดข้อมูลที่มีขอบเขต ไม่แสดงค่า response, request URL ที่มี credential, headers หรือ traceback
 
