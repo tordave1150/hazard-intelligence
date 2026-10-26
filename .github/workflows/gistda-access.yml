@@ -2,6 +2,16 @@ name: Inspect GISTDA flood API response
 on:
   workflow_dispatch:
     inputs:
+      lat:
+        description: 'Query latitude in degrees. Default is the project public Bangkok representative point, not a station or flood measurement.'
+        required: false
+        default: '13.719961'
+        type: string
+      lon:
+        description: 'Query longitude in degrees. Clear both lat/lon for an authentication-only request.'
+        required: false
+        default: '100.602017'
+        type: string
       area:
         description: 'Optional area value from product #25 documentation. Leave empty if unknown. No keys or URLs.'
         required: false
@@ -28,4 +38,6 @@ jobs:
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           GISTDA_PROBE_AREA: ${{ inputs.area }}
+          GISTDA_PROBE_LAT: ${{ inputs.lat }}
+          GISTDA_PROBE_LON: ${{ inputs.lon }}
         run: python -m scripts.probe_gistda

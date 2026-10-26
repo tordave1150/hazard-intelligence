@@ -40,6 +40,23 @@ def test_explicit_area_is_encoded_as_data_and_not_reported():
     assert value not in json.dumps(result)
 
 
+def test_valid_coordinate_pair_is_sent_without_inventing_area():
+    calls=[]
+    def get(url,**kwargs):calls.append(kwargs);return Response({'data':[]})
+    report,code=probe.inspect(KEY,get=get,lat='13.719961',lon='100.602017')
+    assert code==0 and report['point_supplied'] and not report['area_supplied']
+    assert calls[0]['params']=={'api_key':KEY,'lat':13.719961,'lon':100.602017}
+    assert '13.719961' not in json.dumps(report)
+
+
+def test_undefined_missing_nonfinite_and_out_of_range_points_never_call_provider():
+    def forbidden(*a,**k):raise AssertionError('must not call network')
+    for lat,lon in [('undefined','undefined'),('13',''),('','100'),('nan','100'),('13','inf'),
+                    ('91','100'),('13','181'),('-91','100'),('13','-181'),(KEY,'100')]:
+        report,code=probe.inspect(KEY,get=forbidden,lat=lat,lon=lon)
+        assert code==1 and report['result']=='INVALID_POINT_INPUT' and KEY not in json.dumps(report)
+
+
 def test_auth_redirect_and_http200_provider_error_are_not_data_success():
     for status,result,payload in [(407,'AUTHENTICATION_OR_ENTITLEMENT_NOT_VERIFIED',{'detail':'Authentication Required'}),
         (302,'REDIRECT_REJECTED',{}),(400,'HTTP_ERROR_REQUIRES_PARAMETER_OR_PROVIDER_REVIEW',{'message':KEY}),

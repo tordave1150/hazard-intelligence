@@ -27,3 +27,9 @@ Six isolated tests cover secret/URL reflection, the exact single-request target,
 4. A bounded source-specific publisher/reader and tests appropriate to the actual product, followed by map/API verification.
 
 The `1 day` product name alone does not identify a satellite acquisition instant, a complete national mosaic, or present floodwater conditions. No timestamp, coordinate, valid empty result, map extent or risk value is inferred from it. The production layer remains planned/unavailable while these concrete inputs are missing.
+
+## Parameter and credential follow-up
+
+The user's later example confirms query names `lat`, `lon`, `area`; all three values are `undefined`, so the area syntax/units are still unverified. The diagnostic now accepts a validated finite latitude/longitude pair. Its manual form defaults to the existing public project Bangkok representative point, (13.719961, 100.602017), as a query location only. It is not a station coordinate or asserted flood location. No `area` is supplied unless explicitly entered from documentation. Clearing both coordinates remains an authentication-only check; a partial pair or undefined/non-finite/out-of-range values fail before network access. Single-point results cannot establish nationwide coverage.
+
+The user inadvertently included a real credential in a link. It was not copied to code, logs, files or an API request. The user was instructed to revoke it, issue a replacement and update the existing repository secret; credentialed testing is pending that update. A redacted endpoint is sufficient for documentation and the raw submitted link is not retained in this repository. The diagnostic's eight tests now also cover coordinate encoding and invalid pair rejection.

@@ -6,7 +6,7 @@
 
 1. เปิด [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) → **New repository secret**
 2. ช่อง **Name** ใส่ `GISTDA_API_KEY` และช่อง **Secret** วางเฉพาะค่าของ key ไม่ต้องใส่ `GISTDA_API_KEY=` ไม่ต้องวาง URL ทั้งเส้น แล้วกด **Add secret**
-3. เปิด [Inspect GISTDA flood API response](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow → main** หากมีค่า `area` ที่เอกสาร #25 ระบุชัดเจนจึงใส่ค่านั้น ถ้ายังไม่ทราบให้เว้นว่าง แล้วกด **Run workflow**
+3. เปิด [Inspect GISTDA flood API response](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow → main** ค่า `lat=13.719961`, `lon=100.602017` ที่เตรียมให้เป็นจุดตัวแทนกรุงเทพฯ จากข้อมูลพื้นที่ที่ตรวจแล้ว ใช้เป็นจุดทดสอบคำขอ ไม่ใช่สถานีหรือจุดที่ยืนยันว่าท่วม หากมีค่า `area` ที่เอกสาร #25 ระบุชัดเจนจึงใส่ค่านั้น ถ้ายังไม่ทราบให้เว้นว่าง แล้วกด **Run workflow**
 4. แจ้งว่ารันแล้ว ผมจะตรวจผลผ่านตัวเชื่อมต่อ โดยไม่อ่านค่าของ secret
 
 นี่เป็น workflow ตรวจการเข้าถึง/รูปแบบ response เพียงครั้งเดียว ไม่มี schedule และไม่เขียนข้อมูลลง Atlas ไม่ทำให้ layer เปิดเอง โปรแกรมไม่ส่ง `area=undefined` และไม่เดารูปแบบพื้นที่จากชื่อผลิตภัณฑ์ หาก API ต้องการพารามิเตอร์ที่ยังไม่ครบ อาจตอบ 400/404 ได้ ซึ่งต้องเทียบกับเอกสารก่อนสรุปว่าปัญหาอยู่ที่ key หรือคำขอ
@@ -14,6 +14,10 @@
 Endpoint ที่ผู้ใช้ระบุคือ `https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.1/disasters/flood-extent-1day` การตรวจแบบไม่มี key ตอบ HTTP 407 `Authentication Required` ยังไม่มีการทดสอบด้วย key จริง
 
 Workflow ใช้ชื่อ query `api_key` ที่บัญชี API ทางการเคยระบุสำหรับผลิตภัณฑ์นี้ เพื่อทดสอบการใช้กับ v1.1; ยังไม่ถือว่ารูปแบบ authentication/parameters ของ v1.1 ผ่านการยืนยัน การรายงานจะแสดงเฉพาะโครงสร้างชื่อฟิลด์/ชนิดข้อมูลที่มีขอบเขต ไม่แสดงค่า response, request URL ที่มี credential, headers หรือ traceback
+
+หากเผลอส่ง URL ที่มี key จริง ให้กลับไปหน้าที่สร้าง key ใน GISTDA แล้วเพิกถอน key ที่ส่งมาและสร้างใหม่ จากนั้นไป GitHub Actions secrets → `GISTDA_API_KEY` → **Edit** → แทนค่าด้วย key ใหม่ → **Update secret** แจ้งเพียงว่าเปลี่ยนแล้ว ไม่ต้องส่งค่าใหม่ในแชต การเปลี่ยน credential ต้องทำในบัญชีของผู้ใช้เอง ผมไม่ใช้ key ที่ส่งมาในแชตทดสอบ API
+
+URL ตัวอย่างล่าสุดยืนยันชื่อ `lat`, `lon`, `area` แต่ค่าที่เป็น `undefined` ใช้เรียกจริงไม่ได้ ตัวตรวจรับพิกัดเป็นคู่ ตรวจช่วงตัวเลข/NaN/Infinity ก่อนส่ง และจะไม่เดารูปแบบหรือหน่วยของ `area` สามารถล้างทั้ง lat/lon เพื่อทดสอบเฉพาะ authentication โดยไม่ส่งจุดได้ ผลจากจุดเดียวไม่ใช่ความครอบคลุมทั่วประเทศ
 
 ## 1. เริ่มจาก GISTDA
 

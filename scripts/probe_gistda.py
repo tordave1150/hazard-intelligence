@@ -5,6 +5,7 @@ Only bounded field/type structure is reported; no product is accepted by this
 diagnostic. Current parameter semantics must come from the product documents.
 """
 import json
+import math
 import os
 import re
 import time
@@ -34,18 +35,30 @@ def structure(value,secret,depth=0):
     return {'type':'string'}
 
 
-def inspect(api_key,area='',get=None,clock=time.monotonic):
+def inspect(api_key,area='',get=None,clock=time.monotonic,lat='',lon=''):
     api_key=api_key.strip();area=area.strip()
     if len(api_key)<8 or len(api_key)>4096 or any(c in api_key for c in '\r\n') or api_key.lower().startswith(('http:','https:','gistda_api_key=')):
         return {'result':'INVALID_OR_MISSING_SECRET'},1
     if area and (len(area)>8192 or area.lower() in ['undefined','null'] or api_key in area or
                  re.search(r'https?://|api[_-]?key\s*=',area,re.I)):
         return {'result':'INVALID_AREA_INPUT'},1
+    lat=lat.strip();lon=lon.strip()
+    point=None
+    if lat or lon:
+        try:
+            if not lat or not lon:raise ValueError('Both coordinates required')
+            latitude=float(lat);longitude=float(lon)
+            if not math.isfinite(latitude) or not math.isfinite(longitude) or not -90<=latitude<=90 or not -180<=longitude<=180:
+                raise ValueError('Invalid coordinate range')
+            point={'lat':latitude,'lon':longitude}
+        except ValueError:
+            return {'result':'INVALID_POINT_INPUT'},1
     # The official catalog documents api_key authentication. This single
     # v1.1 probe verifies compatibility rather than assuming the key works.
     params={'api_key':api_key}
     if area:params['area']=area
-    report={'product_number':25,'endpoint':ENDPOINT,'area_supplied':bool(area),
+    if point:params.update(point)
+    report={'product_number':25,'endpoint':ENDPOINT,'area_supplied':bool(area),'point_supplied':point is not None,
             'scope':'Response structure inspection only; no data acceptance or publication'}
     deadline=clock()+45
     try:
@@ -83,7 +96,8 @@ def inspect(api_key,area='',get=None,clock=time.monotonic):
 
 
 def main():
-    report,code=inspect(os.getenv('GISTDA_API_KEY',''),os.getenv('GISTDA_PROBE_AREA',''))
+    report,code=inspect(os.getenv('GISTDA_API_KEY',''),os.getenv('GISTDA_PROBE_AREA',''),
+                        lat=os.getenv('GISTDA_PROBE_LAT',''),lon=os.getenv('GISTDA_PROBE_LON',''))
     print(json.dumps(report,ensure_ascii=True,allow_nan=False))
     raise SystemExit(code)
 
