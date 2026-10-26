@@ -1,0 +1,24 @@
+{
+  "reviewed_at": "2026-10-26",
+  "directory_url": "https://stat.bora.dopa.go.th/stat/statnew/statMenu/newStat/ccaa.php",
+  "download_url": "https://stat.bora.dopa.go.th/dload/ccaatt.xlsx",
+  "source_as_of": "2023-09-01",
+  "source_sha256": "5977e39e689d229668dabb2ff47f1a1a4bec341bd1efa0792cb45cad8e16d6e9",
+  "id_aliases": [
+    {
+      "from": "TH-D-4026",
+      "to": "TH-D-4029",
+      "name_th": "เวียงเก่า",
+      "point": {"lat": 16.725377, "lon": 102.291901}
+    }
+  ],
+  "name_corrections": {
+    "TH-D-4906": "หว้านใหญ่",
+    "TH-D-7701": "เมืองประจวบคีรีขันธ์",
+    "TH-D-8001": "เมืองนครศรีธรรมราช",
+    "TH-D-8401": "เมืองสุราษฎร์ธานี",
+    "TH-D-9310": "ป่าพะยอม",
+    "TH-D-9508": "กรงปินัง"
+  },
+  "scope": "Official downloadable code/name table dated 1 September 2023, fetched 26 October 2026. Does not verify legal boundaries or changes after its stated date."
+}

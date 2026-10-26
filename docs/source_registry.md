@@ -7,12 +7,12 @@ Machine-readable registry: `apps/web/data/source-registry.json`. It records endp
 | Open-Meteo daily forecast | Production run 40257438014 published and served 1,005/1,005 validated points, four daily periods, FRESH/SUCCESS on 2026-10-26; user confirmed non-commercial use | Connected on production; source attribution retained |
 | RID daily dam storage | Documented GET, 35 matched identities and official published coordinates, date-only precision, capacities/percent semantics and linked DGA catalog reuse reviewed | Connected on production: run 40287126263 published 35/35 reports; unique indexes and retention verified. Flows remain excluded |
 | TMD public CAP | Official public RSS and linked CAP documents, public-domain feed declaration and attributed non-commercial reuse reviewed; six real expired messages verified | Connected on production: run 40294693768 published six CAP messages, all expired by retrieval. Registered radar/forecast remain separate |
-| HII / ThaiWater gauges | Official exchange standard reviewed; agency endpoint/access and live sample pending | Planned, disabled |
+| HII / ThaiWater gauges | Official public monthly archives, CC BY-NC catalog, 1,396 metadata rows and one real September station sample inspected; October directory empty | Live layer planned/disabled; current API, datum/timezone/quality and product acceptance pending |
 | GISTDA flood products | Official flood catalog reviewed; key required and dataset license unspecified; acquisition sample pending | Planned, disabled |
-| Administrative boundaries | Pinned OpenGISData-Thailand commit, 77 provinces/928 districts, unique code and geometry QA; CC BY 4.0 as published by its author | Display geometry tested; independent current DOPA registry audit pending |
+| Administrative boundaries | Pinned attributed geometry plus official downloadable DOPA code/name comparison: 77 provinces/928 districts; one code and six Thai names corrected | Directory reference is 2023-09-01, reviewed 2026-10-26; later registry changes and legal boundary accuracy unverified |
 | OpenFreeMap basemap | Public Positron style loaded in the deployed browser; provider attribution preserved | Production browser verified; current public hosting terms apply |
 | Mapterhorn DEM | Public TileJSON and terrain loaded in the deployed browser; provider/source attribution linked | Production 3D verified; provider source licences and service availability apply |
-| Basins/rivers | No vetted geometry loaded | Planned, disabled |
+| Basins/rivers | Official ONWR 22-basin resource located; its specific license is not specified | Planned, disabled pending reuse terms and geometric acceptance |
 
 References checked: [Open-Meteo API](https://open-meteo.com/en/docs), [terms](https://open-meteo.com/en/terms), [OpenGISData-Thailand pinned source](https://github.com/chingchai/OpenGISData-Thailand/tree/fafcea179cda88b689f5697c3866a449e79cd298), [OpenFreeMap quick start](https://openfreemap.org/quick_start/), [Mapterhorn attribution](https://mapterhorn.com/attribution/).
 

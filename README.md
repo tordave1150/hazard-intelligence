@@ -68,7 +68,9 @@ Read the [data contract](docs/data_contract.md), [source registry](docs/source_r
 
 ## Attribution
 
-Weather data: [Open-Meteo](https://open-meteo.com/), CC BY 4.0, subject to separate API access terms. Administrative boundaries: [OpenGISData-Thailand](https://github.com/chingchai/OpenGISData-Thailand/tree/fafcea179cda88b689f5697c3866a449e79cd298), CC BY 4.0 as published, simplified for display; upstream DOPA attribution retained. Embedded upstream postcode fields in raw inputs carry the [additional MIT notice](docs/THIRD_PARTY_BOUNDARY_NOTICES.txt). Basemap: OpenFreeMap / OpenMapTiles / OpenStreetMap. Terrain: Mapterhorn and its attributed source datasets.
+Weather data: [Open-Meteo](https://open-meteo.com/), CC BY 4.0, subject to separate API access terms. Administrative boundaries: [OpenGISData-Thailand](https://github.com/chingchai/OpenGISData-Thailand/tree/fafcea179cda88b689f5697c3866a449e79cd298), CC BY 4.0 as published, simplified for display; upstream DOPA attribution retained. [Independent directory comparison](docs/dopa-geography-review-2026-10-26.md) corrected one district code and six Thai names using the official downloadable DOPA table dated 2023-09-01; later registry changes and legal geometry remain unverified. Embedded upstream postcode fields in raw inputs carry the [additional MIT notice](docs/THIRD_PARTY_BOUNDARY_NOTICES.txt). Basemap: OpenFreeMap / OpenMapTiles / OpenStreetMap. Terrain: Mapterhorn and its attributed source datasets.
+
+HII/GISTDA are still planned pending current-product access and acceptance. [Thai account/access setup guide](docs/HII_GISTDA_SETUP_TH.md) includes the verified GISTDA registration route and an HII request draft; public monthly archives are not used as current gauge readings.
 
 Reservoir data: **ข้อมูลน้ำในอ่างเก็บน้ำ กรมชลประทาน (Royal Irrigation Department)**, [official catalog resource](https://data.go.th/th/dataset/reservoir2), [DGA Open Government License terms](https://data.go.th/th/pages/dga-open-government-license). The accepted daily-storage scope and exclusions are documented separately; no agency endorsement is claimed.
 

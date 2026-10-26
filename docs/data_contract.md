@@ -4,7 +4,9 @@ The active machine-readable contract is `packages/contracts/schema.json`, genera
 
 ## Identity
 
-`TH` is national; `TH-R-{upstream reg_royin}` identifies a versioned project region. `TH-P-{two-digit pro_code}` and `TH-D-{four-digit amp_code}` preserve published administrative codes. Names are display attributes. District IDs must start with their parent province code. IDs are unique and parent relationships are checked. Independent current DOPA registry verification is still pending; do not claim a completed authoritative audit.
+`TH` is national; `TH-R-{upstream reg_royin}` identifies a versioned project region. `TH-P-{two-digit code}` and `TH-D-{four-digit code}` identify administrative areas. Names are display attributes. District IDs must start with their parent province code. IDs are unique and parent relationships are checked. The [DOPA comparison](dopa-geography-review-2026-10-26.md) matches all 77 province/928 district codes and Thai names to the official downloadable directory dated 2023-09-01; later registry changes and legal geometry remain unverified.
+
+The versioned manifest corrects the boundary source's Wiang Kao code `4026` to official `4029` and six Thai labels. Old stored weather snapshots are read compatibly only at that exact original representative point; responses expose the applied mapping in `identity_migrations`. Forecast values/coordinates/times remain unchanged. New ingestion requires the corrected ID and rejects old IDs or collisions. No database migration or backfill is required.
 
 ## Forecast semantics
 

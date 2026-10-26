@@ -5,6 +5,7 @@ import {warningState,warningFreshness,warningMapRecords,warningInArea} from '../
 import {validatedForecast} from '../lib/contracts';
 import {areas} from '../lib/geography';
 import type {AgencyWarning,DamObservation,Forecast} from '../lib/types';
+import {canonicalStoredForecast,geographyIdentityMigrations} from '../lib/geography-migrations';
 describe('truthful map semantics',()=>{
   it('does not turn absent data into a zero reading',()=>{expect(metricValue(undefined,'2026-10-25','rainfall_mm')).toBeNull();expect(metricColor(null,'rainfall_mm')).not.toEqual(metricColor(0,'rainfall_mm'));});
   it('uses distinct rainfall and probability scales',()=>{expect(metricColor(25,'rainfall_mm')).not.toEqual(metricColor(25,'rain_probability_pct'));});
@@ -12,6 +13,19 @@ describe('truthful map semantics',()=>{
   it('distinguishes unavailable and unknown',()=>{expect(freshness([])).toBe('UNAVAILABLE');expect(freshness([{fetched_at:'bad',valid_periods:[]}] as unknown as Forecast[])).toBe('UNKNOWN');});
   it('filters by canonical hierarchy, including duplicate names',()=>{const bkk=areas.find(a=>a.id==='TH-P-10')!;const district=areas.find(a=>a.id==='TH-D-1001')!;const other=areas.find(a=>a.id==='TH-P-50')!;expect(contains(bkk,district)).toBe(true);expect(contains(other,district)).toBe(false);});
   it('rejects invalid database documents',()=>{expect(()=>validatedForecast({rainfall_mm:0})).toThrow();});
+  it('migrates the verified historical Wiang Kao ID without changing the forecast',()=>{
+    const row={location_id:'TH-D-4026',point:{lat:16.725377,lon:102.291901},fetched_at:'2026-10-26T01:00:00Z',
+      model_point:{lat:16.72,lon:102.29},valid_periods:[{date:'2026-10-26',rainfall_mm:12.5}]} as Forecast;
+    const result=canonicalStoredForecast(row);
+    expect(result.location_id).toBe('TH-D-4029');
+    expect({...result,location_id:row.location_id}).toEqual(row);
+    expect(row.location_id).toBe('TH-D-4026');
+    expect(canonicalStoredForecast(result)).toBe(result);
+    expect(()=>canonicalStoredForecast({...row,point:{lat:0,lon:0}})).toThrow();
+    expect(areas.find(a=>a.id==='TH-D-4029')?.name_th).toBe('เวียงเก่า');
+    expect(areas.some(a=>a.id==='TH-D-4026')).toBe(false);
+    expect(geographyIdentityMigrations[0].source_as_of).toBe('2023-09-01');
+  });
   it('defaults to today instead of an older first forecast date',()=>{
     const now=Date.parse('2026-10-26T02:00:00Z');
     expect(chooseForecastDate(['2026-10-25','2026-10-26'],'',now)).toBe('2026-10-26');

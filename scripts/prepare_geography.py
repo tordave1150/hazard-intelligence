@@ -14,6 +14,8 @@ EXPECTED_SHA256 = {'provinces.geojson':'310c3adf5c3f5ce574e0ecbc4fadc5761f520d02
 REGIONS = {'North': ('Northern', 'ภาคเหนือ'), 'Northeast': ('Northeastern', 'ภาคตะวันออกเฉียงเหนือ'),
            'Central': ('Central', 'ภาคกลาง'), 'East': ('Eastern','ภาคตะวันออก'),
            'West': ('Western','ภาคตะวันตก'), 'South': ('Southern','ภาคใต้')}
+CORRECTIONS = json.loads((ROOT/'data/geography/dopa-corrections.json').read_text(encoding='utf-8'))
+ALIASES = {a['from']:a['to'] for a in CORRECTIONS['id_aliases']}
 
 
 def write(path, value):
@@ -45,7 +47,7 @@ def main():
              'region_id':region_id,'province_id':province_id,'lat':round(point.y,6),'lon':round(point.x,6),
              'bbox':[round(n,6) for n in geom.bounds], 'geometry_ref':'/data/provinces.geojson' if level=='province' else
              f'/data/districts/{province_id}.geojson' if level=='district' else '/data/regions.geojson',
-             'code_status':'DOPA codes as published by OpenGISData-Thailand; independent current registry audit pending' if level in ('province','district') else 'Project region classification: upstream reg_royin, pinned 2026-10-18'}
+             'code_status':'Compared with official DOPA downloadable directory dated 2023-09-01, reviewed 2026-10-26; later changes and legal geometry unverified' if level in ('province','district') else 'Project region classification: upstream reg_royin, pinned 2026-10-18'}
         areas.append(a)
         geometries[identifier] = geom
         return a
@@ -77,7 +79,10 @@ def main():
         p=raw_feature['properties']; geom=shape(raw_feature['geometry'])
         if not geom.is_valid: raise ValueError(f"Invalid district: {p['amp_code']}")
         province_id=f"TH-P-{p['pro_code']}"
-        area(f"TH-D-{p['amp_code']}",'district',province_id,p['amp_en'],p['amp_th'],geom,f"TH-R-{p['reg_royin'].upper()}",province_id)
+        original_id=f"TH-D-{p['amp_code']}"
+        identifier=ALIASES.get(original_id,original_id)
+        name_th=CORRECTIONS['name_corrections'].get(identifier,p['amp_th'])
+        area(identifier,'district',province_id,p['amp_en'],name_th,geom,f"TH-R-{p['reg_royin'].upper()}",province_id)
     if len(provinces)!=77 or sum(a['level']=='district' for a in areas)!=928 or len({a['id'] for a in areas})!=len(areas):
         raise ValueError('Unexpected geography counts or duplicate canonical IDs')
     for name,selection,tolerance in [('provinces',provinces,.003),('regions',regions,.006)]:
@@ -88,7 +93,10 @@ def main():
     write(ROOT/'apps/web/data/areas.json', sorted(areas,key=lambda a:a['id']))
     report.update(provinces=77,districts=928,regions=len(regions),total_areas=len(areas),
                   attribution='Administrative boundaries: chingchai/OpenGISData-Thailand (DOPA attribution), CC BY 4.0; simplified for display',
-                  limitations='Display boundaries; not a legal survey. Geometry codes verified for uniqueness and parent integrity; current DOPA registry audit remains a release check.')
+                  dopa_reference={'url':CORRECTIONS['download_url'],'sha256':CORRECTIONS['source_sha256'],
+                                  'source_as_of':CORRECTIONS['source_as_of'],'reviewed_at':CORRECTIONS['reviewed_at']},
+                  id_corrections=CORRECTIONS['id_aliases'],name_corrections=CORRECTIONS['name_corrections'],
+                  limitations='Display boundaries; not a legal survey. IDs/names compared with official DOPA downloadable directory dated 2023-09-01. Later registry changes and authoritative legal boundary accuracy remain unverified.')
     write(ROOT/'docs/geography-build-report.json',report)
     print(json.dumps(report,ensure_ascii=False,indent=2))
 

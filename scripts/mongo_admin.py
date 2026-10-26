@@ -10,6 +10,7 @@ from pipelines.shared.quality import check_batch as check_weather
 from pipelines.rid.data import DAMS, PRODUCT, check_batch as check_dams
 from pipelines.rid.publication import DamPublisher
 from pipelines.tmd.publication import WarningPublisher,check_envelope
+from pipelines.shared.geography_migrations import canonical_stored_forecast
 
 
 def verify_database(db):
@@ -31,13 +32,20 @@ def verify_database(db):
             raise ValueError('Invalid active snapshot pointer')
         rows=list(store.find({'source_id':source,'product_id':product,'slot':control['active_slot'],
             'etl_run_id':control['active_run_id']},{'_id':0,'slot':0,'etl_run_id':0}))
+        migrated=0
+        if source=='open_meteo':
+            canonical=[canonical_stored_forecast(row) for row in rows]
+            migrated=sum(a['location_id']!=b['location_id'] for a,b in zip(rows,canonical))
+            rows=canonical
         check(rows,expected)
         for row in rows:validate_record(kind,row)
         required=[('source_id',1),('product_id',1),('slot',1),(identity,1)]
         if not any(index.get('unique') and list(index['key'].items())==required for index in store.list_indexes()):
             raise ValueError('Missing unique snapshot identity index')
-        result.append({'source_id':source,'status':'VERIFIED','active_records':len(rows),'total_documents':total,
-                       'document_limit':2*len(expected),'unique_index_verified':True})
+        report={'source_id':source,'status':'VERIFIED','active_records':len(rows),'total_documents':total,
+                'document_limit':2*len(expected),'unique_index_verified':True}
+        if migrated:report['historical_identity_aliases']=migrated
+        result.append(report)
     return result
 
 

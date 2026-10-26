@@ -6,6 +6,7 @@ import {validatedForecast} from './contracts';
 import {freshness} from './semantics';
 import type {Snapshot} from './types';
 import {areaById} from './geography';
+import {canonicalStoredForecast,geographyIdentityMigrations} from './geography-migrations';
 
 let cached: {until: number; value: Snapshot} | null=null;
 export function resetSnapshotCache() {cached=null;}
@@ -40,6 +41,9 @@ export async function readSnapshot(): Promise<Snapshot> {
       const records=payload.records.map(validatedForecast);
       result={records,status:payload.status??null,storage:'local',error:null,freshness:freshness(records)};
     } else result={records:[],status:null,storage:'unconfigured',error:'Weather snapshot is not connected',freshness:'UNAVAILABLE'};
+    const historicalIds=new Set(result.records.map(r=>r.location_id));
+    result.identity_migrations=geographyIdentityMigrations.filter(alias=>historicalIds.has(alias.from));
+    result.records=result.records.map(canonicalStoredForecast);
     if(result.records.some(r=>!areaById.has(r.location_id)) || new Set(result.records.map(r=>r.location_id)).size!==result.records.length) throw new Error('Invalid location coverage');
   } catch {
     result={records:[],status:null,storage:mongoUri?'mongo':'unconfigured',error:'Latest weather snapshot is temporarily unavailable',freshness:'UNAVAILABLE'};

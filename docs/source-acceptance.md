@@ -18,6 +18,8 @@ All six captured messages had expired before retrieval. The adapter preserves or
 
 [ThaiWater.Standard](https://standard.thaiwater.net/docs/) documents exchange formats, agency-defined base URLs, authentication and station metadata. Its base URL examples use an illustrative agency domain, rather than offering one nationwide live endpoint. Authentication guidance describes issued static/dynamic API tokens. An authorized provider endpoint, credentials, coverage, station datum, terms and sample data are still required. Website-internal endpoints and third-party wrappers were not adopted as undocumented production APIs.
 
+Follow-up on 26 October found a separate official [HII water-level archive catalog](https://data.hii.or.th/dataset/water-level) and [rain archive](https://data.hii.or.th/dataset/hii-rainfall). These specify attributed non-commercial reuse and monthly publication, with public no-key CSV downloads. The linked station metadata download contains 1,396 rows. The October 2026 water-level directory was empty; the September directory contained 399 CSVs including station metadata. A single real station sample, ATG011, contained 4,320 ten-minute rows for September, ending at the unqualified local-looking text `2026-09-30 23:50:00`. The catalog gives water-level units as meters relative to mean sea level and documents missing-value sentinels. Timezone, exact per-station datum/quality flags and current API entitlement are not yet accepted. No historical file was relabelled current, imported into production or used as a live fallback. Catalog availability narrows the access gap for archives; it does not supply a current water-status API. User instructions are in [HII/GISTDA setup](HII_GISTDA_SETUP_TH.md).
+
 ## GISTDA — official flood catalog, registration and unspecified license
 
 The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/flood-disaster-data) lists STAC and map services and directs users to register for a key at the GISTDA gateway. Its license metadata says **License not specified**. No other application's exposed key was reused. A user-owned authorized key, product reuse permission, real acquisition-time sample, coverage and tile metadata verification remain required. Satellite acquisition time must remain distinct from fetch time.
@@ -33,3 +35,11 @@ The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/f
 | GISTDA | Yes | No authenticated acquisition sample | Key, reuse license and acquisition/product acceptance |
 
 These unresolved gates are concrete dependencies. Do not populate production layers with guessed coordinates, units, credentials or illustrative measurements.
+
+## Basin geometry — authoritative product located, permission pending
+
+The ONWR [22 basins under the Royal Decree catalog](https://gdcatalog.go.th/dataset/gdpublish-dataset-32-0113) links an official WGS84 shapefile archive, but its specific dataset license is **License not specified**. The separate water-chart and watershed-classification products have different scopes and terms; they cannot silently license this resource. No basin geometry was incorporated. The earlier 25-basin dataset is explicitly superseded and was not used as current 22-basin geometry.
+
+## User access clarification
+
+On 26 October the user clarified that neither HII nor GISTDA access had been registered. The GISTDA gateway was inspected read-only through its email sign-in and empty registration form. No personal fields, credentials, consent checkboxes or account submissions were entered. Product documentation and reuse permissions behind membership remain uninspected. The setup guide gives the verified registration path and a draft HII data request for the user to send; no message was sent to either agency.

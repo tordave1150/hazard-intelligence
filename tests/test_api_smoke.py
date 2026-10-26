@@ -76,3 +76,13 @@ def test_dams_filter_by_point_scope_without_changing_report_date():
 
 def test_no_write_or_ingestion_route():
     assert requests.post(BASE+'/api/overview',timeout=15).status_code==405
+
+
+def test_corrected_wiang_kao_identity_and_forecast_read_compatibility():
+    matches=requests.get(BASE+'/api/areas?q=เวียงเก่า&level=district',timeout=15).json()['areas']
+    assert len(matches)==1 and matches[0]['id']=='TH-D-4029'
+    data=requests.get(BASE+'/api/weather?area_id=TH-D-4029',timeout=15).json()
+    if data['records']:
+        assert len(data['records'])==1 and data['records'][0]['location_id']=='TH-D-4029'
+        assert data['records'][0]['point']=={'lat':16.725377,'lon':102.291901}
+    assert requests.get(BASE+'/api/weather?area_id=TH-D-4026',timeout=15).status_code==404

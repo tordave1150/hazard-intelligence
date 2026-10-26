@@ -99,6 +99,12 @@ For RID, TMD, HII/ThaiWater and GISTDA, record official documented endpoint, aut
 
 Review Open-Meteo API eligibility, Vercel plan eligibility and Atlas capacity for intended public/commercial use. The free Open-Meteo endpoint is non-commercial. Data attribution does not grant commercial free-endpoint access.
 
+HII/GISTDA account and product-access steps are in [the Thai setup guide](HII_GISTDA_SETUP_TH.md). The user clarified that neither is registered. Do not configure an ingestion workflow from a borrowed dashboard key or import monthly archive readings as current gauge status.
+
+## DOPA directory compatibility
+
+The official downloadable DOPA directory dated 2023-09-01 was compared on 2026-10-26. Its pinned checksum and small corrections are recorded in [the geography review](dopa-geography-review-2026-10-26.md). New weather ingestion uses Wiang Kao's corrected `TH-D-4029`. Existing stored generations with `TH-D-4026` remain readable only at their exact original point; APIs disclose the mapping in `identity_migrations`, and `mongo_admin verify` reports historical alias counts without modifying the database. No one-time database rewrite or immediate nationwide provider refresh is necessary. Keep this reader compatibility while old A/B generations can still be restored. A changed reference workbook requires review before updating its checksum. This code/name audit does not certify registry changes after September 2023 or legal boundaries.
+
 
 ## TMD public CAP ingestion
 

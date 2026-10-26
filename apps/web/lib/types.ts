@@ -16,7 +16,8 @@ export type Source = {id: string; name: string; organization: string; state: str
   spatial_resolution: string; temporal_resolution: string; units_crs: string; latency: string;
   fallback: string; last_terms_reviewed: string | null};
 export type Snapshot = {records: Forecast[]; status: Record<string, unknown> | null;
-  storage: 'mongo' | 'local' | 'unconfigured'; error: string | null; freshness: Freshness};
+  storage: 'mongo' | 'local' | 'unconfigured'; error: string | null; freshness: Freshness;
+  identity_migrations?:{from:string;to:string;reference:string;source_as_of:string}[]};
 export type Metric = 'rainfall_mm' | 'rain_probability_pct';
 export type DamMeta={dam_id:string;source_dam_id:string;name_th:string;point:{lat:number;lon:number};
   province_id:string;district_id:string|null;region_id:string};
