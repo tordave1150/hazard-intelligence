@@ -24,6 +24,8 @@ Follow-up on 26 October found a separate official [HII water-level archive catal
 
 The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/flood-disaster-data) lists STAC and map services and directs users to register for a key at the GISTDA gateway. Its license metadata says **License not specified**. No other application's exposed key was reused. A user-owned authorized key, product reuse permission, real acquisition-time sample, coverage and tile metadata verification remain required. Satellite acquisition time must remain distinct from fetch time.
 
+The user subsequently reported obtaining a credential for the separate **product #25, flood extent one day**, and supplied its v1.1 endpoint. An unauthenticated GET returned 407. Its indexed official catalog describes Open Data Common and point/geometry variants, while current direct catalog/documentation access redirects to login/403. Product scope, current terms, area syntax and actual v1.1 response remain unverified. A manual single-request structure-only diagnostic is prepared; it never publishes or writes Atlas. See [product #25 review](gistda-product-25-review-2026-10-26.md) and the updated [Thai setup steps](HII_GISTDA_SETUP_TH.md). The source is not yet integrated, and the separate catalog licenses are not treated as interchangeable.
+
 ## Gate result
 
 | Source | Official reference found | Actual product sample | Remaining dependency |

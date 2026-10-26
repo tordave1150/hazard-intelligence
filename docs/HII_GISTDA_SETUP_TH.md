@@ -1,6 +1,19 @@
 # ขั้นตอนเตรียม HII และ GISTDA
 
-ตรวจหน้าเว็บทางการวันที่ 26 ตุลาคม 2569 โครงการนี้ใช้ส่วนตัว เผยแพร่ฟรี และไม่เชิงพาณิชย์ ตามที่ผู้ใช้ยืนยัน ขณะนี้ยังไม่มีบัญชีหรือสิทธิ์ใช้ API ของทั้งสองแหล่ง และยังไม่ได้เชื่อมข้อมูลเหล่านี้เข้า production
+ตรวจหน้าเว็บทางการวันที่ 26 ตุลาคม 2569 โครงการนี้ใช้ส่วนตัว เผยแพร่ฟรี และไม่เชิงพาณิชย์ ตามที่ผู้ใช้ยืนยัน ล่าสุดผู้ใช้แจ้งว่าได้รับ key ของ GISTDA ผลิตภัณฑ์ **#25 ข้อมูลขอบเขตพื้นที่น้ำท่วม (1 วันย้อนหลัง)** แล้ว การยืนยัน key/พารามิเตอร์/ข้อมูลจริงยังไม่เสร็จ และยังไม่ได้เชื่อม GISTDA หรือ HII เข้า production
+
+## ตอนนี้: ตรวจ API #25 ด้วย key ของโครงการ
+
+1. เปิด [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) → **New repository secret**
+2. ช่อง **Name** ใส่ `GISTDA_API_KEY` และช่อง **Secret** วางเฉพาะค่าของ key ไม่ต้องใส่ `GISTDA_API_KEY=` ไม่ต้องวาง URL ทั้งเส้น แล้วกด **Add secret**
+3. เปิด [Inspect GISTDA flood API response](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow → main** หากมีค่า `area` ที่เอกสาร #25 ระบุชัดเจนจึงใส่ค่านั้น ถ้ายังไม่ทราบให้เว้นว่าง แล้วกด **Run workflow**
+4. แจ้งว่ารันแล้ว ผมจะตรวจผลผ่านตัวเชื่อมต่อ โดยไม่อ่านค่าของ secret
+
+นี่เป็น workflow ตรวจการเข้าถึง/รูปแบบ response เพียงครั้งเดียว ไม่มี schedule และไม่เขียนข้อมูลลง Atlas ไม่ทำให้ layer เปิดเอง โปรแกรมไม่ส่ง `area=undefined` และไม่เดารูปแบบพื้นที่จากชื่อผลิตภัณฑ์ หาก API ต้องการพารามิเตอร์ที่ยังไม่ครบ อาจตอบ 400/404 ได้ ซึ่งต้องเทียบกับเอกสารก่อนสรุปว่าปัญหาอยู่ที่ key หรือคำขอ
+
+Endpoint ที่ผู้ใช้ระบุคือ `https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.1/disasters/flood-extent-1day` การตรวจแบบไม่มี key ตอบ HTTP 407 `Authentication Required` ยังไม่มีการทดสอบด้วย key จริง
+
+Workflow ใช้ชื่อ query `api_key` ที่บัญชี API ทางการเคยระบุสำหรับผลิตภัณฑ์นี้ เพื่อทดสอบการใช้กับ v1.1; ยังไม่ถือว่ารูปแบบ authentication/parameters ของ v1.1 ผ่านการยืนยัน การรายงานจะแสดงเฉพาะโครงสร้างชื่อฟิลด์/ชนิดข้อมูลที่มีขอบเขต ไม่แสดงค่า response, request URL ที่มี credential, headers หรือ traceback
 
 ## 1. เริ่มจาก GISTDA
 
@@ -12,7 +25,7 @@
 
 หน้าเงื่อนไขผลิตภัณฑ์หลังเข้าสู่ระบบยังไม่ได้ตรวจ บัญชีชุดข้อมูลสาธารณะที่ตรวจระบุ `License not specified` จึงต้องยืนยันสิทธิ์เผยแพร่แผนที่/ข้อมูลบนเว็บสาธารณะก่อนเปิด layer การมีบัญชีเพียงอย่างเดียวยังไม่ยืนยันสิทธิ์ผลิตภัณฑ์หรือการเผยแพร่ต่อ
 
-หลังตรวจเอกสาร/สิทธิ์แล้ว จะกำหนด secret สำหรับ ETL เช่น `GISTDA_API_KEY` ใน [GitHub repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) โดยใส่เฉพาะค่าของ key ไม่ต้องใส่ `GISTDA_API_KEY=` นำหน้า ขณะนี้ยังไม่มี workflow GISTDA จึงยังไม่ต้องเพิ่ม secret นี้ การเก็บ key จะอยู่เฉพาะ backend/Actions ไม่อยู่ใน browser หรือ public repository
+ขณะนี้มี workflow ตรวจ API #25 แบบ manual ตามขั้นตอนด้านบนแล้ว แต่ยังไม่มี workflow เผยแพร่ข้อมูล GISTDA งาน ETL จริงจะเริ่มหลังยืนยันเอกสาร/สิทธิ์/พารามิเตอร์และข้อมูล sample ผ่าน source acceptance การเก็บ key อยู่เฉพาะ backend/Actions ไม่อยู่ใน browser หรือ public repository
 
 ผมเปิดอ่านถึงหน้าลงทะเบียนเปล่าแล้ว ยังไม่ได้ส่งข้อมูล สมัครบัญชี เลือก checkbox หรือยอมรับเงื่อนไขแทนคุณ
 
