@@ -14,6 +14,8 @@
 
 ต่อมาคำขอ 30days แบบไม่กรองอำเภอ limit=1 ตอบ HTTP 200 โดยรายงาน 184,323 รายการและคืนมา 1 รายการ เราตรวจเฉพาะชื่อ/ชนิดของ properties ทั้ง 29 ฟิลด์ ไม่ได้เผยแพร่ geometry หรือเก็บทั้ง dataset พบฟิลด์ _createdAt/_updatedAt และ _area/f_area/h3_area/rice_area แต่ยังไม่ยืนยันว่าเป็นเวลาหรือหน่วยใด จึงไม่ได้ใช้แทนเวลาถ่ายภาพหรือคำนวณพื้นที่
 
+คำขอ STAC item รายวันจากลิงก์ catalog ทางการก็ตอบ HTTP 200 และระบุ datetime=2026-10-26T00:10:00Z (26 ต.ค. 2569 เวลา 07:10 ICT) เราเก็บความหมายเป็นเวลา nominal/search ของ item ตามมาตรฐาน STAC ยังไม่เรียกว่าเวลาถ่ายภาพของแต่ละ geometry และไม่ได้ดาวน์โหลด assets หรือใช้ footprint ของ item แทนขอบเขตน้ำท่วม ขอทราบความสัมพันธ์ระหว่างเวลาของ item, assets และแถว Features รวมถึงหน่วยของ _area/f_area/h3_area/rice_area ด้วย
+
 ขอรายละเอียดเพื่อใช้ข้อมูลให้ถูกต้องดังนี้:
 
 1. **สิทธิ์เผยแพร่และ attribution:** [resource พื้นที่น้ำท่วมหนึ่งวัน](https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a) ระบุ License not specified ขอทราบเงื่อนไขแสดง geometry/แผนที่บนเว็บไซต์สาธารณะฟรี เก็บ snapshot ล่าสุด ประมวลผลสรุปพื้นที่ และให้ดาวน์โหลดผล พร้อมข้อความ attribution และข้อยกเว้นที่ต้องใช้
