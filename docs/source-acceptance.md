@@ -12,7 +12,7 @@ The follow-up matched all 35 identities and published point coordinates from the
 
 The official [RSS directory](https://www.tmd.go.th/service/rss) links the public Thai CAP feed, also listed in the WMO Register. No API key is required for this separate channel. The real feed and six linked Actual/Public CAP 1.2 documents were fetched successfully. Feed copyright declares public domain; the TMD copyright notice permits attributed non-commercial republication, matching the user's confirmed use. Registered forecast/radar products remain separate and unaccepted.
 
-All six captured messages had expired before retrieval. The adapter preserves original classifications, CAP issue/effective/expiry times, exact update/cancel references, explicit province codes and all 481 polygon rings. It never turns a fresh retrieval of an old message into a current warning. The [dated acceptance record](tmd-cap-acceptance-2026-10-26.md) documents the permission interpretation, RSS/CAP timestamp discrepancy, conservative request policy, exclusions and tests. First Atlas publication is pending.
+All six captured messages had expired before retrieval. The adapter preserves original classifications, CAP issue/effective/expiry times, exact update/cancel references, explicit province codes and all 481 polygon rings. It never turns a fresh retrieval of an old message into a current warning. The [dated acceptance record](tmd-cap-acceptance-2026-10-26.md) documents the permission interpretation, RSS/CAP timestamp discrepancy, conservative request policy, exclusions and tests. Run 40294693768 published all six messages to Atlas; the production API validated all records and correctly reported zero within validity. Weather/RID remained unchanged.
 
 ## HII / ThaiWater — a specification is not a live data entitlement
 
@@ -28,7 +28,7 @@ The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/f
 |---|---|---|---|
 | Open-Meteo | Yes | 1,005 validated point forecasts published to Atlas and read from production on 2026-10-26 | Non-commercial use confirmed; remaining live restart/failover qualification is operational |
 | RID daily storage | Yes | 35 verified daily reports and matching published point coordinates | Published and verified on production; flows remain excluded pending definitions |
-| TMD public CAP | Yes | Six verified Actual/Public CAP messages and official polygons | First Atlas publication; registered forecast/radar remain outside accepted scope |
+| TMD public CAP | Yes | Six verified Actual/Public CAP messages and official polygons | Published and verified on production; registered forecast/radar remain outside accepted scope |
 | HII / ThaiWater | Exchange standard | No authorized live product sample | Agency endpoint/access agreement, datum and product acceptance |
 | GISTDA | Yes | No authenticated acquisition sample | Key, reuse license and acquisition/product acceptance |
 
