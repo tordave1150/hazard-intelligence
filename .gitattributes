@@ -1,0 +1,9 @@
+* text=auto
+*.py text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.md text eol=lf whitespace=-blank-at-eol
+# Preserve downloaded source bytes for reproducible SHA-256 verification.
+data/boundaries/raw/** -text

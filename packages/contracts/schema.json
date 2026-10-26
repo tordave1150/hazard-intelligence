@@ -1,0 +1,840 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hazard.local/contracts/2.0",
+  "$defs": {
+    "Area": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "level": {
+          "enum": [
+            "national",
+            "region",
+            "province",
+            "district",
+            "basin"
+          ]
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name_th": {
+          "type": "string",
+          "minLength": 1
+        },
+        "region_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "province_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "bbox": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "geometry_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code_status": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "level",
+        "parent_id",
+        "name",
+        "name_th",
+        "region_id",
+        "province_id",
+        "lat",
+        "lon",
+        "bbox",
+        "geometry_ref",
+        "code_status"
+      ],
+      "additionalProperties": false
+    },
+    "Forecast": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "const": "open_meteo"
+        },
+        "data_state": {
+          "const": "forecast"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "product_id": {
+          "const": "daily_forecast"
+        },
+        "location_id": {
+          "type": "string",
+          "pattern": "^TH-(P-[0-9]{2}|D-[0-9]{4})$"
+        },
+        "forecast_reference_time": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "point": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "additionalProperties": false
+        },
+        "model_point": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "additionalProperties": false
+        },
+        "spatial_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quality_status": {
+          "enum": [
+            "valid",
+            "partial"
+          ]
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "units": {
+          "type": "object",
+          "properties": {
+            "rainfall": {
+              "const": "mm/24h"
+            },
+            "probability": {
+              "const": "%"
+            },
+            "temperature": {
+              "const": "°C"
+            }
+          },
+          "required": [
+            "rainfall",
+            "probability",
+            "temperature"
+          ],
+          "additionalProperties": false
+        },
+        "valid_periods": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "valid_start": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|\\+00:00)$"
+              },
+              "valid_end": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "(Z|\\+00:00)$"
+              },
+              "rainfall_mm": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "rain_probability_pct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
+              },
+              "temp_max_c": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "temp_min_c": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "valid_start",
+              "valid_end",
+              "rainfall_mm",
+              "rain_probability_pct",
+              "temp_max_c",
+              "temp_min_c"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "product_id",
+        "location_id",
+        "forecast_reference_time",
+        "fetched_at",
+        "point",
+        "model_point",
+        "spatial_method",
+        "quality_status",
+        "source_url",
+        "units",
+        "valid_periods"
+      ],
+      "additionalProperties": false
+    },
+    "WeatherObservation": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_state": {
+          "const": "observed"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "location_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "point": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "additionalProperties": false
+        },
+        "metric_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "quality_status": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "location_id",
+        "point",
+        "metric_type",
+        "value",
+        "unit",
+        "observed_at",
+        "fetched_at",
+        "quality_status"
+      ],
+      "additionalProperties": false
+    },
+    "WaterGauge": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_state": {
+          "const": "observed"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "gauge_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "point": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "additionalProperties": false
+        },
+        "metric_type": {
+          "enum": [
+            "river_level",
+            "rainfall"
+          ]
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "station_datum": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "threshold_definition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "gauge_id",
+        "point",
+        "metric_type",
+        "value",
+        "unit",
+        "observed_at",
+        "fetched_at",
+        "station_datum",
+        "threshold_definition"
+      ],
+      "additionalProperties": false
+    },
+    "DamObservation": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_state": {
+          "const": "observed"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "dam_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "point": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "additionalProperties": false
+        },
+        "storage_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "storage_volume": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "inflow": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "outflow": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit_metadata": {
+          "type": "object",
+          "properties": {
+            "volume": {
+              "type": "string",
+              "minLength": 1
+            },
+            "flow": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "volume",
+            "flow"
+          ],
+          "additionalProperties": false
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "dam_id",
+        "point",
+        "storage_pct",
+        "storage_volume",
+        "inflow",
+        "outflow",
+        "unit_metadata",
+        "observed_at",
+        "fetched_at"
+      ],
+      "additionalProperties": false
+    },
+    "SatelliteFloodProduct": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_state": {
+          "const": "satellite_observation"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "product_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "satellite": {
+          "type": "string",
+          "minLength": 1
+        },
+        "satellite_acquired_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "coverage_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tile_or_layer_ref": {
+          "type": "string",
+          "format": "uri"
+        },
+        "processing_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "product_quality": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license_metadata": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "product_id",
+        "satellite",
+        "satellite_acquired_at",
+        "published_at",
+        "fetched_at",
+        "coverage_id",
+        "tile_or_layer_ref",
+        "processing_method",
+        "product_quality",
+        "license_metadata"
+      ],
+      "additionalProperties": false
+    },
+    "AgencyWarning": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_state": {
+          "const": "agency_warning"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "warning_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "area_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 1200
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "effective_start": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "agency_severity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_ref": {
+          "type": "string",
+          "format": "uri"
+        },
+        "last_updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "data_state",
+        "ingested_at",
+        "warning_id",
+        "area_ids",
+        "issued_at",
+        "effective_start",
+        "expires_at",
+        "agency_severity",
+        "content_ref",
+        "last_updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "SourceStatus": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "product_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "last_attempt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_success": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference_time": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "FRESH",
+            "DELAYED",
+            "STALE",
+            "UNAVAILABLE",
+            "UNKNOWN"
+          ]
+        },
+        "completeness": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "integration_status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error_summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "source_id",
+        "product_id",
+        "last_attempt",
+        "last_success",
+        "reference_time",
+        "status",
+        "completeness",
+        "integration_status",
+        "error_summary"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,3 @@
+import Link from 'next/link';
+import registry from '@/data/source-registry.json';
+export default function Sources(){return <main className="document-page"><Link href="/">← Return to unified map</Link><h1>Source registry</h1><p>Integration status records acceptance progress. Runtime data freshness appears in the map’s Source status panel. A planned source has no active layer.</p>{registry.map(s=><article key={s.id}><h2>{s.organization} · {s.name}</h2><p>{s.description}</p><dl>{Object.entries(s).filter(([key])=>!['description','name','organization'].includes(key)).map(([k,v])=><div key={k} style={{display:'contents'}}><dt>{k.replaceAll('_',' ')}</dt><dd>{k.endsWith('url')?<a href={v!}>{v}</a>:v??'Unverified / not connected'}</dd></div>)}</dl></article>)}</main>;}
