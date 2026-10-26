@@ -1,5 +1,9 @@
 name: Inspect GISTDA Disaster Features
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/gistda-inspection.json'
   workflow_dispatch:
     inputs:
       window:
@@ -36,8 +40,14 @@ jobs:
       - name: Install HTTP client
         run: python -m pip install "requests>=2.32.5,<3"
       - name: Inspect Features metadata without returned URLs or database writes
+        if: github.event_name == 'workflow_dispatch'
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           GISTDA_FEATURE_WINDOW: ${{ inputs.window }}
           GISTDA_FEATURE_AP_IDN: ${{ inputs.ap_idn }}
         run: python -m scripts.probe_gistda_features
+      - name: Inspect the versioned main request without database writes
+        if: github.event_name == 'push'
+        env:
+          GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
+        run: python -m scripts.probe_gistda_features --reviewed-request

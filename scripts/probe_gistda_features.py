@@ -1,9 +1,10 @@
-"""Manual Disaster Platform Features inspection, following the official manual.
+"""Bounded Disaster Platform Features inspection, following the official manual.
 
 One page, one fixed-host GET, API-Key header only. No MongoDB/publication and
 no returned links, raw response values or credentials reach logs or artifacts.
 An observed empty page is not an all-clear or a satellite acquisition timestamp.
 """
+import argparse
 from datetime import datetime
 import json
 import os
@@ -17,7 +18,22 @@ BASE='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/'
 WINDOWS={'1day','3days','7days','30days'}
 MAX_BYTES=2*1024*1024
 ROOT=Path(__file__).resolve().parents[1]
+REQUEST_PATH=ROOT/'.github/gistda-inspection.json'
 DISTRICTS={a['id'][5:] for a in json.loads((ROOT/'apps/web/data/areas.json').read_text(encoding='utf-8')) if a['level']=='district'}
+
+
+def load_reviewed_request(path=None):
+    """A public, versioned request can select products/filters, never credentials or hosts."""
+    path=REQUEST_PATH if path is None else path
+    if path.stat().st_size>1024:raise ValueError('Request file too large')
+    request=json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(request,dict) or set(request)!={'request_id','window','ap_idn'}:
+        raise ValueError('Invalid request fields')
+    if any(not isinstance(v,str) for v in request.values()):raise ValueError('Invalid request types')
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):raise ValueError('Invalid request ID')
+    if request['window'] not in WINDOWS:raise ValueError('Invalid request window')
+    if request['ap_idn'] and request['ap_idn'] not in DISTRICTS:raise ValueError('Invalid request district')
+    return request
 
 
 def page_metadata(payload,limit=1):
@@ -98,11 +114,22 @@ def inspect_features(api_key,window='1day',ap_idn='2604',get=None,clock=time.mon
         return {**report,'result':'INSPECTION_FAILED'},1
 
 
-def main():
-    report,code=inspect_features(os.getenv('GISTDA_API_KEY',''),os.getenv('GISTDA_FEATURE_WINDOW','1day'),
-                                 os.getenv('GISTDA_FEATURE_AP_IDN','2604'))
+def main(reviewed_request=False):
+    request=None
+    if reviewed_request:
+        try:request=load_reviewed_request()
+        except (OSError,ValueError,TypeError):
+            print(json.dumps({'result':'INVALID_REVIEWED_REQUEST'}))
+            raise SystemExit(1) from None
+    window=request['window'] if request else os.getenv('GISTDA_FEATURE_WINDOW','1day')
+    ap_idn=request['ap_idn'] if request else os.getenv('GISTDA_FEATURE_AP_IDN','2604')
+    report,code=inspect_features(os.getenv('GISTDA_API_KEY',''),window,ap_idn)
+    if request:report['reviewed_request_id']=request['request_id']
     print(json.dumps(report,ensure_ascii=True,allow_nan=False))
     raise SystemExit(code)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser(description='Inspect one bounded GISTDA Features page without publication')
+    parser.add_argument('--reviewed-request',action='store_true',help='Use the fixed repository request file instead of manual inputs')
+    main(parser.parse_args().reviewed_request)

@@ -8,16 +8,13 @@
 
 Endpoint คือ `https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day` ใช้ **header `API-Key`** และ query รหัสพื้นที่ ต่างจาก point route เก่าที่ใช้ lat/lon/area และตอบ 404 ดู [ผลตรวจปัจจุบัน](gistda-disaster-features-review-2026-10-26.md) สำหรับหลักฐานแยกแต่ละ route
 
-ขั้นต่อไปคือตรวจหา sample โครงสร้างข้อมูลจากผลิตภัณฑ์ย้อนหลังที่กว้างขึ้นเพียง 1 รายการ:
+ขั้นต่อไปคือตรวจหา sample จากช่วงย้อนหลังที่กว้างขึ้นเพียง 1 รายการ โดยบันทึกคำขอ `2026-10-27-01` ใน `.github/gistda-inspection.json` ให้ใช้ **window=30days**, **ap_idn ว่าง** เมื่อ push ไฟล์นี้บน main จะเริ่ม workflow ให้เอง ใช้ secret เดิม ไม่มี schedule หรือการดึงหลายหน้า จึงไม่ต้องให้ผู้ใช้กด Run ซ้ำเพื่อคำขอนี้
 
-1. ใช้ Secret `GISTDA_API_KEY` ใหม่ที่ตั้งไว้แล้ว ไม่ต้องเพิ่มหรือส่งค่าในแชต
-2. เปิด [Inspect GISTDA Disaster Features](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow รอบใหม่ → main**
-3. เลือก **window: 30days** และ **ล้าง ap_idn ให้เป็นช่องว่าง** → **Run workflow** เพื่อขอหน้าแรก limit=1 แบบไม่กรองอำเภอ ยังไม่ใช่การดึง geometry ทั้งประเทศ
-4. แจ้งว่าเริ่มรันแล้วเพื่อให้ตรวจผล ไม่ใช้ Re-run jobs ของรอบเก่าเพราะจะใช้โค้ด/พารามิเตอร์เดิม ตัวเชื่อมต่อยังเริ่ม workflow ใหม่แทนผู้ใช้ไม่ได้
+ไฟล์คำขอมีเพียง request_id, window, ap_idn ไม่รับ key หรือ URL เปลี่ยนได้เฉพาะผลิตภัณฑ์ที่เอกสารระบุและรหัสอำเภอจริง การ push ไฟล์อื่นหรือ pull request ไม่เริ่ม diagnostic นี้ ข้อมูล 30days ใช้ตรวจโครงสร้างตัวอย่างและไม่ถูกเรียกหรือเผยแพร่แทนข้อมูล 1day
 
-ช่วง 30days ใช้ตรวจโครงสร้างตัวอย่างเท่านั้น จะไม่ถูกเผยแพร่หรือเรียกแทนข้อมูล 1day ถ้าต้องการตรวจ one-day query เดิมให้เลือก window=1day และ ap_idn=2604 อย่างชัดเจน
+หากผู้ใช้ต้องการเริ่มเอง ยังใช้ [Inspect GISTDA Disaster Features](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → Run workflow รอบใหม่ → main → เลือก window/ap_idn อย่างชัดเจนได้ ไม่ใช้ Re-run jobs ของรอบเก่าเพราะจะใช้ commit/พารามิเตอร์เดิม
 
-นี่เป็น workflow manual ไม่มี schedule ไม่เขียน Atlas และไม่เปิด layer เอง อ่าน key จาก Actions เท่านั้น แล้วส่งผ่าน header โดยไม่พิมพ์ค่าลับ โปรแกรมทิ้ง `links` จาก response ก่อนรายงาน เพราะ upstream อาจแนบ key กลับมาใน href แม้ request จะใช้ header ห้ามคัดลอก response ทั้งก้อนหรือภาพที่มี key มาเผยแพร่
+นี่เป็น workflow ตรวจตามคำขอ ไม่มี schedule ไม่เขียน Atlas และไม่เปิด layer เอง อ่าน key จาก Actions เท่านั้น แล้วส่งผ่าน header โดยไม่พิมพ์ค่าลับ โปรแกรมทิ้ง `links` จาก response ก่อนรายงาน เพราะ upstream อาจแนบ key กลับมาใน href แม้ request จะใช้ header ห้ามคัดลอก response ทั้งก้อนหรือภาพที่มี key มาเผยแพร่
 
 HTTP 200 พร้อม FeatureCollection ที่มี numberMatched=0 / numberReturned=0 หมายถึงคำขอนั้นตอบสำเร็จแต่ไม่มีรายการ ไม่ยืนยันว่าไม่มีน้ำท่วมหรือดาวเทียมครอบคลุมครบ `timeStamp` เป็นเวลาตอบ API ไม่ใช่เวลาถ่ายภาพ หากพบรายการ โปรแกรมรายงานเฉพาะโครงสร้าง field/type และจำนวน ไม่พิมพ์ค่าของ feature และยังไม่ถือว่าผ่าน source acceptance
 

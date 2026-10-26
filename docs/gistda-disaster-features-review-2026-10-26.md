@@ -11,9 +11,11 @@ References reviewed 2026-10-26; Actions verification added 2026-10-27, Asia/Bang
 
 The live form documents optional `bbox` (xmin,ymin,[zmin],xmax,ymax,[zmax]), `limit`, nonnegative `offset`, `pv_idn`, `ap_idn`, and `tb_idn`. It does not use the legacy `lat`, `lon`, `area` fields. Canonical district **TH-D-2604 / Ongkharak** maps to `ap_idn=2604`; this is an administrative filter rather than a flood assertion or a representative-point query. No unverified bbox/geometry syntax is constructed.
 
-## Bounded private diagnostic
+## Bounded private diagnostic and versioned requests
 
 `.github/workflows/gistda-access.yml` is now **Inspect GISTDA Disaster Features**. Use a fresh **Run workflow → main → window: 1day → ap_idn: 2604**. Clearing `ap_idn` reproduces an unfiltered service query; it still inspects only one page (`limit=1`, `offset=0`). The key is read solely from repository secret `GISTDA_API_KEY`; the user confirmed rotating the key and updating that secret after the screenshots. No screenshot credential is copied or used.
+
+The same workflow also accepts a versioned request when `.github/gistda-inspection.json` changes on **main**. Other push paths and pull requests do not invoke this diagnostic. This avoids requiring a human Actions dispatch for each reviewed schema inspection. The fixed, size-bounded JSON file contains exactly `request_id`, `window`, `ap_idn`; it cannot provide an endpoint or credential. The allowlisted product/filter validation is the same. The current explicit request `2026-10-27-01` selects `30days` with a blank administrative filter for one schema-inspection page. It does not schedule polling or publication. The existing manual form remains available.
 
 `scripts/probe_gistda_features.py` sends exactly one GET with an `API-Key` header to a fixed-host, allowlisted product window. It has no retries, redirects, pagination, database credentials, publication or schedule, and caps JSON at 2 MiB with bounded network time. The legacy probe remains only to reproduce historical evidence.
 
@@ -31,7 +33,7 @@ The same code passed CI [40362226402](https://github.com/tordave1150/hazard-inte
 
 ## Remaining integration work
 
-1. Obtain a nonempty schema sample: a fresh manual `window=30days`, blank `ap_idn`, limit=1 request has been requested to inspect the documented broader service window. Its result is still pending; it is not an automatic fallback or an accepted one-day observation.
+1. Obtain a nonempty schema sample: the versioned request `2026-10-27-01` explicitly selects `window=30days`, blank `ap_idn`, limit=1 to inspect the documented broader service window. Its result is pending; it is not an automatic fallback or an accepted one-day observation. No extra human dispatch is required for that reviewed main push.
 2. Confirm the specific Disaster Platform resource's public display/redistribution terms, attribution, quota, coverage and empty-result semantics. A [current Thai question draft](GISTDA_DISASTER_PRODUCT_QUESTIONS_TH.md) is prepared for the catalog's `disaster@gistda.or.th` contact and remains unsent. The previous unsent legacy-route support draft is historical, not the current next step.
 3. Obtain a real nonempty feature sample and official meanings for acquisition/publication fields, CRS, geometry, units and quality. The current manual/form do not establish all of these. A longer documented window, if explicitly selected, remains labelled with that window and cannot masquerade as one-day observations.
 4. Implement bounded complete retrieval, source-specific contracts, persistence/retention, API/map behavior and failure tests only after those inputs are accepted.

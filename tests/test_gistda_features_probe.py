@@ -103,3 +103,35 @@ def test_size_deadline_json_and_exception_failures_are_sanitized(monkeypatch):
     def fail(*a,**k):raise requests.ConnectionError('secret request detail '+KEY)
     report,code=probe.inspect_features(KEY,get=fail)
     assert code==1 and report['result']=='TRANSPORT_FAILURE' and KEY not in json.dumps(report)
+
+
+def test_reviewed_request_uses_only_allowed_products_filters_and_public_ids(tmp_path):
+    request={'request_id':'2026-10-27-01','window':'30days','ap_idn':''}
+    path=tmp_path/'request.json';path.write_text(json.dumps(request),encoding='utf-8')
+    assert probe.load_reviewed_request(path)==request
+    for change in [{'endpoint':'https://example.invalid/'},{'api_key':KEY},{'window':'https://example.invalid/'},
+                   {'ap_idn':'9999'},{'ap_idn':None},{'request_id':KEY}]:
+        path.write_text(json.dumps({**request,**change}),encoding='utf-8')
+        with pytest.raises(ValueError):probe.load_reviewed_request(path)
+    path.write_text(' '*1025,encoding='utf-8')
+    with pytest.raises(ValueError):probe.load_reviewed_request(path)
+
+
+def test_reviewed_request_selects_explicit_window_without_manual_environment_fallback(tmp_path,monkeypatch,capsys):
+    path=tmp_path/'request.json'
+    path.write_text(json.dumps({'request_id':'2026-10-27-01','window':'30days','ap_idn':''}),encoding='utf-8')
+    monkeypatch.setattr(probe,'REQUEST_PATH',path)
+    monkeypatch.setenv('GISTDA_API_KEY',KEY)
+    monkeypatch.setenv('GISTDA_FEATURE_WINDOW','1day');monkeypatch.setenv('GISTDA_FEATURE_AP_IDN','2604')
+    calls=[]
+    def get(url,**kwargs):calls.append((url,kwargs));return Response(page())
+    monkeypatch.setattr(probe.requests,'get',get)
+    with pytest.raises(SystemExit) as exit:probe.main(reviewed_request=True)
+    assert exit.value.code==0 and len(calls)==1
+    assert calls[0][0]==probe.BASE+'30days' and calls[0][1]['params']=={'limit':1,'offset':0}
+    output=capsys.readouterr().out
+    assert json.loads(output)['reviewed_request_id']=='2026-10-27-01' and KEY not in output
+    path.write_text('{broken',encoding='utf-8')
+    with pytest.raises(SystemExit) as exit:probe.main(reviewed_request=True)
+    assert exit.value.code==1 and len(calls)==1
+    assert json.loads(capsys.readouterr().out)=={'result':'INVALID_REVIEWED_REQUEST'}
