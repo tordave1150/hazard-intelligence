@@ -3,22 +3,22 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'v1.0 is the endpoint in the official DGA catalog; the portal v1.1 returned 404 in the first probe.'
+        description: 'Portal v1.1 for the requested Ongkharak point test. Both versions returned 404 for the previous Bangkok point.'
         required: true
-        default: 'v1.0'
+        default: 'v1.1'
         type: choice
         options:
           - v1.0
           - v1.1
       lat:
-        description: 'Query latitude in degrees. Default is the project public Bangkok representative point, not a station or flood measurement.'
+        description: 'Query latitude in degrees. Default is the project Ongkharak district representative point in Nakhon Nayok.'
         required: false
-        default: '13.719961'
+        default: '14.097076'
         type: string
       lon:
         description: 'Query longitude in degrees. Clear both lat/lon for an authentication-only request.'
         required: false
-        default: '100.602017'
+        default: '101.010122'
         type: string
       area:
         description: 'Optional area value from product #25 documentation. Leave empty if unknown. No keys or URLs.'
