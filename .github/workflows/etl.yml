@@ -10,10 +10,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   ingest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, Node.js 24
         with:
           persist-credentials: false
       - name: Check ingestion configuration
@@ -28,7 +28,7 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Ingestion not configured. Add MONGODB_URI and MONGODB_DB_NAME repository secrets before running the pipeline."
           fi
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0, Node.js 24
         if: steps.configuration.outputs.configured == 'true'
         with:
           python-version: '3.13'

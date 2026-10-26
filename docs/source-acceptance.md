@@ -24,7 +24,7 @@ The [official flood disaster dataset](https://opendata.gistda.or.th/th/dataset/f
 
 | Source | Official reference found | Actual product sample | Remaining dependency |
 |---|---|---|---|
-| Open-Meteo | Yes | 1,005 validated point forecasts | Live Atlas deployment and intended-use eligibility |
+| Open-Meteo | Yes | 1,005 validated point forecasts published to Atlas and read from production on 2026-10-26 | Non-commercial use confirmed; remaining live restart/failover qualification is operational |
 | RID | Yes | 35 dam records, read-only probe | Coordinates, flow/time definitions, reuse terms and adapter tests |
 | TMD | Yes | No authenticated product sample | Registered access, terms and product acceptance |
 | HII / ThaiWater | Exchange standard | No authorized live product sample | Agency endpoint/access agreement, datum and product acceptance |

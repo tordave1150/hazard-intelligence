@@ -82,7 +82,7 @@ def main():
         if db is not None:
             control = Publisher(db).publish(records, [a['id'] for a in locations])
             status.update(records_published=len(records), active_generation=control['active_run_id'])
-            db.source_status.update_one({'_id': key}, {'$set': status}, upsert=True)
+            db.source_status.update_one({'_id': key}, {'$set': status, '$unset': {'error_summary': ''}}, upsert=True)
         if args.export:
             export_local(args.export, records, [a['id'] for a in locations], status)
         print(json.dumps({'status': 'SUCCESS', 'record_count': len(records)}))

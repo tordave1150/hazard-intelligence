@@ -35,6 +35,8 @@ export async function readSnapshot(): Promise<Snapshot> {
       const status=await db.collection('source_status').findOne({_id:'open_meteo:daily_forecast' as never},{projection:{_id:0},maxTimeMS:5000});
       // Whitelist health output. Never return exception details, connection metadata or arbitrary database fields.
       const safeStatus=status ? Object.fromEntries(['last_attempt','last_success','completed_at','status','completeness','successful_locations','requested_locations','error_summary'].map(k=>[k,status[k]??null])) : null;
+      // Older successful runs may still contain a prior failure's summary.
+      if(safeStatus && safeStatus.status!=='FAILED') safeStatus.error_summary=null;
       result={records,status:safeStatus,storage:'mongo',error:null,freshness:freshness(records)};
     } else if(process.env.NODE_ENV!=='production' && process.env.HAZARD_LOCAL_SNAPSHOT==='1') {
       const payload=JSON.parse(await readFile(path.join(process.cwd(),'data/local/weather.json'),'utf8'));
