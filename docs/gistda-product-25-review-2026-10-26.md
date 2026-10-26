@@ -1,4 +1,6 @@
-# GISTDA product #25 — access inspection in progress
+# GISTDA product #25 — historical legacy point-route investigation
+
+**Superseded current instructions:** the user subsequently supplied the official Disaster Platform manual and a successful Features API screenshot. The active workflow now inspects `/features/flood/1day` with an `API-Key` header and optional `ap_idn=2604`, rather than the legacy point routes below. See [current Features review](gistda-disaster-features-review-2026-10-26.md). The three legacy 404 runs are historical evidence; they do not describe the new Features API. The sections below preserve the sequence of that earlier investigation and are not current run instructions.
 
 The user reports obtaining a credential for **ข้อมูลขอบเขตพื้นที่น้ำท่วม (1 วันย้อนหลัง)** and supplied this exact endpoint, without a key:
 

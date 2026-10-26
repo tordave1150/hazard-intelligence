@@ -1,29 +1,27 @@
 # ขั้นตอนเตรียม HII และ GISTDA
 
-ตรวจหน้าเว็บทางการวันที่ 26 ตุลาคม 2569 โครงการนี้ใช้ส่วนตัว เผยแพร่ฟรี และไม่เชิงพาณิชย์ ตามที่ผู้ใช้ยืนยัน ล่าสุดผู้ใช้แจ้งว่าได้รับ key ของ GISTDA ผลิตภัณฑ์ **#25 ข้อมูลขอบเขตพื้นที่น้ำท่วม (1 วันย้อนหลัง)** แล้ว การยืนยัน key/พารามิเตอร์/ข้อมูลจริงยังไม่เสร็จ และยังไม่ได้เชื่อม GISTDA หรือ HII เข้า production
+ตรวจหน้าเว็บทางการวันที่ 26 ตุลาคม 2569 โครงการนี้ใช้ส่วนตัว เผยแพร่ฟรี และไม่เชิงพาณิชย์ ตามที่ผู้ใช้ยืนยัน ผู้ใช้มี GISTDA key และยืนยันว่าเปลี่ยน key/อัปเดต GitHub Secret หลังภาพล่าสุดแล้ว ยังไม่ได้เผยแพร่ข้อมูล GISTDA หรือ HII เข้า production
 
-## ตอนนี้: ตรวจ API #25 ด้วย key ของโครงการ
+## ตอนนี้: ตรวจ Disaster Platform Features ตามคู่มือใหม่
 
-**ผลที่ยืนยันแล้ว:** จุดกรุงเทพฯ ทั้ง v1.1/v1.0 และจุดองครักษ์ v1.1 ตอบ HTTP 404 ทั้งสามรอบ รอบองครักษ์ยืนยันว่าพิกัดถูกส่งเป็นตัวเลขแล้ว และพบ `ROUTE_NOT_FOUND` โดย `undefined_parameters: []` ยังไม่มีข้อมูลน้ำท่วมที่ผ่าน acceptance ขั้นถัดไปคือใช้[ข้อความสอบถามที่เตรียมไว้](GISTDA_PRODUCT25_SUPPORT_REQUEST_TH.md) ยืนยัน endpoint/parameters/สิทธิ์กับ GISTDA ข้อความยังไม่ได้ส่งให้หน่วยงาน ขั้นตอนด้านล่างเก็บไว้สำหรับอ้างอิงเมื่อมีเอกสารหรือการแก้ไขจากผู้ให้บริการ ก่อนทดสอบรอบถัดไป
+คู่มือและภาพผลทดสอบล่าสุดใช้ **Features API** ซึ่งต่างจาก point route #25 ที่ตอบ 404 ทั้งสามรอบเดิม: endpoint ใหม่คือ `https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day` ใช้ **header `API-Key`** และ query รหัสพื้นที่ ไม่ใช้ `lat`, `lon`, `area` รายละเอียดอยู่ใน [ผลตรวจปัจจุบัน](gistda-disaster-features-review-2026-10-26.md) และ [คู่มือทางการ](https://disaster.gistda.or.th/manual_api.pdf)
 
-1. เปิด [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) → **New repository secret**
-2. ช่อง **Name** ใส่ `GISTDA_API_KEY` และช่อง **Secret** วางเฉพาะค่าของ key ไม่ต้องใส่ `GISTDA_API_KEY=` ไม่ต้องวาง URL ทั้งเส้น แล้วกด **Add secret**
-3. เปิด [Inspect GISTDA flood API response](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow รอบใหม่ → main** เลือก **version: v1.1** ใช้ค่า `lat=14.097076`, `lon=101.010122` ที่เตรียมให้ เป็นจุดตัวแทนภายใน **อำเภอองครักษ์ จังหวัดนครนายก (`TH-D-2604`)** จากข้อมูลพื้นที่ของโปรเจกต์ ใช้ทดสอบตามที่ผู้ใช้ขอ ผลจากจุดนี้ขึ้นกับตำแหน่งน้ำท่วมและ coverage ของข้อมูล หากมีค่า `area` ที่เอกสาร #25 ระบุชัดเจนจึงใส่ค่านั้น ถ้ายังไม่ทราบให้เว้นว่าง แล้วกด **Run workflow** ไม่ใช้ Re-run jobs ของรอบเก่า เพราะจะใช้พิกัดและโค้ดเดิม
-4. แจ้งว่ารันแล้ว ผมจะตรวจผลผ่านตัวเชื่อมต่อ โดยไม่อ่านค่าของ secret
+1. Secret `GISTDA_API_KEY` ที่ [repository Actions secrets](https://github.com/tordave1150/hazard-intelligence/settings/secrets/actions) ใช้ค่า key ใหม่ที่อัปเดตแล้ว ไม่ต้องเพิ่ม secret หรือส่งค่าในแชต
+2. เปิด [Inspect GISTDA Disaster Features](https://github.com/tordave1150/hazard-intelligence/actions/workflows/gistda-access.yml) → **Run workflow รอบใหม่ → main**
+3. เลือก **window: 1day**, **ap_idn: 2604** สำหรับอำเภอองครักษ์ จังหวัดนครนายก (`TH-D-2604`) แล้วกด **Run workflow** ถ้าต้องการตรวจทั้ง service แบบภาพตัวอย่างให้ล้าง ap_idn เป็นช่องว่าง ทั้งสองแบบขอเพียงหน้าแรก limit=1 ไม่ใช่การดึง geometry ทั้งประเทศ
+4. แจ้งว่าเริ่มรันแล้วเพื่อให้ตรวจผลผ่านตัวเชื่อมต่อ ไม่ใช้ Re-run jobs ของรอบเก่า เพราะจะใช้โค้ด/พารามิเตอร์เดิม ตัวเชื่อมต่อยังเริ่ม workflow ใหม่แทนผู้ใช้ไม่ได้
 
-นี่เป็น workflow ตรวจการเข้าถึง/รูปแบบ response เพียงครั้งเดียว ไม่มี schedule และไม่เขียนข้อมูลลง Atlas ไม่ทำให้ layer เปิดเอง โปรแกรมไม่ส่ง `area=undefined` และไม่เดารูปแบบพื้นที่จากชื่อผลิตภัณฑ์ หาก API ต้องการพารามิเตอร์ที่ยังไม่ครบ อาจตอบ 400/404 ได้ ซึ่งต้องเทียบกับเอกสารก่อนสรุปว่าปัญหาอยู่ที่ key หรือคำขอ
+นี่เป็น workflow manual ไม่มี schedule ไม่เขียน Atlas และไม่เปิด layer เอง อ่าน key จาก Actions เท่านั้น แล้วส่งผ่าน header โดยไม่พิมพ์ค่าลับ โปรแกรมทิ้ง `links` จาก response ก่อนรายงาน เพราะ upstream อาจแนบ key กลับมาใน href แม้ request จะใช้ header ห้ามคัดลอก response ทั้งก้อนหรือภาพที่มี key มาเผยแพร่
 
-Endpoint ที่ผู้ใช้ระบุคือ `https://api-gateway.gistda.or.th/api/2.0/resources/gi-service/v1.1/disasters/flood-extent-1day` การตรวจแบบไม่มี key ตอบ HTTP 407 `Authentication Required` ต่อมาทดสอบผ่าน repository secret แล้วสามรอบตามหลักฐานด้านบน ทั้งหมดตอบ 404 โดยไม่แสดงค่า key
+HTTP 200 พร้อม FeatureCollection ที่มี numberMatched=0 / numberReturned=0 หมายถึงคำขอนั้นตอบสำเร็จแต่ไม่มีรายการ ไม่ยืนยันว่าไม่มีน้ำท่วมหรือดาวเทียมครอบคลุมครบ `timeStamp` เป็นเวลาตอบ API ไม่ใช่เวลาถ่ายภาพ หากพบรายการ โปรแกรมรายงานเฉพาะโครงสร้าง field/type และจำนวน ไม่พิมพ์ค่าของ feature และยังไม่ถือว่าผ่าน source acceptance
 
-Workflow ใช้ชื่อ query `api_key` ที่บัญชี API ทางการเคยระบุสำหรับผลิตภัณฑ์นี้ เพื่อทดสอบการใช้กับ v1.1; ยังไม่ถือว่ารูปแบบ authentication/parameters ของ v1.1 ผ่านการยืนยัน การรายงานจะแสดงเฉพาะโครงสร้างชื่อฟิลด์/ชนิดข้อมูลที่มีขอบเขต ไม่แสดงค่า response, request URL ที่มี credential, headers หรือ traceback
+window 3days / 7days / 30days เป็นผลิตภัณฑ์คนละช่วงเวลาที่เอกสารระบุ ต้องเลือกเองและติดป้ายตามจริง ไม่มีการสลับอัตโนมัติหรือเอาข้อมูลหลายวันมาเรียกว่าหนึ่งวัน
 
-หากเผลอส่ง URL ที่มี key จริง ให้กลับไปหน้าที่สร้าง key ใน GISTDA แล้วเพิกถอน key ที่ส่งมาและสร้างใหม่ จากนั้นไป GitHub Actions secrets → `GISTDA_API_KEY` → **Edit** → แทนค่าด้วย key ใหม่ → **Update secret** แจ้งเพียงว่าเปลี่ยนแล้ว ไม่ต้องส่งค่าใหม่ในแชต การเปลี่ยน credential ต้องทำในบัญชีของผู้ใช้เอง ผมไม่ใช้ key ที่ส่งมาในแชตทดสอบ API
+[Resource หนึ่งวันของ Disaster Platform](https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a) ระบุ **License not specified** จึงยังต้องยืนยันสิทธิ์เผยแพร่/attribution และ sample ที่มี acquisition time, geometry, CRS, quality/coverage ก่อนทำ layer สาธารณะ ไม่ใช้ Open Data Common ของ catalog point route เก่าแทนผลิตภัณฑ์นี้
 
-URL ตัวอย่างล่าสุดยืนยันชื่อ `lat`, `lon`, `area` แต่ค่าที่เป็น `undefined` ใช้เรียกจริงไม่ได้ ตัวตรวจรับพิกัดเป็นคู่ ตรวจช่วงตัวเลข/NaN/Infinity ก่อนส่ง และจะไม่เดารูปแบบหรือหน่วยของ `area` สามารถล้างทั้ง lat/lon เพื่อทดสอบเฉพาะ authentication โดยไม่ส่งจุดได้ ผลจากจุดเดียวไม่ใช่ความครอบคลุมทั่วประเทศ
+หากเผลอเผย key อีก ให้เพิกถอนและสร้างใหม่ใน GISTDA จากนั้น GitHub Actions secrets → `GISTDA_API_KEY` → Edit → แทนค่าด้วย key ใหม่ → Update secret แจ้งเพียงว่าเปลี่ยนแล้ว การเปลี่ยน credential ต้องทำในบัญชีผู้ใช้เอง
 
-รอบแรก [40340511359](https://github.com/tordave1150/hazard-intelligence/actions/runs/40340511359) ใช้ secret ที่ผู้ใช้ยืนยันว่าเปลี่ยนแล้ว, v1.1 และพิกัดจริงแบบไม่มี area ตอบ HTTP 404 พร้อมฟิลด์ `message`, `error`, `statusCode` ยังไม่มีข้อมูลน้ำท่วม จึงยังสรุปไม่ได้ว่า key ผิดหรือไม่มีน้ำท่วม บัญชี [DGA ของผลิตภัณฑ์นี้](https://data.go.th/dataset/disasters-03) ที่เปิดอ่านได้จริงระบุ v1.0 และ Open Data Common จึงเพิ่มการเลือกเวอร์ชันที่อนุญาตไว้สอง URL เท่านั้น ไม่มีการเปลี่ยนไปใช้ URL อื่นอัตโนมัติหรือดึงข้อมูลหลายครั้งต่อรัน เอกสาร Postman ที่ catalog เชื่อมไว้ปัจจุบันมีหัวข้อน้ำท่วมซ้ำซากซึ่งเป็นคนละผลิตภัณฑ์ จึงไม่นำตัวอย่างนั้นมาใช้เป็นข้อมูลหนึ่งวันย้อนหลัง
-
-## 1. เริ่มจาก GISTDA
+## 1. อ้างอิงการสมัคร GISTDA สำหรับบัญชีใหม่
 
 1. เปิด [GISTDA API Gateway](https://api-gateway.gistda.or.th/) ระบบที่ตรวจเปลี่ยนไปหน้า `/v2/a/signin`
 2. เลือก **เข้าสู่ระบบด้วย อีเมล** แล้วเลือก **ลงทะเบียน** จะถึง [หน้าลงทะเบียน](https://api-gateway.gistda.or.th/v2/a/signup)
@@ -33,7 +31,7 @@ URL ตัวอย่างล่าสุดยืนยันชื่อ `la
 
 หน้าเงื่อนไขผลิตภัณฑ์หลังเข้าสู่ระบบยังไม่ได้ตรวจ บัญชีชุดข้อมูลสาธารณะที่ตรวจระบุ `License not specified` จึงต้องยืนยันสิทธิ์เผยแพร่แผนที่/ข้อมูลบนเว็บสาธารณะก่อนเปิด layer การมีบัญชีเพียงอย่างเดียวยังไม่ยืนยันสิทธิ์ผลิตภัณฑ์หรือการเผยแพร่ต่อ
 
-ขณะนี้มี workflow ตรวจ API #25 แบบ manual ตามขั้นตอนด้านบนแล้ว แต่ยังไม่มี workflow เผยแพร่ข้อมูล GISTDA งาน ETL จริงจะเริ่มหลังยืนยันเอกสาร/สิทธิ์/พารามิเตอร์และข้อมูล sample ผ่าน source acceptance การเก็บ key อยู่เฉพาะ backend/Actions ไม่อยู่ใน browser หรือ public repository
+ขณะนี้มี workflow ตรวจ Disaster Platform Features แบบ manual ตามขั้นตอนด้านบนแล้ว แต่ยังไม่มี workflow เผยแพร่ข้อมูล GISTDA งาน ETL จริงจะเริ่มหลังยืนยันเอกสาร/สิทธิ์/พารามิเตอร์และข้อมูล sample ผ่าน source acceptance การเก็บ key อยู่เฉพาะ backend/Actions ไม่อยู่ใน browser หรือ public repository
 
 ผมเปิดอ่านถึงหน้าลงทะเบียนเปล่าแล้ว ยังไม่ได้ส่งข้อมูล สมัครบัญชี เลือก checkbox หรือยอมรับเงื่อนไขแทนคุณ
 
