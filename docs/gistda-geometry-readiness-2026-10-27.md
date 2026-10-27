@@ -17,7 +17,19 @@ The diagnostic always returns `public_layer_ready: false`, with acquisition time
 
 Reviewed request **2026-10-27-04** selects **Features, 30days, no administrative filter, limit=1, offset=0**. This separately labelled product previously supplied a nonempty sample; the new inspection addresses geometry and administrative consistency not exposed by earlier structure-only reports. It does not substitute for the one-day product or claim complete national collection. The main-only request-path trigger uses the existing GitHub secret, makes one GET, does not paginate or follow returned links, and receives no database credentials. No schedule is added.
 
-Execution evidence will be recorded after the reviewed main request runs. Local verification passed **154 Python tests**, with **18 opt-in HTTP checks skipped** because this change does not modify the web application or public API. Offline regression covers geometry validity, holes/multipolygons, invalid/self-intersecting rings, coordinate errors, complexity limits, hierarchy mismatches, synthetic secrets and full-client value redaction.
+Local verification passed **154 Python tests**, with **18 opt-in HTTP checks skipped**. Offline regression covers geometry validity, holes/multipolygons, invalid/self-intersecting rings, coordinate errors, complexity limits, hierarchy mismatches, synthetic secrets and full-client value redaction.
+
+## Observed result
+
+[Run 40514548736](https://github.com/tordave1150/hazard-intelligence/actions/runs/40514548736), job 122224942544, completed successfully on **9031729**. The API returned HTTP 200, one returned feature of **164,878** reported matches, response timestamp **2026-10-27T13:43:34.886Z / 27 October 20:43:34.886 ICT**. These are response time and query counts, not acquisition time or a national flood total. Three links were discarded. The result remains `FEATURE_PAGE_OBSERVED_SCHEMA_UNVERIFIED`.
+
+The single inspected geometry was **MultiPolygon**, one ring/14 positions, passing syntax and topology checks; every checked coordinate was within the pinned Thailand bounding box. Source province and district codes matched known pinned identities and their parent relationship. No district filter was requested. The tambon prefix matched its district; tambon identity is not independently verified. All seven tested provider metadata fields were present, but their values were not logged. CRS/spatial accuracy, acquisition, units, coverage and display rights remain unverified. This is neither a one-day product nor a full 30-day snapshot.
+
+The query's reported match count differs from the earlier 184,323 matches; it is a new response, not evidence that an equivalent area has drained or that the product is spatially complete. No change/impact inference or cross-page consistency claim is made. A future complete collector must handle the provider's update/pagination semantics explicitly.
+
+CI [40514548677](https://github.com/tordave1150/hazard-intelligence/actions/runs/40514548677) passed both Python and web jobs; Vercel reported successful deployment for 9031729. A value-free receipt is saved locally in ignored `artifacts/gistda-quality-2026-10-27.json`. No raw feature or geometry was persisted, no Atlas write occurred, no public flood layer was activated, and no provider message was sent.
+
+Reviewed request **2026-10-27-05** explicitly rechecks the original **one-day Ongkharak (`ap_idn=2604`)** product with the new diagnostic. It makes one GET only, independent of the 30-day sample; no fallback or inferred no-flood conclusion is permitted. Its later response will be recorded separately. Source registry metadata now discloses the one-sample technical checks and retains UNAVAILABLE production freshness, qualified CRS/units and the disabled layer.
 
 ## Acceptance still required
 

@@ -1,6 +1,6 @@
 {
-  "request_id": "2026-10-27-04",
+  "request_id": "2026-10-27-05",
   "service": "features",
-  "window": "30days",
-  "ap_idn": ""
+  "window": "1day",
+  "ap_idn": "2604"
 }
