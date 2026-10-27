@@ -25,8 +25,10 @@ export function validatedWarningFeed(value:unknown):WarningFeed{
     if(row.message_type!=='Cancel'&&[row.effective_start,row.event,row.headline,row.language,row.agency_severity,row.urgency,row.certainty].some(v=>v===null))throw new Error('Missing CAP information');
     if(row.expires_at&&(!row.effective_start||Date.parse(row.expires_at)<=Date.parse(row.effective_start)))throw new Error('Invalid CAP interval');
     const sourceCodes=row.source_areas.flatMap(a=>a.geocodes.filter(c=>c.value_name==='ISO3166-2').map(c=>c.value));
-    if(sourceCodes.some(code=>!/^TH-[0-9]{2}$/.test(code)))throw new Error('Invalid ISO province code');
-    const codes=new Set(sourceCodes.map(code=>'TH-P-'+code.slice(3)));
+    // Unrecognized agency codes remain verbatim in source_areas. Only exact,
+    // known province references may enter canonical area_ids.
+    const codes=new Set(sourceCodes.filter(code=>/^TH-[0-9]{2}$/.test(code))
+      .map(code=>'TH-P-'+code.slice(3)).filter(id=>areaById.get(id)?.level==='province'));
     if(codes.size!==row.area_ids.length||row.area_ids.some(id=>!codes.has(id)||areaById.get(id)?.level!=='province'))throw new Error('Unverified CAP province');
     let vertices=0;
     for(const [ring] of row.geometry?.coordinates??[]){

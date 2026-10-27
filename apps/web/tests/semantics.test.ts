@@ -1,8 +1,8 @@
 import {describe,it,expect} from 'vitest';
 import {freshness,metricColor,metricValue,contains,chooseForecastDate} from '../lib/semantics';
 import {damFreshness} from '../lib/dams';
-import {warningState,warningFreshness,warningMapRecords,warningInArea} from '../lib/warnings';
-import {validatedForecast} from '../lib/contracts';
+import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnmappedCodes} from '../lib/warnings';
+import {validatedForecast,validatedWarningFeed} from '../lib/contracts';
 import {areas} from '../lib/geography';
 import type {AgencyWarning,DamObservation,Forecast} from '../lib/types';
 import {canonicalStoredForecast,geographyIdentityMigrations} from '../lib/geography-migrations';
@@ -78,5 +78,22 @@ describe('CAP validity and feed freshness',()=>{
     expect(warningInArea(row,province,areas)).toBe(true);
     expect(warningInArea(row,district,areas)).toBe(true);
     expect(warningInArea(row,areas.find(a=>a.id==='TH-P-57')!,areas)).toBe(false);
+  });
+  it('retains unmapped CAP codes, discloses them and never assigns a guessed province',()=>{
+    const row={...message({warning_id:'TMD-unit'}),schema_version:'2.0',source_id:'tmd',product_id:'cap_warnings',data_state:'agency_warning',
+      status:'Actual',scope:'Public',fetched_at:'2026-10-26T07:59:00Z',ingested_at:'2026-10-26T08:00:00Z',
+      effective_time_source:'CAP effective',language:'th-TH',event:'Test fixture',headline:'Test fixture',description:null,instruction:null,
+      agency_severity:'Severe',urgency:'Expected',certainty:'Likely',geometry:null,
+      content_ref:'https://www.tmd.go.th/uploads/CAP/CAPTMD-unit.xml',source_url:'https://www.tmd.go.th/api/xml/CAP',terms_url:'https://www.tmd.go.th/content/copyright',
+      source_areas:[{description:'Test source area',geocodes:[{value_name:'ISO3166-2',value:'TH-80'},{value_name:'ISO3166-2',value:'R-07'},
+        {value_name:'ISO3166-2',value:'R-07'},{value_name:'ISO3166-2',value:'TH-99'}]}]} as AgencyWarning;
+    const feed={schema_version:'2.0',source_id:'tmd',product_id:'cap_warnings',data_state:'agency_warning',snapshot_id:'latest',
+      fetched_at:row.fetched_at,ingested_at:row.ingested_at,feed_generated_at:row.fetched_at,
+      feed_url:row.source_url,feed_copyright:'public domain',feed_item_count:1,ignored_item_count:0,records:[row]};
+    expect(validatedWarningFeed(feed).records[0]).toEqual(row);
+    expect(warningUnmappedCodes(row)).toEqual([{value_name:'ISO3166-2',value:'R-07'},{value_name:'ISO3166-2',value:'TH-99'}]);
+    expect(warningInArea(row,areas.find(a=>a.id==='TH-P-57')!,areas)).toBe(false);
+    expect(()=>validatedWarningFeed({...feed,records:[{...row,area_ids:['TH-P-80','TH-P-07']}]})).toThrow();
+    expect(()=>validatedWarningFeed({...feed,records:[{...row,area_ids:['TH-P-80','TH-P-99']}]})).toThrow();
   });
 });

@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {ArrowLeft,ArrowUpRight,Radio} from 'lucide-react';
 import {bangkokTime} from '@/lib/semantics';
-import {warningInArea,warningState} from '@/lib/warnings';
+import {warningInArea,warningState,warningUnmappedCodes} from '@/lib/warnings';
 import type {Area,WarningSnapshot,Freshness} from '@/lib/types';
 type Props={snapshot:WarningSnapshot;freshness:Freshness;area:Area;areas:Area[];selectedId:string|null;now:number;onSelect:(id:string|null)=>void};
 export default function WarningPanel({snapshot,freshness,area,areas,selectedId,now,onSelect}:Props){
@@ -11,9 +11,12 @@ export default function WarningPanel({snapshot,freshness,area,areas,selectedId,n
   const visible=scoped.filter(r=>previous||['CURRENT','UPCOMING','TIME_UNKNOWN'].includes(warningState(r,snapshot.records,now)));
   const selected=snapshot.records.find(r=>r.warning_id===selectedId);
   const current=scoped.filter(r=>warningState(r,snapshot.records,now)==='CURRENT').length;
+  const unresolved=snapshot.records.filter(row=>warningUnmappedCodes(row).length).length;
+  const selectedCodes=selected?warningUnmappedCodes(selected):[];
   return <section className="warning-evidence" aria-label="TMD CAP messages">
     <div className="dam-heading"><Radio size={16}/><b>Agency warnings</b><span className={`freshness ${freshness.toLowerCase()}`} title="Feed freshness, separate from message validity">FEED {freshness}</span></div>
     <p className="dam-source-caption">กรมอุตุนิยมวิทยา · TMD CAP feed</p>
+    {unresolved>0&&<p className="warning-archive-note">{unresolved} messages in this feed include area codes that could not be matched to a province. Province filtering may show only part of their scope; check the original TMD message for the full area.</p>}
     {!snapshot.feed?<p>{snapshot.error?'TMD messages are temporarily unavailable.':'Awaiting the first published CAP snapshot.'}</p>:selected?<>
       <button className="dam-back" onClick={()=>onSelect(null)}><ArrowLeft size={12}/> Back to CAP messages</button>
       <span className="warning-state">{warningState(selected,snapshot.records,now)==='CURRENT'&&freshness!=='FRESH'?'VALIDITY WINDOW · CURRENCY UNVERIFIED':warningState(selected,snapshot.records,now)}</span>
@@ -23,6 +26,7 @@ export default function WarningPanel({snapshot,freshness,area,areas,selectedId,n
         <dt>Agency severity</dt><dd>{selected.agency_severity??'Not supplied'}</dd>
         <dt>Urgency / certainty</dt><dd>{selected.urgency??'—'} / {selected.certainty??'—'}</dd>
         <dt>Message type</dt><dd>{selected.message_type}</dd><dt>Retrieved</dt><dd>{bangkokTime(selected.fetched_at)}</dd></dl>
+      {selectedCodes.length>0&&<p className="warning-archive-note">Unmapped TMD area codes: {selectedCodes.map(code=>`${code.value_name}: ${code.value}`).join('; ')}. Original codes are retained; no province or region is inferred.</p>}
       {warningState(selected,snapshot.records,now)!=='CURRENT'&&<p className="warning-archive-note">Previous or non-current message · gray outlines are for reference and are not a current warning area.</p>}
       <p className="warning-original">{selected.description}</p>{selected.instruction&&<p className="warning-original">{selected.instruction}</p>}
       {selected.source_areas.map((a,i)=><p className="dam-note" key={i}>TMD area description: {a.description}</p>)}
