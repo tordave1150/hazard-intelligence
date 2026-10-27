@@ -34,4 +34,18 @@ API examples: `/api/flood-products?area_id=TH`, `TH-P-10`, `TH-D-1001`, `TH-D-26
 
 210 offline Python tests passed (19 HTTP checks skipped offline); 20 frontend tests, TypeScript and production build passed. Tests exercise pagination, changed totals, repeats, limits, identity hierarchy, independent pilot/national storage, rollback and area filtering beyond Ongkharak. Synthetic fixture files are explicitly test-only and are never sent to Atlas.
 
-Connected publication/deployment evidence will be added after the reader is deployed and the reviewed national request completes. The full roadmap and conditional PC shutdown remain incomplete.
+## Connected publication and verification
+
+Reader/collector commit `08033aa` passed CI [40548494310](https://github.com/tordave1150/hazard-intelligence/actions/runs/40548494310) and Vercel before the writer request. The existing pilot remained readable during this transition.
+
+Reviewed publication commit `4194c29`, [run 40548798337](https://github.com/tordave1150/hazard-intelligence/actions/runs/40548798337), job 122346589963 succeeded. The actual national provider response was **2026-10-28 00:15:40.934 ICT**, retrieved at 00:15:41.031542 ICT; zero matched/returned features, one complete page, unknown acquisition. Atlas audit verified all five product pointers (including preserved pilot) and unique indexes: weather 1005 active/2010 stored, RID 35/70, TMD 1/2 envelopes, pilot 1/1, national 1/1, with two-envelope limits for each GISTDA collection.
+
+- All 19 production HTTP tests passed. Additional real API checks verified `in_scope=true`, storage=mongo, no error, UNKNOWN acquisition and EMPTY_RESULT for Thailand, Central, Bangkok, Phra Nakhon, Ongkharak and Mae Sai. The national feed is preferred over the pilot.
+- Production browser: both TMD and GISTDA enabled together; current orange TMD frames remain visible in national view. The GISTDA panel says Thailand query, zero actual results, 00:15 retrieval and acquisition unknown. Bangkok selection remains supported and does not display an out-of-pilot error. Console warnings/errors: none.
+- Local explicitly synthetic national fixture: nonempty footprint visible in both 2D and native 3D; selection works; changing to Mae Sai removes unrelated footprints and reports a supported empty result. No synthetic data entered Atlas.
+- Mobile browser viewport 390×844: Bangkok GISTDA panel opens/closes through Area; root clientWidth and scrollWidth both 375, with no horizontal page overflow. This is browser responsive verification, not a physical-device/GPU benchmark.
+- The owned preview process exited cleanly, port 3002 was released, the hash-checked temporary fixture was removed, all owned browser tabs were closed and viewport was restored. Original attached files were unchanged.
+
+Ignored local evidence: `artifacts/gistda-national-publication-2026-10-28.json`, `gistda-national-production-api-2026-10-28.json`, `gistda-national-http-2026-10-28.xml`, `gistda-national-production-2026-10-28.png`, `gistda-national-bangkok-production-2026-10-28.png`, `gistda-national-mobile-production-2026-10-28.png`, and the synthetic `gistda-local-qa/national-nonempty-{2d,3d}.png` captures.
+
+Remaining limits: larger vector products exceed the explicit budget and require the separate tile/static-hosting path; true acquisition time, full satellite coverage and exact administrative clipping remain unverified. The full roadmap and conditional PC shutdown remain incomplete (HII, basins, platform rollback/access and physical-device/GPU checks are still open).
