@@ -72,6 +72,8 @@ Rollback requires an intact previous generation. For a confirmed stopped RID wri
 
 The accepted storage product excludes inflow/outflow. Its report date is independent of the forecast date; exact observation time is unavailable. Freshness cannot be reset by retrieving an old report. See [RID acceptance](rid-acceptance-2026-10-26.md) for measurement, coordinate and reuse evidence. The live page shows awaiting publication until the first complete Atlas report exists; local captures are never a production fallback.
 
+GitHub schedules are best-effort, not an exact wall-clock service guarantee. The observed 27 October weather/RID scheduled runs began at 12:45/13:18 ICT despite their 08:00/08:15 cron targets. Their actual retrieval/publication metadata remains authoritative; a schedule label must not reset freshness. GitHub documents delays and possible dropped scheduled jobs under high load: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule .
+
 ## Rollback and interrupted runs
 
 For a frontend release, use Vercel's prior deployment promotion/rollback. For data, use `python -m scripts.mongo_admin rollback`; the command verifies that the recorded previous run still exists before switching pointers. Edge/server caches may retain the old response for up to roughly three minutes.
@@ -117,6 +119,10 @@ The official downloadable DOPA directory dated 2023-09-01 was compared on 2026-1
 ## TMD public CAP ingestion
 
 `.github/workflows/tmd.yml` is **Latest TMD CAP messages**, scheduled hourly at minute 37 UTC (also minute 37 ICT), with manual Run workflow on main. It uses the existing database-scoped `MONGODB_URI` and `MONGODB_DB_NAME` secrets. No TMD API key or registration is needed for this explicitly published public CAP channel. Registered forecast/radar APIs are separate and must not use a borrowed or demo credential.
+
+A reviewed main push changing only `.github/tmd-publication-request.json` can request the same bounded publication job without a separate Actions dispatch. The JSON is limited to request_id, source_id=tmd and operation=publish_latest; it cannot set a URL, credential, database or another operation. It keeps the existing job/concurrency/secrets and adds no pull-request trigger. Deploy compatible readers before requesting a publication that depends on a reader change.
+
+Only exact recognized ISO province references enter canonical area_ids. All original source geocodes remain in source_areas, including unsupported values/namespaces; no province or region is guessed. The API reports geography_issues across the whole feed, and the UI discloses incomplete province filtering plus the selected message's original unresolved codes. See [the real R-07 recovery record](tmd-geocode-recovery-2026-10-27.md). Whole-feed validation and last-good fallback remain unchanged.
 
 The job audits first, retrieves the RSS index and every listed CAP document sequentially, validates complete feed accounting, then publishes one bounded envelope into the inactive slot. It verifies all three products and audits storage afterward. The two `agency_warning_latest` envelopes each have a 50-message and 2 MiB JSON/BSON bound. Empty successful feeds are published as an envelope with zero records; unavailable reads have no feed. The verifier's active_records=1 means one complete envelope, not one active warning.
 

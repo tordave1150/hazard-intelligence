@@ -34,6 +34,29 @@ def test_real_cap_feed_preserves_times_geometry_and_agency_labels(cap_feed):
     assert row['geometry']['coordinates'][0][0][0][0]>96 # GeoJSON longitude first.
 
 
+def test_real_provider_unmapped_code_keeps_complete_warning_without_inventing_a_province():
+    raw=(FIXTURES/'alert-2026-10-27-unmapped-code.xml').read_bytes()
+    row=normalize(raw,'https://www.tmd.go.th/uploads/CAP/CAPTMD20261027054131_2.xml','2026-10-27T11:50:00Z')
+    assert row['warning_id']=='TMD20261027054131_2' and len(row['area_ids'])==30
+    assert len(row['geometry']['coordinates'])==123
+    assert sum(len(a['geocodes']) for a in row['source_areas'])==31
+    assert any(c=={'value_name':'ISO3166-2','value':'R-07'} for a in row['source_areas'] for c in a['geocodes'])
+    assert 'TH-P-07' not in row['area_ids'] and 'TH-P-7' not in row['area_ids']
+    forged=deepcopy(row);forged['area_ids'].append('TH-P-07')
+    with pytest.raises((ValueError,ValidationError)):validate_record('AgencyWarning',forged)
+    feed=make_feed([{'id':row['warning_id'],'url':row['content_ref']}],'2026-10-27T11:50:00Z',[row],'2026-10-27T11:50:00Z')
+    publisher=WarningPublisher(mongomock.MongoClient().test);publisher.publish([feed],['latest'])
+    assert publisher.read()[0]['records'][0]==row
+
+
+@pytest.mark.parametrize('code',['R-07','TH-99','TH-1'])
+def test_unmapped_agency_geocodes_stay_verbatim_outside_canonical_scope(code):
+    raw=(FIXTURES/'alert-0.xml').read_bytes().replace(b'<value>TH-80</value>',f'<value>{code}</value>'.encode())
+    row=normalize(raw,'https://www.tmd.go.th/uploads/CAP/CAPTMD20261025055042_2.xml',FETCHED)
+    assert 'TH-P-80' not in row['area_ids']
+    assert any(c['value']==code for a in row['source_areas'] for c in a['geocodes'])
+
+
 @pytest.mark.parametrize('raw',[b'<!DOCTYPE rss [<!ENTITY x "bad">]><rss/>',b'<!ENTITY x SYSTEM "file:///private">',b'a'*(2*1024*1024+1),'<!DOCTYPE rss [<!ENTITY x "bad">]><rss/>'.encode('utf-16')],ids=['doctype','entity','oversized','alternate-encoding'])
 def test_xml_entities_and_size_fail_closed(raw):
     with pytest.raises(ValueError):xml(raw)
@@ -116,6 +139,7 @@ def test_bounded_transport_recovery_and_safe_diagnostics():
     session=Session([requests.Timeout('private secret')]*4)
     with pytest.raises(ProviderRequestError) as error:request(SOURCE,session,lambda _:None)
     assert session.calls==4 and 'private' not in str(error.value) and 'secret' not in str(error.value)
+    assert error.value.document_id=='rss_index'
     session=Session([Response(429),Response(200,b'<rss/>')]);wait=[]
     assert request(SOURCE,session,wait.append)[0]==b'<rss/>' and wait==[3]
 
@@ -129,3 +153,18 @@ def test_expired_collection_deadline_starts_no_request():
     session=Session([])
     with pytest.raises(ProviderRequestError) as error:request(SOURCE,session,lambda _:None,deadline=0)
     assert error.value.reason=='collection_deadline' and session.calls==0
+
+
+def test_cli_schema_failure_logs_contract_path_without_source_values(tmp_path,monkeypatch,capsys):
+    from pipelines.tmd import run
+    monkeypatch.setattr('sys.argv',['tmd','--export',str(tmp_path/'unused.json')])
+    def fail():
+        raise ValidationError('private source value',validator='pattern',instance='private source value',
+                              schema_path=['properties','area_ids','items','pattern'])
+    monkeypatch.setattr(run,'collect',fail)
+    with pytest.raises(RuntimeError):run.main()
+    output=capsys.readouterr().out
+    diagnostic=json.loads(output)
+    assert diagnostic['stage']=='collect' and diagnostic['validator']=='pattern'
+    assert diagnostic['schema_path']==['properties','area_ids','items','pattern']
+    assert 'private source value' not in output and not (tmp_path/'unused.json').exists()

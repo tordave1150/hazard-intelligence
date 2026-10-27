@@ -18,6 +18,13 @@ def allowed_document(url):
     return bool(re.fullmatch(r'https://www\.tmd\.go\.th/uploads/CAP/CAPTMD[0-9A-Za-z_-]+\.xml',url))
 
 
+def mapped_provinces(source_areas):
+    """Keep canonical scope strict; original unsupported codes stay in source_areas."""
+    return {'TH-P-'+code['value'][3:] for area in source_areas for code in area['geocodes']
+            if code['value_name']=='ISO3166-2' and re.fullmatch(r'TH-[0-9]{2}',code['value'])
+            and 'TH-P-'+code['value'][3:] in PROVINCES}
+
+
 def check_warning(row):
     if not allowed_document(row['content_ref']) or row['content_ref'].rsplit('/CAP',1)[-1][:-4]!=row['warning_id']:
         raise ValueError('Unverified CAP document identity')
@@ -30,9 +37,7 @@ def check_warning(row):
         raise ValueError('Missing CAP information')
     if row['expires_at'] and (not row['effective_start'] or instant(row['expires_at'])<=instant(row['effective_start'])):
         raise ValueError('Invalid CAP effective interval')
-    source_codes=[c['value'] for a in row['source_areas'] for c in a['geocodes'] if c['value_name']=='ISO3166-2']
-    if any(not re.fullmatch(r'TH-[0-9]{2}',code) for code in source_codes):raise ValueError('Invalid ISO province code')
-    codes={f'TH-P-{code[3:]}' for code in source_codes}
+    codes=mapped_provinces(row['source_areas'])
     if codes!=set(row['area_ids']) or not codes<=PROVINCES:raise ValueError('Unverified CAP province code')
     if row['geometry']:
         total=0

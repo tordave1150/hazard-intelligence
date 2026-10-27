@@ -4,7 +4,7 @@ from email.utils import parsedate_to_datetime
 from datetime import timezone
 from pipelines.shared.time_units import instant,utc_now
 from pipelines.shared.schemas import validate_record
-from .data import SOURCE,PRODUCT,MAX_ITEMS,allowed_document
+from .data import SOURCE,PRODUCT,MAX_ITEMS,allowed_document,mapped_provinces
 
 NS={'c':'urn:oasis:names:tc:emergency:cap:1.2'}
 
@@ -52,13 +52,11 @@ def normalize(raw,content_ref,fetched_at):
     refs=[]
     for ref in (text(root,'references') or '').split():
         sender,identity,sent=ref.split(',');refs.append({'sender':sender,'warning_id':identity,'issued_at':utc(sent)})
-    areas=[];polygons=[];codes=set()
+    areas=[];polygons=[]
     for area in info.findall('c:area',NS) if info is not None else []:
         if area.find('c:circle',NS) is not None:raise ValueError('CAP circles require separate product acceptance')
         geocodes=[{'value_name':text(g,'valueName'),'value':text(g,'value')} for g in area.findall('c:geocode',NS)]
         areas.append({'description':text(area,'areaDesc'),'geocodes':geocodes})
-        for g in geocodes:
-            if g['value_name']=='ISO3166-2':codes.add('TH-P-'+g['value'][3:])
         for polygon in area.findall('c:polygon',NS):
             # CAP lists latitude,longitude; GeoJSON requires longitude,latitude.
             polygons.append([[[float(pair.split(',')[1]),float(pair.split(',')[0])] for pair in polygon.text.split()]])
@@ -70,7 +68,7 @@ def normalize(raw,content_ref,fetched_at):
         'expires_at':utc(get('expires')) if get('expires') else None,
         'language':get('language'),'event':get('event'),'headline':get('headline') or get('event'),
         'description':get('description'),'instruction':get('instruction'),'agency_severity':get('severity'),
-        'urgency':get('urgency'),'certainty':get('certainty'),'area_ids':sorted(codes),'source_areas':areas,
+        'urgency':get('urgency'),'certainty':get('certainty'),'area_ids':sorted(mapped_provinces(areas)),'source_areas':areas,
         'geometry':{'type':'MultiPolygon','coordinates':polygons} if polygons else None,
         'content_ref':content_ref,'source_url':SOURCE,'terms_url':'https://www.tmd.go.th/content/copyright'}
     return validate_record('AgencyWarning',row)

@@ -6,20 +6,24 @@ from .transform import feed_index,normalize,make_feed
 
 
 class ProviderRequestError(RuntimeError):
-    def __init__(self,reason,status=None):
-        self.reason=reason;self.status=status
+    def __init__(self,reason,status=None,document_id=None):
+        self.reason=reason;self.status=status;self.document_id=document_id
         super().__init__(f'TMD request failed ({reason})')
 
 
 def request(url,session,sleep=time.sleep,deadline=None):
     if url!=SOURCE and not allowed_document(url):raise ValueError('Unapproved TMD URL')
-    failure=ProviderRequestError('transport')
+    document_id='rss_index' if url==SOURCE else url.rsplit('/CAP',1)[-1][:-4]
+    # Only a bounded ID from an already-allowlisted public CAP URL is logged.
+    if len(document_id)>128:document_id='cap_document'
+    error=lambda reason,status=None:ProviderRequestError(reason,status,document_id)
+    failure=error('transport')
     def remaining():
         left=deadline-time.monotonic() if deadline is not None else 600
-        if left<=0:raise ProviderRequestError('collection_deadline')
+        if left<=0:raise error('collection_deadline')
         return left
     def pause(seconds):
-        if seconds>=remaining():raise ProviderRequestError('collection_deadline')
+        if seconds>=remaining():raise error('collection_deadline')
         sleep(seconds)
     for attempt in range(4):
         try:
@@ -27,19 +31,19 @@ def request(url,session,sleep=time.sleep,deadline=None):
             with session.get(url,timeout=(min(10,left),min(30,left)),allow_redirects=False,stream=True) as response:
                 status=response.status_code
                 if status==429 or status>=500:
-                    failure=ProviderRequestError('rate_limit' if status==429 else 'upstream',status)
+                    failure=error('rate_limit' if status==429 else 'upstream',status)
                     delay=response.headers.get('Retry-After','')
-                elif status!=200:raise ProviderRequestError('http_permanent',status) from None
+                elif status!=200:raise error('http_permanent',status) from None
                 else:
                     body=bytearray()
                     for chunk in response.iter_content(65536):
                         remaining()
                         body.extend(chunk)
-                        if len(body)>2*1024*1024:raise ProviderRequestError('oversized_response')
+                        if len(body)>2*1024*1024:raise error('oversized_response')
                     remaining();return bytes(body),utc_now()
             if attempt<3:pause(min(120,max(2**(attempt+1),int(delay) if delay.isdigit() else 0)))
         except requests.RequestException:
-            failure=ProviderRequestError('transport')
+            failure=error('transport')
             if attempt<3:pause(2**(attempt+1))
     raise failure from None
 

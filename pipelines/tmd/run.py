@@ -2,6 +2,7 @@ import argparse,json,os
 from pathlib import Path
 from uuid import uuid4
 from pymongo import MongoClient
+from jsonschema import ValidationError
 from pipelines.shared.time_units import utc_now
 from .client import collect,ProviderRequestError
 from .data import KEY,PRODUCT
@@ -34,7 +35,11 @@ def main():
             try:db.source_status.update_one({'_id':KEY},{'$set':status},upsert=True)
             except Exception:pass
         diagnostic={'source_id':'tmd','status':'FAILED','stage':stage,'error_type':type(exc).__name__}
-        if isinstance(exc,ProviderRequestError):diagnostic.update(reason=exc.reason,http_status=exc.status)
+        if isinstance(exc,ProviderRequestError):diagnostic.update(reason=exc.reason,http_status=exc.status,document_id=exc.document_id)
+        if isinstance(exc,ValidationError):
+            # Schema paths come from our contract, never from source values,
+            # request URLs, database credentials or exception text.
+            diagnostic.update(validator=exc.validator,schema_path=list(exc.absolute_schema_path))
         print(json.dumps(diagnostic),flush=True)
         raise RuntimeError('TMD feed failed; last published generation retained') from None
     finally:

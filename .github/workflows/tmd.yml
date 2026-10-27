@@ -1,5 +1,9 @@
 name: Latest TMD CAP messages
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/tmd-publication-request.json'
   schedule:
     - cron: '37 * * * *' # Hourly snapshot, independent of daily weather/RID.
   workflow_dispatch:
@@ -31,6 +35,23 @@ jobs:
           cache: pip
           cache-dependency-path: pipelines/requirements.txt
       - run: pip install -r pipelines/requirements.txt
+      - name: Validate reviewed publication request
+        if: github.event_name == 'push'
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          path=Path('.github/tmd-publication-request.json')
+          if path.stat().st_size>1024:raise ValueError('Publication request too large')
+          request=json.loads(path.read_text(encoding='utf-8'))
+          if not isinstance(request,dict) or set(request)!={'request_id','source_id','operation'}:
+              raise ValueError('Invalid publication request fields')
+          if request['source_id']!='tmd' or request['operation']!='publish_latest':
+              raise ValueError('Unsupported publication scope')
+          if not isinstance(request['request_id'],str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):
+              raise ValueError('Invalid publication request ID')
+          print(json.dumps({'reviewed_request_id':request['request_id'],'source_id':'tmd','scope':'accepted latest CAP snapshot'}))
+          PY
       - name: Audit database before CAP publication
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

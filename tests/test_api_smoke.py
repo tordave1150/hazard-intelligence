@@ -54,6 +54,12 @@ def test_cap_messages_keep_expiry_separate_from_feed_freshness():
     assert set(value['message_states'])=={r['warning_id'] for r in value['records']}
     assert 'absence does not establish safe conditions' in value['coverage']
     assert all(r['status']=='Actual' and r['scope']=='Public' and r['source_url']=='https://www.tmd.go.th/api/xml/CAP' for r in value['records'])
+    issues=value['geography_issues']['unmapped_geocodes']
+    assert isinstance(issues,list) and 'not assigned' in value['geography_issues']['scope']
+    for issue in issues:
+        row=next(r for r in value['records'] if r['warning_id']==issue['warning_id'])
+        assert any(c=={'value_name':issue['value_name'],'value':issue['value']} for a in row['source_areas'] for c in a['geocodes'])
+        if issue['value_name']=='ISO3166-2':assert 'TH-P-'+issue['value'][3:] not in row['area_ids']
     if value['feed']:
         assert value['feed']['feed_item_count']==len(value['records'])+value['feed']['ignored_item_count']
     else:assert value['status']=='UNAVAILABLE'
