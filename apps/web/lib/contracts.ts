@@ -21,12 +21,14 @@ export function validatedFloodFeed(value:unknown):FloodFeed{
   if(new TextEncoder().encode(JSON.stringify(feed)).length>2*1024*1024)throw new Error('GISTDA response too large');
   const bounds=areaById.get('TH')!.bbox;let positions=0,rings=0;
   for(const row of feed.records){
+    let featureRings=0;
     const polygons=row.geometry.type==='Polygon'?[row.geometry.coordinates]:row.geometry.coordinates;
     for(const polygon of polygons)for(const ring of polygon){
-      positions+=ring.length;rings++;
+      positions+=ring.length;rings++;featureRings++;
       if(ring[0].length!==ring.at(-1)!.length||ring[0].some((v,i)=>v!==ring.at(-1)![i]))throw new Error('Unclosed GISTDA ring');
       if(ring.some(p=>p.length!==ring[0].length||p.some(v=>!Number.isFinite(v))||p[0]<bounds[0]||p[0]>bounds[2]||p[1]<bounds[1]||p[1]>bounds[3]))throw new Error('Invalid GISTDA position');
     }
+    if(featureRings>256)throw new Error('GISTDA feature ring limit exceeded');
   }
   if(positions>20000||rings>256*100)throw new Error('GISTDA geometry limit exceeded');
   return feed;

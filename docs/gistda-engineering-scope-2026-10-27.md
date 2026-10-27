@@ -1,5 +1,7 @@
 # GISTDA engineering scope correction — 2026-10-27
 
+**Subsequent release:** the [Ongkharak pilot is now connected to Atlas/API/map](gistda-pilot-release-2026-10-27.md). The candidate-only stage below is preserved as its development record; publication no longer remains a future task for this pilot.
+
 The user challenged the previous instruction to contact the agency before continuing, citing the available API and documented response codes. Requiring an email response as the sole way to proceed was too broad. The earlier records and unsent questions remain historical evidence; this decision supersedes any blanket instruction there to stop all implementation until the agency replies.
 
 The [official API manual](https://disaster.gistda.or.th/manual_api.pdf), printed page 1 (PDF page 4), documents vector Features/GeoJSON and map services usable with website maps. The [catalog](https://opendata.gistda.or.th/th/dataset/flood-disaster-data) provides API resources, while its license field is unspecified. That missing metadata is not a finding that use is prohibited or that a new written approval is always required. Conversely, the manual and free-access assertion are not recorded as a blanket, unrestricted bulk-redistribution license. Source terms/attribution remain qualified in the registry. Agency contact is an optional way to resolve gaps, not a prerequisite for all engineering work. No agency message is sent.

@@ -4,7 +4,7 @@ A single Thailand map for weather and water situation awareness, built with Next
 
 Project repository: [tordave1150/hazard-intelligence](https://github.com/tordave1150/hazard-intelligence). The legacy `weather_api` repository remains the migration baseline.
 
-The live weather path covers **77 provinces + 928 districts, four forecast periods, 1,005 validated point forecasts**. The RID daily-storage adapter accepts 35 official large-dam reports with verified published point coordinates; see [product acceptance](docs/rid-acceptance-2026-10-26.md). The TMD public CAP adapter preserves official message validity, cancellations and original polygons; expired messages are explicitly historical. River gauges, satellite products and basins remain planned until their own access, permission and data acceptance pass. This build does not publish a flood-risk score, depth or ETA.
+The live weather path covers **77 provinces + 928 districts, four forecast periods, 1,005 validated point forecasts**. The RID daily-storage adapter accepts 35 official large-dam reports with verified published point coordinates; see [product acceptance](docs/rid-acceptance-2026-10-26.md). TMD CAP preserves issued validity, cancellation references and polygons; delayed retrieval keeps gray reference boundaries rather than implying no warning. The **GISTDA 1day Ongkharak pilot** is connected to Atlas, a read API and the 2D/3D map, including genuine empty-result and outside-pilot states. Acquisition remains unknown and unverified area metrics are excluded. See [the pilot release](docs/gistda-pilot-release-2026-10-27.md). River gauges, nationwide satellite coverage and basins remain unfinished. This build does not publish a flood-risk score, depth or ETA.
 
 ## Run locally
 

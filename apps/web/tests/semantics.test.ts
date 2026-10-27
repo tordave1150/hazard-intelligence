@@ -60,6 +60,11 @@ describe('GISTDA district query versus observation semantics',()=>{
       expect(()=>validatedFloodFeed({...structuredClone(floodFixture),...change})).toThrow();
     const corrupt=structuredClone(floodFixture);corrupt.records[0].geometry.coordinates[0][0]=[0,0];
     expect(()=>validatedFloodFeed(corrupt)).toThrow();
+    const polygon=feed.records[0].geometry;
+    if(polygon.type!=='Polygon')throw new Error('Expected synthetic polygon fixture');
+    const complex=structuredClone(feed);
+    complex.records[0].geometry={type:'MultiPolygon',coordinates:Array.from({length:257},()=>polygon.coordinates)};
+    expect(()=>validatedFloodFeed(complex)).toThrow();
   });
   it('does not turn a failed or old provider query into a fresh observation',()=>{
     const feed=validatedFloodFeed(structuredClone(floodFixture));
