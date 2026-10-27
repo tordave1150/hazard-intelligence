@@ -38,7 +38,7 @@ export default function WarningPanel({snapshot,freshness,area,areas,selectedId,n
       <div className="dam-list">{visible.map(row=><button key={row.warning_id} onClick={()=>onSelect(row.warning_id)}><span>{row.headline??row.message_type}<small>{warningState(row,snapshot.records,now)} · {bangkokTime(row.issued_at)}</small></span><ArrowUpRight size={13}/></button>)}</div>
     </>}
     {snapshot.feed&&<p className="dam-note">Feed checked {bangkokTime(snapshot.feed.fetched_at)}. Feed freshness measures retrieval, not warning issuance. The weather forecast timeline does not change these times. Province references are not district-specific warnings; outlines preserve TMD's published polygons.</p>}
-    {freshness!=='FRESH'&&snapshot.feed&&<p className="warning-archive-note">Feed is {freshness.toLowerCase()}; current coverage is unverified. Colored warning outlines are paused.</p>}
+    {freshness!=='FRESH'&&snapshot.feed&&<p className="warning-archive-note">Feed is {freshness.toLowerCase()}; current coverage is unverified. Boundaries within their issued validity window remain visible in gray for reference; agency colors resume after a successful fresh check.</p>}
     {snapshot.health?.status==='FAILED'&&<p className="failed-run">Latest TMD refresh failed · showing the last complete feed.</p>}
   </section>;
 }

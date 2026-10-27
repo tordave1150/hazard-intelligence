@@ -70,7 +70,9 @@ describe('CAP validity and feed freshness',()=>{
     expect(warningFreshness(feed,now,true)).toBe('DELAYED');
     expect(warningFreshness({...feed,feed_generated_at:'2026-10-25T07:59:00Z'},now)).toBe('STALE');
     expect(warningFreshness(null,now)).toBe('UNAVAILABLE');
-    expect(warningMapRecords([row],null,'DELAYED',now)).toEqual([]);
+    expect(warningMapRecords([row],null,'DELAYED',now)).toMatchObject([{warning_id:row.warning_id,archived:true,display_state:'CURRENT'}]);
+    expect(warningMapRecords([row],null,'STALE',now)).toMatchObject([{archived:true}]);
+    expect(warningMapRecords([row],null,'FRESH',now)).toMatchObject([{archived:false}]);
     expect(warningMapRecords([row],row.warning_id,'STALE',now)[0].archived).toBe(true);
   });
   it('uses explicit province codes for regional and local context',()=>{

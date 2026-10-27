@@ -35,7 +35,9 @@ export function warningUnmappedCodes(row:AgencyWarning){
   });
 }
 export function warningMapRecords(records:AgencyWarning[],selected:string|null,freshness:Freshness,now=Date.now()):WarningDisplay[]{
-  const chosen=selected?records.filter(r=>r.warning_id===selected):records.filter(r=>warningState(r,records,now)==='CURRENT'&&freshness==='FRESH');
+  // Keep issued validity-window boundaries visible as gray references when a
+  // refresh is delayed; freshness still controls whether agency colors apply.
+  const chosen=selected?records.filter(r=>r.warning_id===selected):records.filter(r=>warningState(r,records,now)==='CURRENT');
   return chosen.filter(r=>r.geometry).map(row=>({...row,display_state:warningState(row,records,now),
     archived:warningState(row,records,now)!=='CURRENT'||freshness!=='FRESH'}));
 }
