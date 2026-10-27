@@ -60,6 +60,8 @@ This completes the reviewed access/metadata inspections; no further probe is sch
 
 ## Remaining integration work
 
+The supplied 27 October dictionary/notes were [reconciled independently](gistda-dictionary-reconciliation-2026-10-27.md). Their 14 rows match the two separate ArcGIS layer schemas, not a new provider dictionary for the Disaster Features API. ArcGIS service/extent CRS 3857, source CRS 32647 and maxRecordCount 1000 do not become Features defaults. The existing observed Features/STAC access evidence is retained; acquisition, units, coverage and resource-specific permissions remain open.
+
 Technical work resumed at the user's request on 27 October. The new [geometry/identity readiness inspection](gistda-geometry-readiness-2026-10-27.md) extends the same one-page diagnostic with value-free syntax/topology and pinned-code consistency checks. Request 2026-10-27-04 successfully inspected a separate 30days sample in run 40514548736: one of 164,878 reported matches, MultiPolygon with one ring/14 positions, valid topology and matched province/district hierarchy. These checks do not confer public-display permission or verified acquisition/coverage semantics; the provider question draft remains unsent.
 
 1. Obtain the provider's definition of the verified one-day STAC item time and its relation to Features rows/assets. Keep nominal/search time, retrieval time and any actual acquisition time distinct; retain one-day and 30-day products separately.

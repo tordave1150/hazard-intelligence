@@ -18,6 +18,8 @@
 
 ขอรายละเอียดเพื่อใช้ข้อมูลให้ถูกต้องดังนี้:
 
+ตรวจพบเอกสาร schema ของ ArcGIS `app/GISTDA_flood/MapServer/0` และ `/1` แยกต่างหาก ทั้งคู่มี 7 ฟิลด์ เช่น `f_area`/`tam_rai` และระบุ service CRS 3857, source CRS 32647 แต่คำถามนี้มุ่งที่ **Disaster Platform `/features/flood/{window}` ซึ่ง sample มี 29 properties** รวม `h3_area`/`rice_area` ไม่ขอสมมติว่าความหมาย หน่วย CRS หรือสิทธิ์ของ ArcGIS ใช้แทน Features API ได้ ขอเอกสารที่ระบุผลิตภัณฑ์/endpoint ให้ตรงกันด้วยครับ/ค่ะ
+
 1. **สิทธิ์เผยแพร่และ attribution:** [resource พื้นที่น้ำท่วมหนึ่งวัน](https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a) ระบุ License not specified ขอทราบเงื่อนไขแสดง geometry/แผนที่บนเว็บไซต์สาธารณะฟรี เก็บ snapshot ล่าสุด ประมวลผลสรุปพื้นที่ และให้ดาวน์โหลดผล พร้อมข้อความ attribution และข้อยกเว้นที่ต้องใช้
 2. **เวลาและคุณภาพข้อมูล:** ขอ data dictionary และตัวอย่างที่ไม่มี credential ระบุฟิลด์ acquisition time, publication time, satellite/sensor, timezone/precision, CRS, หน่วยพื้นที่ และ quality flags รวมทั้งความหมาย/ขอบเขตของผลิตภัณฑ์ 1day, 3days, 7days และ 30days
 3. **ผลลัพธ์ว่างและ coverage:** `numberMatched=0` หมายถึงไม่พบ geometry ใน dataset ณ เวลาคำขอ หรือมีสถานะ no coverage/no acquisition/data delay แยกต่างหากหรือไม่ มีข้อมูล footprint ของการสำรวจและเวลาที่สำรวจแต่ละพื้นที่หรือไม่ ตัวกรอง `ap_idn` เลือกหรือ clip geometry อย่างไร และผลที่คืนมานับซ้ำระหว่างวัน/เขตปกครองหรือไม่
