@@ -104,11 +104,11 @@
     "name": "Satellite flood observations",
     "organization": "GISTDA",
     "state": "satellite_observation",
-    "status": "Access/sample checks passed · product acceptance pending",
+    "status": "API access verified · daily adapter in development",
     "url": "https://disaster.gistda.or.th/services/open-api",
     "terms_url": "https://opendata.gistda.or.th/th/dataset/flood-disaster-data/resource/062a08da-a6a9-4db7-9af7-1d345e38563a",
-    "cadence": "Production ingestion not running · product acceptance pending",
-    "description": "One-day Ongkharak Features returned HTTP 200/zero features. A separate 30-day sample inspected on 27 October passed MultiPolygon syntax/topology and known province/district consistency checks: one feature of 164,878 reported matches, not a complete collection. All 29 property names/types and one-day STAC metadata were inspected earlier. STAC item time is nominal/search metadata. Actual acquisition, provider CRS/spatial accuracy, units/coverage and resource-specific reuse terms remain unverified; these checks establish neither current flooding nor safe conditions.",
+    "cadence": "Manual candidate validation · production ETL not scheduled",
+    "description": "API access and a separate 30-day geometry sample are verified. A bounded daily Ongkharak candidate collector is in development: unknown acquisition stays null, area metrics are excluded and incomplete query results are rejected. No GISTDA snapshot has been published to Atlas. The official manual documents web-map use; catalog license details, quota and scientific coverage remain qualified. Empty results establish neither complete satellite coverage nor safe conditions.",
     "attribution": "GISTDA (when connected)",
     "endpoint": "https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day",
     "authentication": "User-owned backend key in API-Key header; one-day/30-day Features and one-day STAC requests verified in Actions",
@@ -121,7 +121,7 @@
     "temporal_resolution": "One-day product label; STAC nominal/search time available, per-feature acquisition time unverified",
     "units_crs": "Area units/provider CRS unverified; one sample passed longitude/latitude syntax and topology checks",
     "latency": "Unknown; actual satellite acquisition/publication sample not yet accepted",
-    "fallback": "Layer disabled until acceptance",
+    "fallback": "No published GISTDA snapshot; layer awaiting storage/API/map integration",
     "last_terms_reviewed": "2026-10-27"
   }
 ]

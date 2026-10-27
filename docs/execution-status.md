@@ -2,6 +2,8 @@
 
 Updated: 2026-10-27, Asia/Bangkok. This is an execution record, not a claim that every roadmap phase is production-complete.
 
+Latest GISTDA scope correction: the user challenged making agency contact mandatory. [Engineering continues without an email prerequisite](gistda-engineering-scope-2026-10-27.md): a complete bounded one-day Ongkharak candidate collector now retains validated geometry with null unknown acquisition and excludes unverified area/exposure metrics. It uses the existing key through a receipt-only main workflow, no database or raw export. Published snapshot/API/map integration remains engineering work; terms/coverage qualifications are retained without treating missing catalog license metadata as an automatic prohibition. The unsent questions are optional. Earlier dated acceptance statements are superseded to this extent.
+
 Latest release verification: Phase 6 repaired TMD ingestion (12/12 real messages) and source-dialog focus; **120 Python tests + 18 production HTTP checks + 15 frontend tests** passed, alongside connected-browser desktop/mobile flows and CI/build/deploy. See [the release report](phase6-release-verification-2026-10-27.md). GISTDA technical work has now resumed at the user's request, starting with the [bounded geometry/identity diagnostic](gistda-geometry-readiness-2026-10-27.md); provider questions remain unsent and public-product acceptance remains open. Platform rollback/Atlas infrastructure failover and physical-device/GPU verification remain open. Earlier sections preserve dated baseline work.
 
 
