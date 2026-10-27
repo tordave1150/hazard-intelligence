@@ -34,7 +34,7 @@ def test_real_cap_feed_preserves_times_geometry_and_agency_labels(cap_feed):
     assert row['geometry']['coordinates'][0][0][0][0]>96 # GeoJSON longitude first.
 
 
-def test_real_provider_unmapped_code_keeps_complete_warning_without_inventing_a_province():
+def test_real_provider_unmapped_code_keeps_complete_warning_without_inventing_a_province(cap_feed):
     raw=(FIXTURES/'alert-2026-10-27-unmapped-code.xml').read_bytes()
     row=normalize(raw,'https://www.tmd.go.th/uploads/CAP/CAPTMD20261027054131_2.xml','2026-10-27T11:50:00Z')
     assert row['warning_id']=='TMD20261027054131_2' and len(row['area_ids'])==30
@@ -45,8 +45,11 @@ def test_real_provider_unmapped_code_keeps_complete_warning_without_inventing_a_
     forged=deepcopy(row);forged['area_ids'].append('TH-P-07')
     with pytest.raises((ValueError,ValidationError)):validate_record('AgencyWarning',forged)
     feed=make_feed([{'id':row['warning_id'],'url':row['content_ref']}],'2026-10-27T11:50:00Z',[row],'2026-10-27T11:50:00Z')
-    publisher=WarningPublisher(mongomock.MongoClient().test);publisher.publish([feed],['latest'])
+    publisher=WarningPublisher(mongomock.MongoClient().test)
+    publisher.publish([cap_feed],['latest']);publisher.publish([feed],['latest'])
     assert publisher.read()[0]['records'][0]==row
+    publisher.rollback();assert publisher.read()==[cap_feed]
+    publisher.publish([feed],['latest']);assert publisher.read()[0]['records'][0]==row
 
 
 @pytest.mark.parametrize('code',['R-07','TH-99','TH-1'])

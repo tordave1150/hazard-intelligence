@@ -1,7 +1,8 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import type {MouseEvent as ReactMouseEvent} from 'react';
 import {Activity,ArrowDownToLine,ArrowLeft,ArrowUpRight,Check,ChevronDown,ChevronRight,CloudRain,Compass,Database,Layers3,MapPin,Mountain,Radio,Search,ShieldCheck,SlidersHorizontal,Waves,X,Satellite,Droplets,Info,RefreshCw,Clock3} from 'lucide-react';
 import registry from '@/data/source-registry.json';
 import {ageLabel,bangkokDate,bangkokTime,chooseForecastDate,contains,freshness,metricColor,metricLabel,metricUnit,metricValue} from '@/lib/semantics';
@@ -22,9 +23,13 @@ export default function Dashboard({areas}:{areas:Area[]}){
   const [warningSnapshot,setWarningSnapshot]=useState<WarningSnapshot>(emptyWarnings),[showWarnings,setShowWarnings]=useState(false),[selectedWarning,setSelectedWarning]=useState<string|null>(null);
   const [metric,setMetric]=useState<Metric>('rainfall_mm'),[date,setDate]=useState(''),[rainfall,setRainfall]=useState(true),[is3d,setIs3d]=useState(false),[terrain,setTerrain]=useState(true),[extrude,setExtrude]=useState(false),[opacity,setOpacity]=useState(74);
   const [sourcesOpen,setSourcesOpen]=useState(false),[leftOpen,setLeftOpen]=useState(false),[rightOpen,setRightOpen]=useState(false),[refresh,setRefresh]=useState(0),[clock,setClock]=useState(Date.now());
+  const sourceOpener=useRef<HTMLButtonElement|null>(null);
+  const openSources=(event:ReactMouseEvent<HTMLButtonElement>)=>{sourceOpener.current=event.currentTarget;setSourcesOpen(true);};
   useEffect(()=>{
     if(!sourcesOpen)return;
-    const previous=document.activeElement;
+    // Capture the actual opener before the modal's autoFocus runs. Reading
+    // activeElement here captures the modal's close button after mounting.
+    const previous=sourceOpener.current;
     const handle=(event:KeyboardEvent)=>{
       if(event.key==='Escape')setSourcesOpen(false);
       if(event.key==='Tab'){
@@ -35,7 +40,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
       }
     };
     document.addEventListener('keydown',handle);
-    return()=>{document.removeEventListener('keydown',handle);if(previous instanceof HTMLElement)previous.focus();};
+    return()=>{document.removeEventListener('keydown',handle);if(previous?.isConnected)previous.focus({preventScroll:true});};
   },[sourcesOpen]);
   const area=lookup.get(selected)??lookup.get('TH')!;
   useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(timer);},[]);
@@ -93,7 +98,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
       <div className="search-wrap"><Search size={17}/><input aria-label="Search area" placeholder="Search province, district, or Thai name…" value={search} onChange={e=>setSearch(e.target.value)}/><kbd>⌕</kbd>
         {search&&<div className="search-results">{results.length?results.map(a=><button key={a.id} onClick={()=>select(a.id)}><MapPin size={14}/><span>{a.name}<small>{a.name_th} · {a.level}</small></span><ChevronRight size={14}/></button>):<p>No matching areas</p>}</div>}
       </div>
-      <button className="source-top" onClick={()=>setSourcesOpen(true)}><span className={`status-dot ${status.toLowerCase()}`}/><span>Source status<small>{availableSources} available · {5-availableSources} unavailable</small></span><ChevronDown size={14}/></button>
+      <button className="source-top" onClick={openSources}><span className={`status-dot ${status.toLowerCase()}`}/><span>Source status<small>{availableSources} available · {5-availableSources} unavailable</small></span><ChevronDown size={14}/></button>
     </header>
     <div className="situation-title"><div><p className="eyebrow">SITUATION OVERVIEW</p><h1>From national outlook to local understanding.</h1></div><span className="monitoring-badge"><ShieldCheck size={14}/> Monitoring · source-specific evidence</span></div>
     <section className="summary-grid" aria-label="Situation overview">
@@ -138,7 +143,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
             <a className="source-link" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather data by Open-Meteo <ArrowUpRight size={12}/></a></div>
           {[{icon:Waves,title:'River & rain gauges',text:'No connected gauge source.'},{icon:Satellite,title:'Satellite flood observations',text:'No licensed product connected. Acquisition date will be shown.'}].map(({icon:Icon,title,text})=><div className="unavailable-evidence" key={title}><Icon size={16}/><div><b>{title}</b><p>{text}</p></div><span>—</span></div>)}
           <button className="export-button" disabled={!scope.length} onClick={download}><ArrowDownToLine size={14}/> Export this area’s weather</button></>}
-          <div className="freshness-card"><div><Clock3 size={15}/><b>Data freshness</b><span className={`freshness ${status.toLowerCase()}`}>{loading?'LOADING':status}</span></div><p>{snapshot.records.length?`${snapshot.records.length} of 1,005 forecast points available`:'No published weather data'}</p><small>Oldest retrieval: {bangkokTime(oldestFetch)}</small><small>First valid window: {bangkokTime(firstValid)}</small>{snapshot.status?.status==='FAILED'&&<p className="failed-run">Latest ingestion failed · showing last good data</p>}<button onClick={()=>setSourcesOpen(true)}>View all sources <ArrowUpRight size={12}/></button></div>
+          <div className="freshness-card"><div><Clock3 size={15}/><b>Data freshness</b><span className={`freshness ${status.toLowerCase()}`}>{loading?'LOADING':status}</span></div><p>{snapshot.records.length?`${snapshot.records.length} of 1,005 forecast points available`:'No published weather data'}</p><small>Oldest retrieval: {bangkokTime(oldestFetch)}</small><small>First valid window: {bangkokTime(firstValid)}</small>{snapshot.status?.status==='FAILED'&&<p className="failed-run">Latest ingestion failed · showing last good data</p>}<button onClick={openSources}>View all sources <ArrowUpRight size={12}/></button></div>
         </aside>
       </div>
       <footer className="timeline"><div className="timeline-label"><Clock3 size={16}/><span><b>Forecast timeline</b><small>Daily windows · Asia/Bangkok</small></span></div><div className="timeline-dates">{dates.length?dates.map(d=><button className={d===date?'active':''} key={d} onClick={()=>setDate(d)}><span>{new Date(d+'T00:00:00+07:00').toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok',weekday:'short'})}</span><b>{new Date(d+'T00:00:00+07:00').toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short'})}</b><i/></button>):<p>{loading?'Loading available forecast windows…':'No forecast windows available'}</p>}</div><button className="refresh-button" disabled={loading} onClick={()=>setRefresh(x=>x+1)}><RefreshCw size={14} className={loading?'spin':''}/><span>Reload snapshot</span></button></footer>

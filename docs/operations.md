@@ -78,6 +78,8 @@ GitHub schedules are best-effort, not an exact wall-clock service guarantee. The
 
 For a frontend release, use Vercel's prior deployment promotion/rollback. For data, use `python -m scripts.mongo_admin rollback`; the command verifies that the recorded previous run still exists before switching pointers. Edge/server caches may retain the old response for up to roughly three minutes.
 
+After the 27 October CAP repair, **c573cb6 is the minimum compatible frontend commit for feeds containing unmapped source geocodes**. A frontend rollback target must include that reader change; pre-repair readers reject the raw R-07 geocode even though canonical area_ids are valid. If an older frontend is required, first plan/verify an appropriate intact previous data generation in a maintenance window. Do not roll production backward merely to test this. The real-fixture regression covers legacy feed → unmapped-code feed → rollback → re-publication in isolation.
+
 If a worker is killed during publication, the non-expiring product lock intentionally blocks another writer. Confirm that the process/workflow is stopped, inspect `etl_locks` with an authorized database console, then use `python -m scripts.mongo_admin unlock --stopped-run-token <exact-token>`. Never unlock a running writer. A failed inactive slot may invalidate the prior rollback generation; active data stays readable. Back up Atlas independently: A/B slots are not disaster recovery.
 
 ## Checks
