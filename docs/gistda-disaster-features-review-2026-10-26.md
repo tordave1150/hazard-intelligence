@@ -60,6 +60,8 @@ This completes the reviewed access/metadata inspections; no further probe is sch
 
 ## Remaining integration work
 
+Technical work resumed at the user's request on 27 October. The new [geometry/identity readiness inspection](gistda-geometry-readiness-2026-10-27.md) extends the same one-page diagnostic with value-free syntax/topology and pinned-code consistency checks. Request 2026-10-27-04 explicitly selects a separate 30days sample. These checks do not confer public-display permission or verified acquisition/coverage semantics; the provider question draft remains unsent.
+
 1. Obtain the provider's definition of the verified one-day STAC item time and its relation to Features rows/assets. Keep nominal/search time, retrieval time and any actual acquisition time distinct; retain one-day and 30-day products separately.
 2. Confirm the specific Disaster Platform resource's public display/redistribution terms, attribution, quota, coverage and empty-result semantics. A [current Thai question draft](GISTDA_DISASTER_PRODUCT_QUESTIONS_TH.md) is prepared for the catalog's `disaster@gistda.or.th` contact and remains unsent. The previous unsent legacy-route support draft is historical, not the current next step.
 3. Obtain a real nonempty feature sample and official meanings for acquisition/publication fields, CRS, geometry, units and quality. The current manual/form do not establish all of these. A longer documented window, if explicitly selected, remains labelled with that window and cannot masquerade as one-day observations.

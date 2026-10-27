@@ -14,6 +14,7 @@ import re
 import time
 import requests
 from scripts.probe_gistda import structure,error_hints
+from scripts.gistda_sample_quality import sample_quality
 
 BASE='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/'
 WINDOWS={'1day','3days','7days','30days'}
@@ -146,6 +147,8 @@ def inspect_features(api_key,window='1day',ap_idn='2604',get=None,clock=time.mon
             except (ValueError,TypeError,OverflowError):return {**report,'result':'FEATURE_COLLECTION_SCHEMA_UNVERIFIED'},1
             if api_key in report['page_metadata']['response_timestamp']:
                 return {**report,'page_metadata':None,'result':'FEATURE_COLLECTION_SCHEMA_UNVERIFIED'},1
+            if payload['features']:
+                report['sample_quality']=sample_quality(payload['features'][0],ap_idn,'crs' in payload)
             result='EMPTY_FEATURE_COLLECTION_OBSERVED' if report['page_metadata']['empty_result'] else 'FEATURE_PAGE_OBSERVED_SCHEMA_UNVERIFIED'
             return {**report,'result':result},0
     except requests.RequestException:

@@ -2,7 +2,7 @@
 
 Updated: 2026-10-27, Asia/Bangkok. This is an execution record, not a claim that every roadmap phase is production-complete.
 
-Latest verification: Phase 6 repaired TMD ingestion (12/12 real messages) and source-dialog focus; **120 Python tests + 18 production HTTP checks + 15 frontend tests** passed, alongside connected-browser desktop/mobile flows and CI/build/deploy. See [the current release report](phase6-release-verification-2026-10-27.md). Platform rollback/Atlas infrastructure failover and physical-device/GPU verification remain open; GISTDA questions are deferred. Earlier sections preserve dated baseline work.
+Latest release verification: Phase 6 repaired TMD ingestion (12/12 real messages) and source-dialog focus; **120 Python tests + 18 production HTTP checks + 15 frontend tests** passed, alongside connected-browser desktop/mobile flows and CI/build/deploy. See [the release report](phase6-release-verification-2026-10-27.md). GISTDA technical work has now resumed at the user's request, starting with the [bounded geometry/identity diagnostic](gistda-geometry-readiness-2026-10-27.md); provider questions remain unsent and public-product acceptance remains open. Platform rollback/Atlas infrastructure failover and physical-device/GPU verification remain open. Earlier sections preserve dated baseline work.
 
 
 ## Implemented and verified locally
