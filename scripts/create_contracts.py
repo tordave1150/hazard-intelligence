@@ -16,6 +16,12 @@ def obj(properties, required=None):
 
 point = obj({'lat': {'type': 'number', 'minimum': -90, 'maximum': 90}, 'lon': {'type': 'number', 'minimum': -180, 'maximum': 180}})
 common = {'schema_version': {'const': '2.0'}, 'source_id': string, 'data_state': string, 'ingested_at': time}
+flood_position = {'type':'array','minItems':2,'maxItems':3,'items':{'type':'number'}}
+flood_ring = {'type':'array','minItems':4,'maxItems':20000,'items':flood_position}
+flood_polygon = {'type':'array','minItems':1,'maxItems':256,'items':flood_ring}
+flood_geometry = {'anyOf':[
+    obj({'type':{'const':'Polygon'},'coordinates':flood_polygon}),
+    obj({'type':{'const':'MultiPolygon'},'coordinates':{'type':'array','minItems':1,'maxItems':256,'items':flood_polygon}})]}
 defs = {
     'Area': obj({'id': string, 'level': {'enum': ['national','region','province','district','basin']}, 'parent_id': {'type': ['string','null']},
                  'name': string, 'name_th': string, 'region_id': {'type': ['string','null']}, 'province_id': {'type': ['string','null']},
@@ -76,6 +82,16 @@ defs = {
         'feed_copyright':{'const':'public domain'}, 'feed_item_count':{'type':'integer','minimum':0,'maximum':50},
         'ignored_item_count':{'type':'integer','minimum':0,'maximum':50},
         'records':{'type':'array','maxItems':50,'items':{'$ref':'#/$defs/AgencyWarning'}}}),
+    'GistdaFloodFeed': obj({**common,'source_id':{'const':'gistda'},'product_id':{'const':'flood_1day_ongkharak'},
+        'data_state':{'const':'satellite_observation'},'snapshot_id':{'const':'latest'},'product_window':{'const':'1day'},
+        'area_id':{'const':'TH-D-2604'},'query':obj({'ap_idn':{'const':'2604'},'limit':{'const':100},'offset':{'const':0}}),
+        'source_url':{'const':'https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day'},
+        'attribution':{'const':'GISTDA Disaster Platform'},'response_at':time,'fetched_at':time,'observed_at':{'type':'null'},
+        'observation_time_status':{'const':'NOT_SUPPLIED'},'complete_provider_query':{'const':True},
+        'record_count':{'type':'integer','minimum':0,'maximum':100},'coverage':string,
+        'area_metrics':{'const':'NOT_USED_UNITS_UNVERIFIED'},'interpretation':string,
+        'records':{'type':'array','maxItems':100,'items':obj({'type':{'const':'Feature'},
+            'id':{'type':'string','pattern':'^[a-f0-9]{24}-[0-9]{1,2}$'},'geometry':flood_geometry,'properties':{'type':'null'}})}}),
     'SourceStatus': obj({'source_id':string, 'product_id':string, 'last_attempt':nullable_time, 'last_success':nullable_time,
         'reference_time':nullable_time, 'status':{'enum':['FRESH','DELAYED','STALE','UNAVAILABLE','UNKNOWN']},
         'completeness':{'type':['number','null'],'minimum':0,'maximum':1}, 'integration_status':string,

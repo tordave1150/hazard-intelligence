@@ -4,15 +4,17 @@ import maplibregl,{type Map as MapType} from 'maplibre-gl';
 import {MapboxOverlay} from '@deck.gl/mapbox';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import type {Feature,FeatureCollection,Geometry} from 'geojson';
-import type {Area,DamObservation,Forecast,Freshness,Metric,WarningDisplay} from '@/lib/types';
+import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningDisplay} from '@/lib/types';
 import {warningColor} from '@/lib/warnings';
+import {floodColor} from '@/lib/floods';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 
 type Props={area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;
   rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void;
   dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void;
-  warnings:WarningDisplay[];onSelectWarning:(id:string)=>void};
+  warnings:WarningDisplay[];onSelectWarning:(id:string)=>void;
+  floods:FloodFeature[];floodFreshness:Freshness;selectedFlood:string|null;onSelectFlood:(id:string)=>void};
 export default function MapView(props:Props){
   const stale=['STALE','UNKNOWN','UNAVAILABLE'].includes(props.freshness);
   const container=useRef<HTMLDivElement>(null),map=useRef<MapType|null>(null),overlay=useRef<MapboxOverlay|null>(null);
@@ -24,6 +26,10 @@ export default function MapView(props:Props){
     type:'Feature',geometry:row.geometry!,properties:{source_id:'tmd',warning_id:row.warning_id,headline:row.headline,
       state:row.display_state,archived:row.archived,color:warningColor(row),severity:row.agency_severity,issued_at:row.issued_at,expires_at:row.expires_at}
   }))}),[props.warnings]);
+  const floodGeometry=useMemo<FeatureCollection>(()=>({type:'FeatureCollection',features:props.floods.map((row,index)=>({
+    ...row,properties:{source_id:'gistda',feature_id:row.id,label:`Provider footprint ${index+1}`,selected:props.selectedFlood===row.id,
+      color:floodColor(props.floodFreshness),query_freshness:props.floodFreshness}
+  }))}),[props.floods,props.selectedFlood,props.floodFreshness]);
   useEffect(()=>{
     if(!container.current)return;
     setReady(false);
@@ -55,6 +61,11 @@ export default function MapView(props:Props){
           paint:{'line-color':'#597e7b','line-width':1}},label);
         instance.addLayer({id:'weather-native-extrusion',type:'fill-extrusion',source:'weather-native',layout:{visibility:'none'},
           paint:{'fill-extrusion-color':['get','color'],'fill-extrusion-height':['get','height'],'fill-extrusion-base':0,'fill-extrusion-opacity':.65}});
+        instance.addSource('gistda-flood',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        instance.addLayer({id:'gistda-flood-fill',type:'fill',source:'gistda-flood',layout:{visibility:'none'},
+          paint:{'fill-color':['get','color'],'fill-opacity':.17}});
+        instance.addLayer({id:'gistda-flood-line',type:'line',source:'gistda-flood',layout:{visibility:'none'},
+          paint:{'line-color':['get','color'],'line-width':['case',['get','selected'],3,1.8]}});
         instance.addSource('warning-cap',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         instance.addLayer({id:'warning-cap-fill',type:'fill',source:'warning-cap',layout:{visibility:'none'},
           paint:{'fill-color':['get','color'],'fill-opacity':['case',['get','archived'],.05,.16]}});
@@ -67,6 +78,9 @@ export default function MapView(props:Props){
           const warning=instance.queryRenderedFeatures(event.point,{layers:['warning-cap-fill']})[0];
           if(warning?.properties){const p=warning.properties;instance.getCanvas().style.cursor='pointer';
             popup.setLngLat(event.lngLat).setText(`TMD CAP · ${p.state} · ${p.headline} · issued ${p.issued_at} · expires ${p.expires_at??'not supplied'}`).addTo(instance);return;}
+          const flood=instance.queryRenderedFeatures(event.point,{layers:['gistda-flood-fill']})[0];
+          if(flood?.properties){instance.getCanvas().style.cursor='pointer';popup.setLngLat(event.lngLat)
+            .setText(`GISTDA · ${flood.properties.label} · 1day product · Ongkharak pilot · acquisition time not supplied`).addTo(instance);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           instance.getCanvas().style.cursor=feature?'pointer':'';
           if(feature?.properties){const p=feature.properties;
@@ -77,6 +91,8 @@ export default function MapView(props:Props){
           if(!latest.current.is3d)return;
           const warning=instance.queryRenderedFeatures(event.point,{layers:['warning-cap-fill']})[0];
           if(warning?.properties){latest.current.onSelectWarning(warning.properties.warning_id);return;}
+          const flood=instance.queryRenderedFeatures(event.point,{layers:['gistda-flood-fill']})[0];
+          if(flood?.properties){latest.current.onSelectFlood(flood.properties.feature_id);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           if(feature?.properties)latest.current.onSelect(latest.current.area.level==='national'?feature.properties.region_id:feature.properties.id);
         });
@@ -159,6 +175,12 @@ export default function MapView(props:Props){
     hoverPopup.current?.remove();
   },[ready,warningGeometry,props.is3d]);
   useEffect(()=>{
+    if(!ready||!map.current?.getSource('gistda-flood'))return;
+    (map.current.getSource('gistda-flood') as maplibregl.GeoJSONSource).setData(floodGeometry);
+    for(const id of ['gistda-flood-fill','gistda-flood-line'])map.current.setLayoutProperty(id,'visibility',props.is3d?'visible':'none');
+    hoverPopup.current?.remove();
+  },[ready,floodGeometry,props.is3d]);
+  useEffect(()=>{
     if(!ready||!overlay.current)return;
     const lookup=new Map(props.records.map(r=>[r.location_id,r]));
     const features=geometry.features.map(f=>({...f,properties:{...f.properties,
@@ -190,12 +212,16 @@ export default function MapView(props:Props){
         const id=object.properties.id;
         latest.current.onSelect(latest.current.area.level==='national'?object.properties.region_id:id);
       }
+    }),new GeoJsonLayer({id:'gistda-flood-polygons',data:floodGeometry,pickable:true,filled:true,stroked:true,
+      getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=40;return color;},getLineColor:warningRgb,
+      getLineWidth:(f:Feature)=>f.properties?.selected?3:1.8,lineWidthUnits:'pixels',lineWidthMinPixels:1.8,
+      onClick:({object})=>{if(object)latest.current.onSelectFlood(object.properties.feature_id);return true;}
     }),new GeoJsonLayer({id:'tmd-cap-polygons',data:warningGeometry,pickable:true,filled:true,stroked:true,
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
       getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
       onClick:({object})=>{if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
-    })],getTooltip:({object})=>object?{text:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
-  },[ready,geometry,warningGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,stale]);
+    })],getTooltip:({object})=>object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n1day product · Ongkharak pilot\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
+  },[ready,geometry,warningGeometry,floodGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>
     <div className="map-context"><span className="map-context-icon"><MapIcon size={15}/></span><div><strong>{props.area.level==='national'?'Thailand · national view':props.area.name}</strong><span>{props.area.level==='national'?'Select a region to explore':'Select an area for local intelligence'}</span></div></div>

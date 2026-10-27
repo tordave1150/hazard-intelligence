@@ -2,7 +2,9 @@ import {describe,it,expect} from 'vitest';
 import {freshness,metricColor,metricValue,contains,chooseForecastDate} from '../lib/semantics';
 import {damFreshness} from '../lib/dams';
 import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnmappedCodes} from '../lib/warnings';
-import {validatedForecast,validatedWarningFeed} from '../lib/contracts';
+import {validatedForecast,validatedWarningFeed,validatedFloodFeed} from '../lib/contracts';
+import {floodInArea,floodQueryFreshness,floodColor} from '../lib/floods';
+import floodFixture from '../../../tests/fixtures/gistda/synthetic-feed.json';
 import {areas} from '../lib/geography';
 import type {AgencyWarning,DamObservation,Forecast} from '../lib/types';
 import {canonicalStoredForecast,geographyIdentityMigrations} from '../lib/geography-migrations';
@@ -36,6 +38,36 @@ describe('truthful map semantics',()=>{
     expect(damFreshness([{report_date:'2026-10-26',fetched_at:'2026-10-26T01:00:00Z'}] as DamObservation[],now)).toBe('FRESH');
     expect(damFreshness([{report_date:'2026-10-22',fetched_at:'2026-10-26T01:00:00Z'}] as DamObservation[],now)).toBe('STALE');
     expect(damFreshness([{report_date:'2026-10-27',fetched_at:'2026-10-26T01:00:00Z'}] as DamObservation[],now)).toBe('UNKNOWN');
+  });
+});
+
+describe('GISTDA district query versus observation semantics',()=>{
+  const now=Date.parse('2026-10-27T13:00:00Z');
+  it('keeps a complete empty result available without inventing acquisition or area values',()=>{
+    const feed=validatedFloodFeed({...structuredClone(floodFixture),records:[],record_count:0});
+    expect(feed.observed_at).toBeNull();expect(feed.area_metrics).toBe('NOT_USED_UNITS_UNVERIFIED');
+    expect(floodQueryFreshness(feed,now)).toBe('FRESH');
+    expect(feed.record_count).toBe(0);expect(feed.complete_provider_query).toBe(true);
+  });
+  it('restricts scope to Ongkharak and its administrative parents, not neighboring districts',()=>{
+    for(const id of ['TH','TH-R-CENTRAL','TH-P-26','TH-D-2604'])expect(floodInArea(areas.find(a=>a.id===id)!)).toBe(true);
+    for(const id of ['TH-P-10','TH-D-2601','TH-D-5709'])expect(floodInArea(areas.find(a=>a.id===id)!)).toBe(false);
+  });
+  it('validates safe geometry and rejects invented observation dates, alternate products and partial results',()=>{
+    const feed=validatedFloodFeed(structuredClone(floodFixture));
+    expect(feed.records[0].properties).toBeNull();expect(feed.records[0].geometry.type).toBe('Polygon');
+    for(const change of [{record_count:0},{observed_at:'2026-10-27T12:00:00Z'},{product_window:'30days'},{complete_provider_query:false}])
+      expect(()=>validatedFloodFeed({...structuredClone(floodFixture),...change})).toThrow();
+    const corrupt=structuredClone(floodFixture);corrupt.records[0].geometry.coordinates[0][0]=[0,0];
+    expect(()=>validatedFloodFeed(corrupt)).toThrow();
+  });
+  it('does not turn a failed or old provider query into a fresh observation',()=>{
+    const feed=validatedFloodFeed(structuredClone(floodFixture));
+    expect(floodQueryFreshness(feed,now,true)).toBe('DELAYED');
+    expect(floodQueryFreshness({...feed,response_at:'2026-10-24T00:00:00Z'},now)).toBe('STALE');
+    expect(floodQueryFreshness(null,now)).toBe('UNAVAILABLE');
+    expect(floodColor('STALE')).not.toBe(floodColor('FRESH'));
+    expect(feed.observed_at).toBeNull();
   });
 });
 describe('CAP validity and feed freshness',()=>{

@@ -76,7 +76,7 @@ def build_candidate(payload, fetched_at):
             raise CandidateError('CANDIDATE_GEOMETRY_LIMIT')
         geometry = {key: deepcopy(feature['geometry'][key]) for key in ('type', 'coordinates')}
         digest = hashlib.sha256(json.dumps(geometry, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-        records.append({'type': 'Feature', 'id': f'{digest[:24]}-{index}', 'geometry': geometry})
+        records.append({'type': 'Feature', 'id': f'{digest[:24]}-{index}', 'geometry': geometry, 'properties': None})
     return {
         'schema_version': 'gistda-candidate/1', 'source_id': 'gistda',
         'product_id': 'flood_1day_ongkharak', 'product_window': '1day', 'area_id': AREA_ID,

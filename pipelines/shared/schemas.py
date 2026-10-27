@@ -44,4 +44,7 @@ def validate_record(kind, record):
     if kind in ['AgencyWarning','WarningFeed']:
         from pipelines.tmd.data import check_warning,check_feed
         (check_warning if kind=='AgencyWarning' else check_feed)(record)
+    if kind == 'GistdaFloodFeed':
+        from pipelines.gistda.data import check_feed
+        check_feed(record)
     return record

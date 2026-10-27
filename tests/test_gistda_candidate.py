@@ -60,7 +60,7 @@ def test_nonempty_candidate_retains_geometry_without_guessing_units_time_or_priv
     clean = result['records'][0]
     assert clean['geometry']['coordinates'] == row['geometry']['coordinates']
     assert set(clean['geometry']) == {'type', 'coordinates'}
-    assert not {'properties', 'f_area', '_createdAt'} & set(clean)
+    assert clean['properties'] is None and not {'f_area', '_createdAt'} & set(clean)
     assert KEY not in json.dumps(result) and '123456' not in json.dumps(result)
     assert 'geometry' not in json.dumps(candidate.receipt(result))
 

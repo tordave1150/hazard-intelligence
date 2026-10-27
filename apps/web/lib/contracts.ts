@@ -1,7 +1,7 @@
 import Ajv from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import schema from '../../../packages/contracts/schema.json';
-import type {DamObservation,Forecast,WarningFeed} from './types';
+import type {DamObservation,Forecast,WarningFeed,FloodFeed} from './types';
 import {allowedWarningDocument} from './warnings';
 import {areaById} from './geography';
 import {damById,damLicenseUrl,damMetadataUrl,damSourceUrl} from './dams';
@@ -12,6 +12,25 @@ ajv.addSchema(schema);
 const validate = ajv.compile<Forecast>({$ref:`${schema.$id}#/$defs/Forecast`});
 const validateDam=ajv.compile<DamObservation>({$ref:`${schema.$id}#/$defs/DamObservation`});
 const validateWarnings=ajv.compile<WarningFeed>({$ref:`${schema.$id}#/$defs/WarningFeed`});
+const validateFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaFloodFeed`});
+export function validatedFloodFeed(value:unknown):FloodFeed{
+  if(!validateFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
+  const feed=value as FloodFeed;
+  if(feed.record_count!==feed.records.length||new Set(feed.records.map(r=>r.id)).size!==feed.records.length)throw new Error('Incomplete GISTDA query');
+  if(Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at)||Date.parse(feed.response_at)>Date.parse(feed.fetched_at)+300000)throw new Error('Invalid GISTDA time');
+  if(new TextEncoder().encode(JSON.stringify(feed)).length>2*1024*1024)throw new Error('GISTDA response too large');
+  const bounds=areaById.get('TH')!.bbox;let positions=0,rings=0;
+  for(const row of feed.records){
+    const polygons=row.geometry.type==='Polygon'?[row.geometry.coordinates]:row.geometry.coordinates;
+    for(const polygon of polygons)for(const ring of polygon){
+      positions+=ring.length;rings++;
+      if(ring[0].length!==ring.at(-1)!.length||ring[0].some((v,i)=>v!==ring.at(-1)![i]))throw new Error('Unclosed GISTDA ring');
+      if(ring.some(p=>p.length!==ring[0].length||p.some(v=>!Number.isFinite(v))||p[0]<bounds[0]||p[0]>bounds[2]||p[1]<bounds[1]||p[1]>bounds[3]))throw new Error('Invalid GISTDA position');
+    }
+  }
+  if(positions>20000||rings>256*100)throw new Error('GISTDA geometry limit exceeded');
+  return feed;
+}
 export function validatedWarningFeed(value:unknown):WarningFeed{
   if(!validateWarnings(value))throw new Error('Stored CAP feed does not match contract');
   const feed=value as WarningFeed;

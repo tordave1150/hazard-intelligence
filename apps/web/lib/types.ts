@@ -43,3 +43,11 @@ export type WarningSnapshot={feed:Omit<WarningFeed,'records'>|null;records:Agenc
   freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null};
 export type WarningState='CURRENT'|'UPCOMING'|'EXPIRED'|'SUPERSEDED'|'CANCELLED'|'TIME_UNKNOWN';
 export type WarningDisplay=AgencyWarning & {display_state:WarningState;archived:boolean};
+export type FloodFeature={type:'Feature';id:string;geometry:import('geojson').Polygon|import('geojson').MultiPolygon;properties:null};
+export type FloodFeed={schema_version:'2.0';source_id:'gistda';product_id:'flood_1day_ongkharak';data_state:'satellite_observation';
+  snapshot_id:'latest';product_window:'1day';area_id:'TH-D-2604';query:{ap_idn:'2604';limit:100;offset:0};
+  source_url:string;attribution:'GISTDA Disaster Platform';response_at:string;fetched_at:string;ingested_at:string;
+  observed_at:null;observation_time_status:'NOT_SUPPLIED';complete_provider_query:true;record_count:number;
+  records:FloodFeature[];coverage:string;area_metrics:'NOT_USED_UNITS_UNVERIFIED';interpretation:string};
+export type FloodSnapshot={feed:Omit<FloodFeed,'records'>|null;records:FloodFeature[];health:Record<string,unknown>|null;
+  freshness:Freshness;query_freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null};

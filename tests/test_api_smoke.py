@@ -30,10 +30,33 @@ def test_bad_queries_rejected(route):
     assert response.status_code==400 and response.headers['Cache-Control']=='no-store'
 
 
-@pytest.mark.parametrize('route',['/api/gauges','/api/flood-products'])
+@pytest.mark.parametrize('route',['/api/gauges'])
 def test_planned_sources_are_never_normal(route):
     value=requests.get(BASE+route,timeout=15).json()
     assert value['status']=='UNAVAILABLE' and value['records']==[]
+
+
+def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknown():
+    response=requests.get(BASE+'/api/flood-products',timeout=20);assert response.status_code==200
+    value=response.json()
+    assert value['source_id']=='gistda' and value['integration_status']=='pilot'
+    assert value['scope_area_id']=='TH-D-2604' and value['in_scope'] is True
+    if value['feed']:
+        assert value['status'] in ['AVAILABLE','EMPTY_RESULT'] and value['freshness']=='UNKNOWN'
+        assert value['feed']['observed_at'] is None and value['feed']['complete_provider_query'] is True
+        assert value['feed']['record_count']==len(value['records'])<=100
+        assert value['feed']['product_window']=='1day' and value['feed']['query']['ap_idn']=='2604'
+        assert all(row['properties'] is None for row in value['records'])
+    else:assert value['status']=='UNAVAILABLE' and value['records']==[]
+
+
+def test_gistda_rejects_other_windows_and_never_turns_outside_scope_into_no_flood():
+    value=requests.get(BASE+'/api/flood-products?area_id=TH-D-5709',timeout=20).json()
+    assert value['in_scope'] is False and value['records']==[]
+    assert value['status']==('OUT_OF_SCOPE' if value['feed'] else 'UNAVAILABLE')
+    assert requests.get(BASE+'/api/flood-products?window=30days',timeout=15).status_code==400
+    assert requests.get(BASE+'/api/flood-products?area_id=TH-P-99',timeout=15).status_code==404
+    assert requests.post(BASE+'/api/flood-products',timeout=15).status_code==405
 
 
 def test_dam_endpoint_has_independent_report_semantics():

@@ -1,0 +1,55 @@
+name: Latest GISTDA Ongkharak flood product
+on:
+  push:
+    branches: [main]
+    paths: ['.github/gistda-publication-request.json']
+  schedule:
+    - cron: '27 2 * * *' # Daily target 09:27 ICT; actual query time is authoritative.
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gistda-ongkharak-publication
+  cancel-in-progress: false
+jobs:
+  ingest:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - run: pip install -r pipelines/requirements.txt
+      - name: Validate fixed-scope reviewed request
+        if: github.event_name == 'push'
+        run: python -c "from pipelines.gistda.run import check_request; check_request()"
+      - name: Check ingestion configuration
+        env:
+          GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: |
+          if [ -z "$GISTDA_API_KEY" ] || [ -z "$MONGODB_URI" ] || [ -z "$MONGODB_DB_NAME" ]; then
+            echo "::error::Existing GISTDA and MongoDB repository secrets are required."
+            exit 1
+          fi
+      - name: Verify active snapshots before publication
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m scripts.mongo_admin verify
+      - name: Publish a complete bounded one-day district query
+        env:
+          GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m pipelines.gistda.run --publish
+      - name: Verify unique indexes and A/B retention after publication
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m scripts.mongo_admin verify

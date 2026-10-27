@@ -16,6 +16,7 @@ from pymongo.errors import ConnectionFailure,PyMongoError
 from pipelines.shared.publication import Publisher
 from pipelines.rid.publication import DamPublisher
 from pipelines.tmd.publication import WarningPublisher
+from pipelines.gistda.publication import FloodPublisher
 from scripts.mongo_admin import verify_database
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -87,26 +88,33 @@ def main():
         weather=json.loads((ROOT/'apps/web/data/local/weather.json').read_text(encoding='utf-8'))['records']
         dams=json.loads((ROOT/'apps/web/data/local/dams.json').read_text(encoding='utf-8'))['records']
         feed=json.loads((ROOT/'apps/web/data/local/warnings.json').read_text(encoding='utf-8'))['feed']
+        flood=json.loads((ROOT/'tests/fixtures/gistda/synthetic-feed.json').read_text(encoding='utf-8'))
         assert len(weather)==1005 and len(dams)==35 and feed['records']
         specs=[(Publisher(db),weather,[r['location_id'] for r in weather]),
-               (DamPublisher(db),dams,[r['dam_id'] for r in dams]),(WarningPublisher(db),[feed],['latest'])]
+               (DamPublisher(db),dams,[r['dam_id'] for r in dams]),(WarningPublisher(db),[feed],['latest']),
+               (FloodPublisher(db),[flood],['latest'])]
         for publisher,rows,ids in specs:publisher.publish(rows,ids)
         original={row['_id']:row['active_run_id'] for row in db.snapshot_control.find()}
         newer=deepcopy(weather);newer[0]['ingested_at']=datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         changed_dams=deepcopy(dams);changed_dams[0]['ingested_at']=newer[0]['ingested_at']
         empty=deepcopy(feed);empty.update(records=[],feed_item_count=0,ignored_item_count=0)
         specs[0][0].publish(newer,specs[0][2]);specs[1][0].publish(changed_dams,specs[1][2]);specs[2][0].publish([empty],['latest'])
+        empty_flood=deepcopy(flood);empty_flood.update(records=[],record_count=0)
+        specs[3][0].publish([empty_flood],['latest'])
         web=start_web()
         assert read('/api/overview')['records'][0]['ingested_at']==newer[0]['ingested_at']
         assert len(read('/api/dams')['records'])==35
         empty_response=read('/api/warnings');assert empty_response['feed'] and empty_response['records']==[]
+        empty_flood_response=read('/api/flood-products')
+        assert empty_flood_response['feed'] and empty_flood_response['records']==[] and empty_flood_response['status']=='EMPTY_RESULT'
         record('real_engine_publication_and_empty_feed',engine=client.server_info()['version'],weather=1005,dams=35,cap_messages=0)
-        for source in ['open_meteo','rid','tmd']:cli('rollback','--source',source)
+        for source in ['open_meteo','rid','tmd','gistda']:cli('rollback','--source',source)
         stop(web);web=start_web()
         assert read('/api/overview')['records']==weather and read('/api/dams')['records']==dams
         assert read('/api/warnings')['records']==feed['records']
+        assert read('/api/flood-products')['records']==flood['records']
         assert all(row['active_run_id']==original[row['_id']] for row in db.snapshot_control.find())
-        record('cli_rollback_restores_all_three_original_generations',cap_messages=len(feed['records']))
+        record('cli_rollback_restores_all_four_original_generations',cap_messages=len(feed['records']),gistda_features=len(flood['records']))
         publisher,_,ids=specs[0];before=db.snapshot_control.find_one({'_id':'open_meteo:daily_forecast'})
         insert=publisher.records.insert_many
         def partial(rows,**kwargs):
@@ -129,12 +137,13 @@ def main():
         assert db.etl_locks.count_documents({})==0
         record('hard_exit_lock_blocks_writer_and_exact_token_recovers_after_exit')
         stop(mongo);mongo=None;stop(web);web=start_web()
-        for route in ['/api/overview','/api/dams','/api/warnings']:
+        for route in ['/api/overview','/api/dams','/api/warnings','/api/flood-products']:
             value=read(route);assert value['records']==[] and value['freshness']=='UNAVAILABLE' and value['storage']=='mongo' and value['error']
         record('real_database_outage_returns_unavailable_without_local_fallback')
         mongo=start_mongo();stop(web);web=start_web()
         assert read('/api/overview')['records']==weather and read('/api/dams')['records']==dams
         assert read('/api/warnings')['records']==feed['records']
+        assert read('/api/flood-products')['records']==flood['records']
         report=verify_database(db);assert all(r['status']=='VERIFIED' for r in report)
         record('database_restart_recovers_previous_data_and_indexes',verification=report)
         outcome={'status':'PASS','time':datetime.now(timezone.utc).isoformat(),'database':database,'events':events,

@@ -143,3 +143,13 @@ Provide an official checksum-verified MongoDB executable and the three real igno
 ```
 
 The 26 October run used MongoDB 8.0.34 from MongoDB's official Windows archive, SHA-256 `6b021a0864494e4decf278b36477a29eb36072432773e4e62c2f42c302630db0`. It passed actual publication, CLI rollback for weather/RID/CAP, a synthetic empty CAP feed, interrupted candidate retention, rejected rollback into an overwritten slot, hard-process-exit orphan-lock recovery, production-mode HTTP outage responses without local fallback, and recovery of exact data/indexes after a database restart. Evidence is saved in ignored `artifacts/mongo-qualification-report.json`. This qualifies the local real-engine path; deployed Vercel rollback and Atlas infrastructure failover remain separate release checks. Test processes are stopped in a finally block.
+
+## GISTDA Ongkharak pilot snapshot
+
+The connected product is fixed to Features 1day / ap_idn=2604. It makes one bounded limit=100 query and publishes only when provider counts certify a complete response. It does not page, substitute another window or claim national satellite coverage. Acquisition remains null; area/depth/exposure metrics and raw provider properties/links are excluded. A successful empty response is connected data, never all-clear.
+
+Publish with `python -m pipelines.gistda.run --publish` using the existing server-side GISTDA/MongoDB secrets. The independent `gistda.yml` workflow targets 09:27 ICT daily and also accepts manual main runs or an explicit `.github/gistda-publication-request.json` change. The request contains exactly request_id, source_id=gistda and operation=publish_ongkharak_1day. It cannot choose an endpoint or credential.
+
+`python -m scripts.mongo_admin verify` includes satellite_flood_latest, bounded to two 2-MiB envelopes with unique slot/snapshot identities. `rollback --source gistda` requires an intact previous generation; stopped-worker unlock uses the same exact-token requirements as other products. Never run production rollback/outage merely for testing.
+
+The read API is `/api/flood-products?area_id=TH-D-2604`. EMPTY_RESULT, OUT_OF_SCOPE and UNAVAILABLE are separate. Query freshness is independent from UNKNOWN observation age. The layer is enabled by envelope existence, including zero rows. See `gistda-pilot-release-2026-10-27.md` for release evidence and limitations.
