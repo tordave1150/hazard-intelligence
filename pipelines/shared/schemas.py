@@ -47,4 +47,7 @@ def validate_record(kind, record):
     if kind == 'GistdaFloodFeed':
         from pipelines.gistda.data import check_feed
         check_feed(record)
+    if kind == 'GistdaNationalFloodFeed':
+        from pipelines.gistda.data import check_feed
+        check_feed(record, national=True)
     return record

@@ -1,4 +1,4 @@
-name: Latest GISTDA Ongkharak flood product
+name: Latest GISTDA Thailand flood product
 on:
   push:
     branches: [main]
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: gistda-ongkharak-publication
+  group: gistda-thailand-publication
   cancel-in-progress: false
 jobs:
   ingest:
@@ -26,7 +26,7 @@ jobs:
       - run: pip install -r pipelines/requirements.txt
       - name: Validate fixed-scope reviewed request
         if: github.event_name == 'push'
-        run: python -c "from pipelines.gistda.run import check_request; check_request()"
+        run: python -c "from pipelines.gistda.run import check_request; check_request(national=True)"
       - name: Check ingestion configuration
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
@@ -42,12 +42,12 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
-      - name: Publish a complete bounded one-day district query
+      - name: Publish the complete bounded one-day Thailand query
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
-        run: python -m pipelines.gistda.run --publish
+        run: python -m pipelines.gistda.run --publish --national
       - name: Verify unique indexes and A/B retention after publication
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

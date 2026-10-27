@@ -13,14 +13,21 @@ const validate = ajv.compile<Forecast>({$ref:`${schema.$id}#/$defs/Forecast`});
 const validateDam=ajv.compile<DamObservation>({$ref:`${schema.$id}#/$defs/DamObservation`});
 const validateWarnings=ajv.compile<WarningFeed>({$ref:`${schema.$id}#/$defs/WarningFeed`});
 const validateFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaFloodFeed`});
+const validateNationalFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaNationalFloodFeed`});
 export function validatedFloodFeed(value:unknown):FloodFeed{
-  if(!validateFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
+  if(!validateFlood(value)&&!validateNationalFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
   const feed=value as FloodFeed;
+  const national=feed.area_id==='TH';
   if(feed.record_count!==feed.records.length||new Set(feed.records.map(r=>r.id)).size!==feed.records.length)throw new Error('Incomplete GISTDA query');
   if(Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at)||Date.parse(feed.response_at)>Date.parse(feed.fetched_at)+300000)throw new Error('Invalid GISTDA time');
-  if(new TextEncoder().encode(JSON.stringify(feed)).length>2*1024*1024)throw new Error('GISTDA response too large');
+  if(new TextEncoder().encode(JSON.stringify(feed)).length>(national?4:2)*1024*1024)throw new Error('GISTDA response too large');
+  if(national&&(!feed.record_count?feed.page_count!==1:!feed.page_count||feed.page_count>feed.record_count||feed.record_count>feed.page_count*100))throw new Error('Invalid GISTDA page accounting');
   const bounds=areaById.get('TH')!.bbox;let positions=0,rings=0;
   for(const row of feed.records){
+    if(national){
+      const [province,district]=row.area_ids??[],member=areaById.get(district);
+      if(!member||member.level!=='district'||member.province_id!==province)throw new Error('Invalid GISTDA administrative hierarchy');
+    }
     let featureRings=0;
     const polygons=row.geometry.type==='Polygon'?[row.geometry.coordinates]:row.geometry.coordinates;
     for(const polygon of polygons)for(const ring of polygon){
@@ -30,7 +37,7 @@ export function validatedFloodFeed(value:unknown):FloodFeed{
     }
     if(featureRings>256)throw new Error('GISTDA feature ring limit exceeded');
   }
-  if(positions>20000||rings>256*100)throw new Error('GISTDA geometry limit exceeded');
+  if(positions>(national?100000:20000)||rings>256*(national?1000:100))throw new Error('GISTDA geometry limit exceeded');
   return feed;
 }
 export function validatedWarningFeed(value:unknown):WarningFeed{

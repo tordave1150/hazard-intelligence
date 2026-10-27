@@ -97,5 +97,21 @@ defs = {
         'completeness':{'type':['number','null'],'minimum':0,'maximum':1}, 'integration_status':string,
         'error_summary':{'type':['string','null']}})
 }
+from copy import deepcopy
+national_flood = deepcopy(defs['GistdaFloodFeed'])
+national_props = national_flood['properties']
+national_props.update(product_id={'const':'flood_1day_thailand'}, area_id={'const':'TH'},
+    query=obj({'limit':{'const':100},'offset':{'const':0}}),
+    page_count={'type':'integer','minimum':1,'maximum':10},
+    pagination_consistency={'const':'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN'})
+national_props['record_count']['maximum'] = national_props['records']['maxItems'] = 1000
+national_feature = national_props['records']['items']
+national_feature['properties']['id']['pattern'] = '^[a-f0-9]{24}-[0-9]{1,3}$'
+national_feature['properties']['area_ids'] = {'type':'array','minItems':2,'maxItems':2,
+    'prefixItems':[{'type':'string','pattern':'^TH-P-[0-9]{2}$'},{'type':'string','pattern':'^TH-D-[0-9]{4}$'}], 'items':False}
+national_feature['required'].append('area_ids')
+national_flood['required'] += ['page_count','pagination_consistency']
+defs['GistdaNationalFloodFeed'] = national_flood
+
 destination = Path(__file__).resolve().parents[1] / 'packages/contracts/schema.json'
 destination.write_text(json.dumps({'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'https://hazard.local/contracts/2.0','$defs':defs},indent=2,ensure_ascii=False)+'\n',encoding='utf-8')

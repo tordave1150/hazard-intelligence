@@ -1,5 +1,8 @@
 # ขั้นตอนเตรียม HII และ GISTDA
 
+GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older pilot instructions below are historical.
+
+
 **อัปเดต 27 ต.ค. 2569:** GISTDA เชื่อม production แล้วในขอบเขตนำร่อง **องครักษ์ / 1day** ใช้ secrets เดิมและ workflow **Latest GISTDA Ongkharak flood product** ที่ `gistda.yml` ไม่ต้องสมัครหรือเปลี่ยน key ใหม่ การติดต่อหน่วยงานเป็นทางเลือก ดู [ผลเผยแพร่และวิธีตรวจ](gistda-pilot-release-2026-10-27.md) ผลว่างที่สำเร็จเปิด checkbox ได้และแสดงว่าไม่พบรายการจากคำขอนี้ โดยไม่สรุปว่าไม่มีน้ำท่วม เวลาถ่ายภาพยังเป็นไม่ระบุ ข้อความการตั้งค่าด้านล่างเก็บเป็นประวัติขั้นตอนก่อนเชื่อมต่อ
 
 ตรวจหน้าเว็บทางการวันที่ 26 ตุลาคม 2569 โครงการนี้ใช้ส่วนตัว เผยแพร่ฟรี และไม่เชิงพาณิชย์ ตามที่ผู้ใช้ยืนยัน ผู้ใช้มี GISTDA key และยืนยันว่าเปลี่ยน key/อัปเดต GitHub Secret หลังภาพล่าสุดแล้ว ยังไม่ได้เผยแพร่ข้อมูล GISTDA หรือ HII เข้า production

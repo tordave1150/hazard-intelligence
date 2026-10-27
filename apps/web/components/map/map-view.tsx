@@ -80,7 +80,7 @@ export default function MapView(props:Props){
             popup.setLngLat(event.lngLat).setText(`TMD CAP · ${p.state} · ${p.headline} · issued ${p.issued_at} · expires ${p.expires_at??'not supplied'}`).addTo(instance);return;}
           const flood=instance.queryRenderedFeatures(event.point,{layers:['gistda-flood-fill']})[0];
           if(flood?.properties){instance.getCanvas().style.cursor='pointer';popup.setLngLat(event.lngLat)
-            .setText(`GISTDA · ${flood.properties.label} · 1day product · Ongkharak pilot · acquisition time not supplied`).addTo(instance);return;}
+            .setText(`GISTDA · ${flood.properties.label} · 1day provider product · acquisition time not supplied`).addTo(instance);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           instance.getCanvas().style.cursor=feature?'pointer':'';
           if(feature?.properties){const p=feature.properties;
@@ -220,7 +220,7 @@ export default function MapView(props:Props){
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
       getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
       onClick:({object})=>{if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
-    })],getTooltip:({object})=>object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n1day product · Ongkharak pilot\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
+    })],getTooltip:({object})=>object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n1day provider product\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric)} · forecast`}\nOpen-Meteo · ${props.date} · ICT 00:00–24:00\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
   },[ready,geometry,warningGeometry,floodGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>

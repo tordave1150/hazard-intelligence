@@ -16,7 +16,7 @@ from pymongo.errors import ConnectionFailure,PyMongoError
 from pipelines.shared.publication import Publisher
 from pipelines.rid.publication import DamPublisher
 from pipelines.tmd.publication import WarningPublisher
-from pipelines.gistda.publication import FloodPublisher
+from pipelines.gistda.publication import NationalFloodPublisher
 from scripts.mongo_admin import verify_database
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -88,11 +88,11 @@ def main():
         weather=json.loads((ROOT/'apps/web/data/local/weather.json').read_text(encoding='utf-8'))['records']
         dams=json.loads((ROOT/'apps/web/data/local/dams.json').read_text(encoding='utf-8'))['records']
         feed=json.loads((ROOT/'apps/web/data/local/warnings.json').read_text(encoding='utf-8'))['feed']
-        flood=json.loads((ROOT/'tests/fixtures/gistda/synthetic-feed.json').read_text(encoding='utf-8'))
+        flood=json.loads((ROOT/'tests/fixtures/gistda/synthetic-national-feed.json').read_text(encoding='utf-8'))
         assert len(weather)==1005 and len(dams)==35 and feed['records']
         specs=[(Publisher(db),weather,[r['location_id'] for r in weather]),
                (DamPublisher(db),dams,[r['dam_id'] for r in dams]),(WarningPublisher(db),[feed],['latest']),
-               (FloodPublisher(db),[flood],['latest'])]
+               (NationalFloodPublisher(db),[flood],['latest'])]
         for publisher,rows,ids in specs:publisher.publish(rows,ids)
         original={row['_id']:row['active_run_id'] for row in db.snapshot_control.find()}
         newer=deepcopy(weather);newer[0]['ingested_at']=datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
@@ -144,7 +144,9 @@ def main():
         assert read('/api/overview')['records']==weather and read('/api/dams')['records']==dams
         assert read('/api/warnings')['records']==feed['records']
         assert read('/api/flood-products')['records']==flood['records']
-        report=verify_database(db);assert all(r['status']=='VERIFIED' for r in report)
+        report=verify_database(db)
+        assert all(r['status']=='VERIFIED' for r in report if r['product_id']!='flood_1day_ongkharak')
+        assert next(r for r in report if r['product_id']=='flood_1day_ongkharak')['status']=='UNAVAILABLE'
         record('database_restart_recovers_previous_data_and_indexes',verification=report)
         outcome={'status':'PASS','time':datetime.now(timezone.utc).isoformat(),'database':database,'events':events,
                  'scope':'Disposable local MongoDB and production-mode Next.js; no Atlas operation or provider request.'}

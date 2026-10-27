@@ -3,7 +3,7 @@ import {freshness,metricColor,metricValue,contains,chooseForecastDate} from '../
 import {damFreshness} from '../lib/dams';
 import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnmappedCodes} from '../lib/warnings';
 import {validatedForecast,validatedWarningFeed,validatedFloodFeed} from '../lib/contracts';
-import {floodInArea,floodQueryFreshness,floodColor} from '../lib/floods';
+import {floodInArea,floodQueryFreshness,floodColor,floodRecordsInArea,floodResponse} from '../lib/floods';
 import floodFixture from '../../../tests/fixtures/gistda/synthetic-feed.json';
 import {areas} from '../lib/geography';
 import type {AgencyWarning,DamObservation,Forecast} from '../lib/types';
@@ -50,8 +50,23 @@ describe('GISTDA district query versus observation semantics',()=>{
     expect(feed.record_count).toBe(0);expect(feed.complete_provider_query).toBe(true);
   });
   it('restricts scope to Ongkharak and its administrative parents, not neighboring districts',()=>{
-    for(const id of ['TH','TH-R-CENTRAL','TH-P-26','TH-D-2604'])expect(floodInArea(areas.find(a=>a.id===id)!)).toBe(true);
-    for(const id of ['TH-P-10','TH-D-2601','TH-D-5709'])expect(floodInArea(areas.find(a=>a.id===id)!)).toBe(false);
+    const feed=validatedFloodFeed(structuredClone(floodFixture));
+    for(const id of ['TH','TH-R-CENTRAL','TH-P-26','TH-D-2604'])expect(floodInArea(areas.find(a=>a.id===id)!,feed)).toBe(true);
+    for(const id of ['TH-P-10','TH-D-2601','TH-D-5709'])expect(floodInArea(areas.find(a=>a.id===id)!,feed)).toBe(false);
+  });
+  it('filters national results by supplied administrative codes beyond the pilot without claiming clipping',()=>{
+    const feed=validatedFloodFeed({...structuredClone(floodFixture),product_id:'flood_1day_thailand',area_id:'TH',
+      query:{limit:100,offset:0},page_count:1,pagination_consistency:'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN',
+      records:[{...structuredClone(floodFixture.records[0]),area_ids:['TH-P-10','TH-D-1001']}]});
+    const snapshot={feed,records:feed.records,health:null,freshness:'UNKNOWN' as const,query_freshness:'FRESH' as const,storage:'local' as const,error:null};
+    for(const id of ['TH','TH-P-10','TH-D-1001','TH-R-CENTRAL'])expect(floodRecordsInArea(snapshot,areas.find(a=>a.id===id)!)).toHaveLength(1);
+    for(const id of ['TH-P-26','TH-D-2604','TH-D-5709']){
+      const area=areas.find(a=>a.id===id)!;
+      expect(floodInArea(area,feed)).toBe(true);
+      expect(floodResponse(snapshot,area).status).toBe('EMPTY_RESULT');
+      expect(floodRecordsInArea(snapshot,area)).toHaveLength(0);
+    }
+    expect(()=>validatedFloodFeed({...feed,records:[{...feed.records[0],area_ids:['TH-P-26','TH-D-1001']}]})).toThrow();
   });
   it('validates safe geometry and rejects invented observation dates, alternate products and partial results',()=>{
     const feed=validatedFloodFeed(structuredClone(floodFixture));

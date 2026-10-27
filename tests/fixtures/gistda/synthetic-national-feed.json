@@ -1,0 +1,61 @@
+{
+  "schema_version": "2.0",
+  "source_id": "gistda",
+  "product_id": "flood_1day_thailand",
+  "product_window": "1day",
+  "area_id": "TH",
+  "query": {
+    "limit": 100,
+    "offset": 0
+  },
+  "source_url": "https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day",
+  "attribution": "GISTDA Disaster Platform",
+  "response_at": "2026-10-27T12:00:00Z",
+  "fetched_at": "2026-10-27T12:00:01Z",
+  "observed_at": null,
+  "observation_time_status": "NOT_SUPPLIED",
+  "complete_provider_query": true,
+  "record_count": 1,
+  "records": [
+    {
+      "type": "Feature",
+      "id": "611935ffb175afe8fdab9665-0",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              101.01,
+              14.09
+            ],
+            [
+              101.015,
+              14.09
+            ],
+            [
+              101.015,
+              14.095
+            ],
+            [
+              101.01,
+              14.09
+            ]
+          ]
+        ]
+      },
+      "properties": null,
+      "area_ids": [
+        "TH-P-26",
+        "TH-D-2604"
+      ]
+    }
+  ],
+  "coverage": "SYNTHETIC national QA fixture; no actual satellite coverage",
+  "area_metrics": "NOT_USED_UNITS_UNVERIFIED",
+  "interpretation": "Empty is no returned feature; never an all-clear, water depth or current flood severity",
+  "snapshot_id": "latest",
+  "data_state": "satellite_observation",
+  "ingested_at": "2026-10-27T12:00:02Z",
+  "page_count": 1,
+  "pagination_consistency": "COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN"
+}

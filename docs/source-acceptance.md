@@ -1,5 +1,8 @@
 # Source acceptance investigation — 2026-10-25
 
+GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older pilot instructions below are historical.
+
+
 These are actual discovery/probe results. They do not mark a source integrated or authorize redistribution. No borrowed dashboard keys were used.
 
 ## RID — initial daily-storage acceptance completed 2026-10-26

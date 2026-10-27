@@ -1,6 +1,8 @@
 # Execution status — Roadmap V2
 
-Updated: 2026-10-27, Asia/Bangkok. This is an execution record, not a claim that every roadmap phase is production-complete.
+Updated: 2026-10-28, Asia/Bangkok. This is an execution record, not a claim that every roadmap phase is production-complete.
+
+Current development: [national GISTDA query expansion](gistda-national-query-release-2026-10-28.md) removes the application-only Ongkharak restriction. Unfiltered 1day inspection 40547286159 returned HTTP 200 with zero total features at 00:05 ICT. Local validation: 210 Python tests, 20 frontend tests, TypeScript and build passed. Reader-first rollout and connected publication verification are in progress. The prior pilot record below is dated history.
 
 Latest connected release: **GISTDA 1day Ongkharak is live through Atlas → read API → enabled map layer**, including a successful empty query. Run 40542746005 on 07eb9f8 published zero returned features at 23:38 ICT, preserving unknown acquisition and pilot scope; storage/index verification passed. TMD refresh 40539233290 restored a FRESH feed and orange current-message boundaries; delayed feeds now keep gray references. All 191 offline Python tests, 19 frontend tests and 19 production HTTP checks passed, plus build/CI and desktop/mobile verification. [Release evidence](gistda-pilot-release-2026-10-27.md). The following candidate-only paragraphs are dated development history, superseded for this now-connected pilot; broader platform/HII/basin gates remain.
 
