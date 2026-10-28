@@ -1,6 +1,6 @@
-# Today, clock themes and bounded forecast tooling — local release candidate
+# Today, clock themes and bounded forecast tooling — release record
 
-Approved scope: [current execution specification](execution-spec-current.md). This revision is implemented in the workspace; it has not been committed, deployed or published to Atlas. The deployed national GISTDA release remains a separate recorded baseline. Earlier uncommitted GISTDA wording/retention/capacity work is preserved.
+Approved scope: [current execution specification](execution-spec-current.md). The user explicitly authorized uploading the 49 changed files to `tordave1150/hazard-intelligence` and deploying `hazard-intelligence-lime.vercel.app`. Commit `db0b1fd82826c7162f8e96606e4ca988c55119f1` is now deployed to production. National hourly publication has not been run as part of this release; its reader handles the pending product explicitly. The earlier national GISTDA release remains the source-data baseline.
 
 ## Product behavior
 
@@ -56,7 +56,7 @@ The user subsequently supplied the real ZIP. [Offline inspection](shapefile-insp
 - Browser/API: Today default, Today daily/hourly and future daily-only behavior were inspected. Bangkok/3D persisted across date selection; Ongkharak/3D and selected GISTDA overlay persisted through Dawn/Day/Dusk/Night with a temporary local injected clock. A pending-style race found during hot reload was fixed and regression-tested; the fresh browser session then reported no warning/error logs.
 - Mobile 390×844 browser: document client/scroll widths both **375 px**, no horizontal page overflow. Hourly opens its panel first, the drawer closes, and Escape restores source-dialog focus to its opener. This is responsive browser verification, not a physical-device/GPU benchmark.
 - Synthetic national API check: **1,005 points**, one interval per point, 24 shared available windows, **794,824 bytes**. District filtering returned one point; invalid time/area returned 400/404; hourly source status reflected the snapshot. Only local synthetic data was involved.
-- Temporary hourly/flood fixtures and the local theme-control route/component were hash-checked and removed, the owned server/tab was stopped/closed and viewport overrides reset. Existing local source snapshots and original external documents/ZIP were not changed. No new Atlas data, remote commit, deployment or provider message was created.
+- Temporary hourly/flood fixtures and the local theme-control route/component were hash-checked and removed, the owned server/tab was stopped/closed and viewport overrides reset. Existing local source snapshots and original external documents/ZIP were not changed. At completion of this local QA stage, no new Atlas data, remote commit, deployment or provider message had been created. The later connected deployment is recorded below.
 - Local proof: `artifacts/today-theme-night-review.jpg`, `theme-{dawn,day,dusk,night}-qa.jpg`, `today-hourly-mobile-qa.jpg`, `current-execution-local-api-check.json`, and `hourly-provider-check-2026-10-28.json`. Temporary clock buttons exist only in QA captures, not in the delivered website.
 
 
@@ -68,3 +68,11 @@ The user subsequently supplied the real ZIP. [Offline inspection](shapefile-insp
 - Hourly: `pipelines/open_meteo/{hourly,budget,client,run}.py`, `packages/contracts/schema.json`, `scripts/mongo_admin.py`, `.github/workflows/hourly.yml`, and web hourly contract/reader/API/panel helpers.
 - Diagnostics: `scripts/gistda_cadence.py`, existing GISTDA workflow, `scripts/inspect_flood_shapefile.py` and its optional dependencies; real-SHP findings are documented separately.
 - Regression: `tests/test_hourly.py`, `tests/test_offline_tools.py`, `apps/web/tests/dashboard.test.ts`, with prior GISTDA regression edits preserved.
+
+## Connected rollout — 28 October 2026, approximately 23:24 ICT
+
+- Source commit: [`db0b1fd`](https://github.com/tordave1150/hazard-intelligence/commit/db0b1fd82826c7162f8e96606e4ca988c55119f1). Branch CI [40725143151](https://github.com/tordave1150/hazard-intelligence/actions/runs/40725143151) passed both Python and web jobs, including TypeScript, frontend tests and production build, before main was fast-forwarded. The GitHub connector lacked write permission; the existing authenticated Git connection completed the authorized push.
+- Vercel production deployment `dpl_8Mt6MzwzeMHqCxUdaejeF4t3YC5N` is READY, targets this exact source commit and owns the existing public aliases, including [the live website](https://hazard-intelligence-lime.vercel.app/). Build duration was approximately 35 seconds; aliasError is null. Previous production deployment `dpl_E9CsTW3wwvn1Ygu1T1nLTufVRNnA` remains the recorded rollback baseline.
+- Real-clock browser check: the live URL displays **NIGHT theme · Bangkok clock**, with dark interface and dark basemap. Today's daily forecast remains accessible (103.6 mm/24h national maximum from the existing snapshot). Selecting 29 October retains Night and 3D. The browser reported no warning/error console entries during this check. Proof: ignored `artifacts/today-night-production-2026-10-28.jpg`.
+- All **19 production HTTP checks passed** in 25.77 seconds. Four additional hourly endpoint checks passed: normal read 200, invalid parameter 400, unknown area 404 and POST 405. The reader reports Mongo storage, no read error, zero records and zero available intervals. The live hourly panel explicitly says no applicable hourly forecast for today; no national hourly publication is claimed. Receipts: ignored `artifacts/today-themes-production-http.xml` and `today-night-production-hourly-check.json`.
+- Vercel runtime-log access returned 403, so an infrastructure error-log scan could not be completed. HTTP/browser verification passed; this permission failure is not evidence of zero runtime errors. No protection, permissions or credentials were changed. No synthetic data or ZIP-derived geometry was published.
