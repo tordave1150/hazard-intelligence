@@ -94,10 +94,10 @@ class Publisher:
             self.control.update_one({'_id': key}, {'$set': {**previous, 'previous': old, 'published_at': utc_now()}, '$inc': {'revision': 1}})
 
 
-def export_local(path, records, expected_ids, status):
-    check_batch(records, expected_ids)
+def export_local(path, records, expected_ids, status, *, kind='Forecast', check=check_batch):
+    check(records, expected_ids)
     for record in records:
-        validate_record('Forecast', record)
+        validate_record(kind, record)
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temp = destination.with_suffix('.tmp')

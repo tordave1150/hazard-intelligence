@@ -3,7 +3,7 @@ import {freshness,metricColor,metricValue,contains,chooseForecastDate} from '../
 import {damFreshness} from '../lib/dams';
 import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnmappedCodes} from '../lib/warnings';
 import {validatedForecast,validatedWarningFeed,validatedFloodFeed} from '../lib/contracts';
-import {floodInArea,floodQueryFreshness,floodColor,floodRecordsInArea,floodResponse} from '../lib/floods';
+import {floodInArea,floodQueryFreshness,floodColor,floodRecordsInArea,floodResponse,floodRefreshFailure} from '../lib/floods';
 import floodFixture from '../../../tests/fixtures/gistda/synthetic-feed.json';
 import {areas} from '../lib/geography';
 import type {AgencyWarning,DamObservation,Forecast} from '../lib/types';
@@ -43,6 +43,16 @@ describe('truthful map semantics',()=>{
 
 describe('GISTDA district query versus observation semantics',()=>{
   const now=Date.parse('2026-10-27T13:00:00Z');
+  it('discloses capacity and incomplete refresh failures without echoing private error text',()=>{
+    expect(floodRefreshFailure({status:'FAILED',error_summary:'NATIONAL_FEATURE_BUDGET_EXCEEDED'})).toContain('supported number');
+    expect(floodRefreshFailure({status:'FAILED',error_summary:'RESPONSE_TOO_LARGE'})).toContain('map data size');
+    expect(floodRefreshFailure({status:'FAILED',error_summary:'CANDIDATE_GEOMETRY_LIMIT'})).toContain('map data size');
+    expect(floodRefreshFailure({status:'FAILED',error_summary:'DEADLINE_EXCEEDED'})).toContain('time limit');
+    expect(floodRefreshFailure({status:'FAILED',error_summary:'PROVIDER_COUNT_CHANGED_DURING_PAGINATION'})).toContain('complete, consistent');
+    expect(floodRefreshFailure({status:'FAILED',error_summary:'private credential https://example.invalid/?key=secret'})).toBe('Latest GISTDA refresh failed.');
+    expect(floodRefreshFailure({status:'SUCCESS',error_summary:'RESPONSE_TOO_LARGE'})).toBeNull();
+    expect(floodRefreshFailure(null)).toBeNull();
+  });
   it('keeps a complete empty result available without inventing acquisition or area values',()=>{
     const feed=validatedFloodFeed({...structuredClone(floodFixture),records:[],record_count:0});
     expect(feed.observed_at).toBeNull();expect(feed.area_metrics).toBe('NOT_USED_UNITS_UNVERIFIED');

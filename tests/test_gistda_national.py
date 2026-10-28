@@ -1,6 +1,7 @@
 from copy import deepcopy
 import json
 from pathlib import Path
+import sys
 
 import mongomock
 import pytest
@@ -60,6 +61,48 @@ def test_multiple_pages_include_other_districts_and_advance_by_actual_returned_c
     assert all(row['properties'] is None for row in result['records'])
     assert result['pagination_consistency']=='COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN'
     validate_record('GistdaNationalFloodFeed',normalize(result,NOW))
+
+
+def test_full_supported_capacity_completes_all_ten_pages_without_raw_properties():
+    pages = [page([feature(index) for index in range(start, start + 100)], 1000)
+             for start in range(0, 1000, 100)]
+    result, calls = collect(pages)
+    assert result['record_count'] == 1000 and result['page_count'] == 10
+    assert [call[1]['params']['offset'] for call in calls] == list(range(0, 1000, 100))
+    assert result['observed_at'] is None
+    assert all(record['properties'] is None for record in result['records'])
+    assert KEY not in json.dumps(result) and 'f_area' not in json.dumps(result)
+    validate_record('GistdaNationalFloodFeed', normalize(result, NOW))
+
+
+def test_national_budget_failure_records_reason_and_keeps_last_complete_generation(monkeypatch, capsys):
+    from pipelines.gistda import run
+    client = mongomock.MongoClient()
+    db = client.weather_db
+    candidate, _ = collect([page([feature()])])
+    publisher = NationalFloodPublisher(db)
+    publisher.publish([normalize(candidate, NOW)], ['latest'])
+    control_key = 'gistda:' + national.PRODUCT
+    before = db.snapshot_control.find_one({'_id': control_key})
+    real_collect = national.collect_national_candidate
+
+    def oversized_query(key):
+        return real_collect(key, get=lambda *args, **kwargs: Response(page([], 1001)), now=lambda: NOW)
+
+    monkeypatch.setattr(national, 'collect_national_candidate', oversized_query)
+    monkeypatch.setattr(run, 'MongoClient', lambda *args, **kwargs: client)
+    monkeypatch.setenv('MONGODB_URI', 'mongodb://unused-test-host')
+    monkeypatch.setenv('MONGODB_DB_NAME', 'weather_db')
+    monkeypatch.setenv('GISTDA_API_KEY', KEY)
+    monkeypatch.setattr(sys, 'argv', ['gistda', '--publish', '--national'])
+    with pytest.raises(RuntimeError):
+        run.main()
+    assert db.snapshot_control.find_one({'_id': control_key}) == before
+    assert publisher.read()[0]['record_count'] == 1
+    assert db.satellite_flood_national_latest.count_documents({}) == 1
+    status = db.source_status.find_one({'_id': control_key})
+    assert status['status'] == 'FAILED' and status['error_summary'] == 'NATIONAL_FEATURE_BUDGET_EXCEEDED'
+    assert KEY not in capsys.readouterr().out
 
 
 @pytest.mark.parametrize('pages,reason',[

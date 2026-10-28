@@ -1,3 +1,5 @@
+Current local implementation addendum (28 October 2026): [reconciled execution specification](execution-spec-current.md) and [release candidate](current-execution-release-2026-10-28.md). This updates Today/forecast UX, time themes and bounded tooling; the long-term direction below remains in force. New hourly publication/deployment is still pending.
+
 # Thailand Hazard Intelligence — Unified National-to-Local Roadmap
 
 > **Version:** 2.0  

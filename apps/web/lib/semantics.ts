@@ -20,13 +20,13 @@ export function contains(area: Area, child: Area) {
 }
 
 export const metricLabel = (metric: Metric) => metric === 'rainfall_mm' ? 'Forecast rainfall' : 'Chance of rain';
-export const metricUnit = (metric: Metric) => metric === 'rainfall_mm' ? 'mm / 24h' : '%';
+export const metricUnit = (metric: Metric,period:'daily'|'hourly'='daily') => metric === 'rainfall_mm' ? period==='hourly'?'mm / 1h':'mm / 24h' : '%';
 export function metricValue(record: Forecast | undefined, date: string, metric: Metric) {
   return record?.valid_periods.find(p => p.date === date)?.[metric] ?? null;
 }
-export function metricColor(value: number | null, metric: Metric): [number, number, number, number] {
+export function metricColor(value: number | null, metric: Metric,period:'daily'|'hourly'='daily'): [number, number, number, number] {
   if (value === null || !Number.isFinite(value)) return [148,163,184,85];
-  const breaks = metric === 'rainfall_mm' ? [1,10,25,50] : [20,40,60,80];
+  const breaks = metric === 'rainfall_mm' ? period==='hourly'?[.2,1,5,10]:[1,10,25,50] : [20,40,60,80];
   const colors: [number,number,number,number][] = [[208,237,236,170],[146,211,205,185],[74,172,175,200],[30,123,151,215],[17,79,118,230]];
   return colors[breaks.filter(b=>value>=b).length];
 }

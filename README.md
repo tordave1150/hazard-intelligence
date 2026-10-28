@@ -1,5 +1,7 @@
 # Thailand Hazard Intelligence
 
+Local release candidate (28 October 2026): [Today modes, clock themes, hourly forecast and offline diagnostics](docs/current-execution-release-2026-10-28.md). These changes are not yet deployed; the connected release below is the prior production baseline.
+
 GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](docs/gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older pilot instructions below are historical.
 
 
@@ -7,7 +9,7 @@ A single Thailand map for weather and water situation awareness, built with Next
 
 Project repository: [tordave1150/hazard-intelligence](https://github.com/tordave1150/hazard-intelligence). The legacy `weather_api` repository remains the migration baseline.
 
-The live weather path covers **77 provinces + 928 districts, four forecast periods, 1,005 validated point forecasts**. The RID daily-storage adapter accepts 35 official large-dam reports with verified published point coordinates; see [product acceptance](docs/rid-acceptance-2026-10-26.md). TMD CAP preserves issued validity, cancellation references and polygons; delayed retrieval keeps gray reference boundaries rather than implying no warning. The **GISTDA 1day Ongkharak pilot** is connected to Atlas, a read API and the 2D/3D map, including genuine empty-result and outside-pilot states. Acquisition remains unknown and unverified area metrics are excluded. See [the pilot release](docs/gistda-pilot-release-2026-10-27.md). River gauges, nationwide satellite coverage and basins remain unfinished. This build does not publish a flood-risk score, depth or ETA.
+The live weather path covers **77 provinces + 928 districts, four forecast periods, 1,005 validated point forecasts**. The RID daily-storage adapter accepts 35 official large-dam reports with verified published point coordinates; see [product acceptance](docs/rid-acceptance-2026-10-26.md). TMD CAP preserves issued validity, cancellation references and polygons; delayed retrieval keeps gray reference boundaries rather than implying no warning. The **GISTDA retrospective 1day Thailand query** is connected to Atlas, a read API and the 2D/3D map, with administrative filtering and distinct empty/unavailable states. The product covers the previous one-day window; exact observation date and acquisition remain unknown, and unverified area metrics are excluded. See [the national release](docs/gistda-national-query-release-2026-10-28.md) and [current acceptance scope](docs/gistda-integration-acceptance-2026-10-28.md). River gauges, verified nationwide satellite coverage and basins remain unfinished. This build does not publish a flood-risk score, depth or ETA.
 
 ## Run locally
 
@@ -73,7 +75,7 @@ Read the [data contract](docs/data_contract.md), [source registry](docs/source_r
 
 Weather data: [Open-Meteo](https://open-meteo.com/), CC BY 4.0, subject to separate API access terms. Administrative boundaries: [OpenGISData-Thailand](https://github.com/chingchai/OpenGISData-Thailand/tree/fafcea179cda88b689f5697c3866a449e79cd298), CC BY 4.0 as published, simplified for display; upstream DOPA attribution retained. [Independent directory comparison](docs/dopa-geography-review-2026-10-26.md) corrected one district code and six Thai names using the official downloadable DOPA table dated 2023-09-01; later registry changes and legal geometry remain unverified. Embedded upstream postcode fields in raw inputs carry the [additional MIT notice](docs/THIRD_PARTY_BOUNDARY_NOTICES.txt). Basemap: OpenFreeMap / OpenMapTiles / OpenStreetMap. Terrain: Mapterhorn and its attributed source datasets.
 
-HII/GISTDA are still planned pending current-product access and acceptance. [Thai account/access setup guide](docs/HII_GISTDA_SETUP_TH.md) includes the verified GISTDA registration route and an HII request draft; public monthly archives are not used as current gauge readings.
+HII current gauges remain planned. GISTDA is connected for the bounded retrospective 1day query, with scientific/coverage and resource-specific reuse qualifications recorded separately. [Thai account/access setup guide](docs/HII_GISTDA_SETUP_TH.md) includes the verified GISTDA registration route and an HII request draft; public monthly archives are not used as current gauge readings.
 
 Reservoir data: **ข้อมูลน้ำในอ่างเก็บน้ำ กรมชลประทาน (Royal Irrigation Department)**, [official catalog resource](https://data.go.th/th/dataset/reservoir2), [DGA Open Government License terms](https://data.go.th/th/pages/dga-open-government-license). The accepted daily-storage scope and exclusions are documented separately; no agency endorsement is claimed.
 

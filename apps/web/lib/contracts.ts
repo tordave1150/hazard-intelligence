@@ -1,7 +1,7 @@
 import Ajv from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import schema from '../../../packages/contracts/schema.json';
-import type {DamObservation,Forecast,WarningFeed,FloodFeed} from './types';
+import type {DamObservation,Forecast,WarningFeed,FloodFeed,HourlyForecast} from './types';
 import {allowedWarningDocument} from './warnings';
 import {areaById} from './geography';
 import {damById,damLicenseUrl,damMetadataUrl,damSourceUrl} from './dams';
@@ -14,6 +14,17 @@ const validateDam=ajv.compile<DamObservation>({$ref:`${schema.$id}#/$defs/DamObs
 const validateWarnings=ajv.compile<WarningFeed>({$ref:`${schema.$id}#/$defs/WarningFeed`});
 const validateFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaFloodFeed`});
 const validateNationalFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaNationalFloodFeed`});
+const validateHourly=ajv.compile<HourlyForecast>({$ref:`${schema.$id}#/$defs/HourlyForecast`});
+export function validatedHourly(value:unknown):HourlyForecast{
+  if(!validateHourly(value))throw new Error('Invalid hourly forecast contract');
+  const record=value as HourlyForecast,start=Date.parse(record.forecast_date+'T00:00:00+07:00'),area=areaById.get(record.location_id);
+  if(!area||!['province','district'].includes(area.level)||area.lat!==record.point.lat||area.lon!==record.point.lon)throw new Error('Invalid hourly point identity');
+  if(record.forecast_date!==bangkokDate(Date.parse(record.fetched_at))||record.forecast_date!==bangkokDate(Date.parse(record.ingested_at))||Date.parse(record.fetched_at)>Date.parse(record.ingested_at))throw new Error('Invalid hourly dates');
+  for(const [index,hour] of record.valid_hours.entries()){
+    if(Date.parse(hour.valid_start)!==start+index*3600000||Date.parse(hour.valid_end)!==start+(index+1)*3600000||hour.temperature_valid_at!==hour.valid_end)throw new Error('Invalid preceding-hour interval');
+  }
+  return record;
+}
 export function validatedFloodFeed(value:unknown):FloodFeed{
   if(!validateFlood(value)&&!validateNationalFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
   const feed=value as FloodFeed;

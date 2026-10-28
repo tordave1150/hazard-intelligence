@@ -4,9 +4,23 @@ import {contains} from './semantics';
 
 export const floodScopeId='TH-D-2604';
 export const floodSourceUrl='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day';
+export const floodWindowLabel='Previous 1-day window · ย้อนหลัง 1 วัน';
+export function floodRefreshFailure(health:FloodSnapshot['health']):string|null{
+  if(health?.status!=='FAILED')return null;
+  switch(health.error_summary){
+    case 'NATIONAL_FEATURE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh exceeded the supported number of flood footprints.';
+    case 'RESPONSE_TOO_LARGE':
+    case 'CANDIDATE_GEOMETRY_LIMIT':return 'Latest GISTDA refresh exceeded the supported map data size.';
+    case 'DEADLINE_EXCEEDED':return 'Latest GISTDA refresh could not finish within the collection time limit.';
+    case 'INCOMPLETE_QUERY_NOT_PUBLISHABLE':
+    case 'PROVIDER_COUNT_CHANGED_DURING_PAGINATION':
+    case 'DUPLICATE_OR_REPEATED_PROVIDER_FEATURE':return 'Latest GISTDA refresh could not confirm a complete, consistent result.';
+    default:return 'Latest GISTDA refresh failed.';
+  }
+}
 type FeedMetadata=Omit<FloodFeed,'records'>;
 export const floodInArea=(area:Area,feed:FeedMetadata|null)=>!!feed&&(feed.area_id==='TH'?area.level!=='basin':contains(area,areaById.get(feed.area_id)!));
-export const floodScopeLabel=(feed:FeedMetadata|null)=>feed?.area_id==='TH'?'Thailand query':'Ongkharak pilot';
+export const floodScopeLabel=(feed:FeedMetadata|null)=>!feed?'Awaiting product':feed.area_id==='TH'?'Thailand query':'Ongkharak pilot';
 export function floodRecordsInArea(snapshot:Pick<FloodSnapshot,'feed'|'records'>,area:Area){
   if(!floodInArea(area,snapshot.feed))return [];
   if(snapshot.feed?.area_id!=='TH'||area.id==='TH')return snapshot.records;

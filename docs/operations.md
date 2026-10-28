@@ -1,6 +1,8 @@
 # Operations and release runbook
 
-GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older pilot instructions below are historical.
+Current local candidate: [Today/hourly/theme operation and rollback](current-execution-release-2026-10-28.md). Hourly has independent storage and rollback; daily/hourly share the provider request budget. Cadence recording reuses existing GISTDA publication evidence with no extra provider request.
+
+GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older diagnostic/pilot instructions below are historical, including references to an unscheduled or unpublished GISTDA integration. For current commands, rollback source names, retention, acceptance and limits, use [the current integration scope](gistda-integration-acceptance-2026-10-28.md).
 
 
 ## Local development

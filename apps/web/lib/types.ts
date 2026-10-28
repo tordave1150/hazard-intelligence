@@ -19,6 +19,12 @@ export type Snapshot = {records: Forecast[]; status: Record<string, unknown> | n
   storage: 'mongo' | 'local' | 'unconfigured'; error: string | null; freshness: Freshness;
   identity_migrations?:{from:string;to:string;reference:string;source_as_of:string}[]};
 export type Metric = 'rainfall_mm' | 'rain_probability_pct';
+export type HourlyPeriod={valid_start:string;valid_end:string;temperature_valid_at:string;rainfall_mm:number|null;rain_probability_pct:number|null;temperature_c:number|null};
+export type HourlyForecast={schema_version:'2.0';source_id:'open_meteo';product_id:'today_hourly';data_state:'forecast';location_id:string;
+  forecast_date:string;forecast_reference_time:null;fetched_at:string;ingested_at:string;point:{lat:number;lon:number};model_point:{lat:number;lon:number};
+  spatial_method:string;source_url:string;units:{rainfall:'mm/1h';probability:'%';temperature:'°C'};valid_hours:HourlyPeriod[]};
+export type HourWindow=Pick<HourlyPeriod,'valid_start'|'valid_end'>;
+export type HourlySnapshot={records:HourlyForecast[];available_hours?:HourWindow[];selected_hour_end?:string|null;view_kind?:'single_interval';health:Record<string,unknown>|null;freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null};
 export type DamMeta={dam_id:string;source_dam_id:string;name_th:string;point:{lat:number;lon:number};
   province_id:string;district_id:string|null;region_id:string};
 export type DamObservation=DamMeta & {schema_version:'2.0';source_id:'rid';product_id:'daily_dam_storage';

@@ -1,3 +1,4 @@
 -r ../pipelines/requirements.txt
+-r ../scripts/requirements-shapefile.txt
 pytest>=8,<9
 mongomock>=4.3,<5

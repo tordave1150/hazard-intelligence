@@ -11,6 +11,7 @@ from pipelines.shared.quality import check_batch
 from pipelines.shared.time_units import utc_now
 from .client import ProviderRequestError, fetch_batch
 from .transform import normalize
+from .budget import request_budget
 
 
 def collect_forecasts(locations, fetcher=None, sleep=time.sleep):
@@ -75,7 +76,8 @@ def main():
     key = 'open_meteo:daily_forecast'
     records, missing = [], []
     try:
-        records, missing = collect_forecasts(locations)
+        with request_budget(db):
+            records, missing = collect_forecasts(locations)
         check_batch(records, [a['id'] for a in locations])
         status.update(status='SUCCESS', completed_at=utc_now(), last_success=utc_now(), records_validated=len(records),
                       successful_locations=len(records), missing_locations=[], completeness=1.0)

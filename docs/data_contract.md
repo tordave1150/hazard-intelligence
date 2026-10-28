@@ -30,7 +30,13 @@ Forecast freshness uses the older of first valid start and retrieval time: ≤30
 
 RID freshness additionally checks report calendar age: today's report retrieved within 30 hours is FRESH; at most two calendar days old and retrieved within 48 hours is DELAYED; otherwise STALE. Future/invalid timestamps are UNKNOWN. A newly retrieved old report cannot become FRESH. Changing the selected forecast date does not change the RID report date.
 
-Satellite contracts require acquisition time, retrieval time, processing method and licensed external product reference. No raster scenes are stored in MongoDB. Gauge contracts preserve station datum and published threshold definitions. Agency warnings preserve issuer categories and effective/expiry windows. No composite flood-risk score, flood ETA or depth is defined.
+Satellite contracts preserve verified acquisition time when supplied, retrieval time, processing method and the external product reference with applicable reuse qualifications. Missing acquisition stays null; a product-window label or retrieval time cannot fill it. Acceptance is specific to the displayed use case; unknown area units exclude area metrics without blocking a bounded geometry adapter. No raster scenes are stored in MongoDB. Gauge contracts preserve station datum and published threshold definitions. Agency warnings preserve issuer categories and effective/expiry windows. No composite flood-risk score, flood ETA or depth is defined.
+
+## GISTDA retrospective 1day query
+
+`GistdaNationalFloodFeed` wraps the complete bounded unfiltered provider query, with `product_window=1day` meaning the previous one-day window (ย้อนหลัง 1 วัน). A query on 28 October may return the 27 October product; no product date is calculated from the query clock. `observed_at=null` and `observation_time_status=NOT_SUPPLIED` preserve the missing exact acquisition metadata. `response_at`, `fetched_at` and `ingested_at` remain distinct UTC instants. Query freshness cannot establish observation freshness.
+
+Only checked geometry, generated IDs, canonical administrative references and fixed query/source metadata are persisted. Raw provider properties/links and unverified area/exposure values are excluded. National storage is bounded to two 4-MiB envelopes; pilot storage is separate. Oversized/incomplete/failed refreshes retain the last complete generation and expose a fixed human-readable failure category. No partial snapshot is promoted. See [current acceptance scope, retention and scaling limits](gistda-integration-acceptance-2026-10-28.md).
 
 
 ## TMD CAP warnings
@@ -40,3 +46,7 @@ Satellite contracts require acquisition time, retrieval time, processing method 
 `agency_warning_latest` uses unique `(source_id, product_id, slot, snapshot_id)` keys, with snapshot_id=latest and at most two complete envelopes of up to 2 MiB each. Its independent control/status/lock key is `tmd:cap_warnings`. Completeness means processing of the feed's listed items, not complete national coverage. Public API responses separate envelope metadata from records to avoid duplicate payloads and expose message_states computed with global update/cancel references.
 
 Feed freshness is FRESH through two hours, DELAYED through six, then STALE, using the older of assembly/retrieval. Failure downgrades a fresh prior feed to DELAYED. Message lifecycle is independent: current validity window, upcoming, expired, cancelled, superseded or time unknown. Only currently valid messages from a FRESH feed receive current thematic outlines. Explicit historical inspection uses gray reference outlines; a fresh retrieval never extends expiry or implies safe conditions.
+
+## Today hourly forecast
+
+`HourlyForecast` is separate from `Forecast`: `product_id=today_hourly`, `forecast_date` is the Bangkok retrieval day, 24 explicit one-hour `valid_hours`, preceding-hour mm/1h/probability, and temperature at each interval end. Issue time is null. National coverage is 1,005 canonical representative points; `weather_hourly_latest` keeps at most 2,010 across independent A/B slots. Missing/partial refreshes retain the previous generation; yesterday is never relabelled Today. See [cadence, quota ledger and rollback](current-execution-release-2026-10-28.md).

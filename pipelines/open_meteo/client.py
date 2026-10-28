@@ -1,7 +1,9 @@
 import os
 import time
+import json
 import requests
 from pipelines.shared.time_units import utc_now
+from .budget import active_budget, BudgetExceeded
 
 DAILY = 'precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min'
 
@@ -21,27 +23,62 @@ def fetch_batch(locations, session=None, sleep=time.sleep):
     API accounting still charges each coordinate; batching is not a quota bypass.
     No raw response or key is logged.
     """
+    params = {'latitude': ','.join(str(x['lat']) for x in locations), 'longitude': ','.join(str(x['lon']) for x in locations),
+              'daily': DAILY, 'timezone': 'Asia/Bangkok', 'forecast_days': 4}
+    return _fetch(locations, params, session, sleep)
+
+
+def fetch_hourly_batch(locations, day, session=None, sleep=time.sleep):
+    from datetime import date, timedelta
+    end = (date.fromisoformat(day) + timedelta(days=1)).isoformat()
+    params = {'latitude': ','.join(str(x['lat']) for x in locations), 'longitude': ','.join(str(x['lon']) for x in locations),
+              'hourly': 'precipitation,precipitation_probability,temperature_2m', 'timezone': 'Asia/Bangkok',
+              'timeformat': 'unixtime', 'start_hour': day + 'T01:00', 'end_hour': end + 'T00:00'}
+    return _fetch(locations, params, session, sleep)
+
+
+def _fetch(locations, params, session, sleep):
     session = session or requests.Session()
     key = os.getenv('OPEN_METEO_API_KEY')
     url = 'https://customer-api.open-meteo.com/v1/forecast' if key else 'https://api.open-meteo.com/v1/forecast'
-    params = {'latitude': ','.join(str(x['lat']) for x in locations), 'longitude': ','.join(str(x['lon']) for x in locations),
-              'daily': DAILY, 'timezone': 'Asia/Bangkok', 'forecast_days': 4}
     if key:
         params['apikey'] = key
     for attempt in range(4):
+        budget = active_budget.get()
+        if budget is not None:
+            try:
+                budget.reserve(len(locations))
+            except BudgetExceeded:
+                raise ProviderRequestError('request_budget_exhausted', retryable=False) from None
         response = None
         try:
-            response = session.get(url, params=params, timeout=(10, 60))
+            response = session.get(url, params=params, timeout=(10, 60), allow_redirects=False, stream=True)
         except requests.RequestException:
             failure = ProviderRequestError('transport_error')
         else:
+            if not 200 <= response.status_code < 300 and hasattr(response, 'close'):
+                response.close()
             if response.status_code == 429 or response.status_code >= 500:
                 failure = ProviderRequestError('rate_limited' if response.status_code == 429 else 'upstream_unavailable', response.status_code)
             elif not 200 <= response.status_code < 300:
                 raise ProviderRequestError('http_error', response.status_code, retryable=False) from None
             else:
                 try:
-                    payload = response.json()
+                    if hasattr(response, 'iter_content'):
+                        chunks, size, deadline = [], 0, time.monotonic() + 60
+                        try:
+                            for chunk in response.iter_content(65536):
+                                size += len(chunk)
+                                if size > 2 * 1024 * 1024 or time.monotonic() > deadline:
+                                    raise ProviderRequestError('response_budget_exceeded', retryable=False)
+                                chunks.append(chunk)
+                            payload = json.loads(b''.join(chunks).decode('utf-8'))
+                        finally:
+                            response.close()
+                    else:
+                        payload = response.json() # In-memory test doubles; real HTTP is streamed above.
+                except requests.RequestException:
+                    failure = ProviderRequestError('transport_error')
                 except ValueError:
                     failure = ProviderRequestError('invalid_json')
                 else:
