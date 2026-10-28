@@ -29,4 +29,5 @@ body,.dashboard{background:var(--paper)}
 @media(max-width:600px){.mode-bar{align-items:flex-start}.mode-actions{width:100%}.mode-actions button{flex:1}.timeline-dates button{padding-left:5px;padding-right:5px;min-width:0;flex:1}.timeline-dates{gap:3px}.workspace-body{min-height:560px}.timeline{min-height:140px}.summary-card>.mini-tag{position:static;margin-top:6px}}
 
 :root:is([data-time-theme=night],[data-time-theme=dusk]) .layer.enabled,:root:is([data-time-theme=night],[data-time-theme=dusk]) .back-national,:root:is([data-time-theme=night],[data-time-theme=dusk]) .evidence-heading,:root:is([data-time-theme=night],[data-time-theme=dusk]) .source-link{color:var(--teal)}
+:root:is([data-time-theme=night],[data-time-theme=dusk]) .metric-controls select{color:var(--ink)}
 .situation-evidence select{display:block;width:100%;margin:10px 0;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:5px;color:var(--ink);font-size:10px}.situation-evidence label{font-size:10px;color:var(--muted)}
