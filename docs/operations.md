@@ -1,162 +1,35 @@
-# Operations and release runbook
+# Current operations
 
-Current GISTDA operation (29 October 2026): [three-day product, chunked API, workflow cleanup and rollback](gistda-three-day-release-2026-10-29.md). Publish with `python -m pipelines.gistda.run --publish --three-day`; `--source gistda` rolls back the three-day collection. `gistda_1day` and `gistda_pilot` explicitly address historical products. Older one-day/candidate/cadence instructions below are superseded for active GISTDA operation.
+The application covers Thailand. [Current scope](current-scope.md) is authoritative; retired local experiments are under `archive/` and do not define preferences or defaults.
 
-Current local candidate: [Today/hourly/theme operation and rollback](current-execution-release-2026-10-28.md). Hourly has independent storage and rollback; daily/hourly share the provider request budget. Cadence recording reuses existing GISTDA publication evidence with no extra provider request.
+## Collection and publication
 
-GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older diagnostic/pilot instructions below are historical, including references to an unscheduled or unpublished GISTDA integration. For current commands, rollback source names, retention, acceptance and limits, use [the current integration scope](gistda-integration-acceptance-2026-10-28.md).
+- GISTDA: `python -m pipelines.gistda.run --publish` collects the complete bounded **3days Thailand** query and publishes its chunked A/B generation. `--three-day` is an equivalent explicit option. There is no district publisher or default district filter.
+- Daily weather: `python -m pipelines.open_meteo.run --level all --publish`.
+- Hourly weather: `python -m pipelines.open_meteo.hourly --publish`.
+- RID: `python -m pipelines.rid.run --publish`.
+- TMD: `python -m pipelines.tmd.run --publish`.
 
+Use existing server-side repository secrets. Never put provider keys or MongoDB credentials into browser inputs, URLs, reports or committed files. The Python runners do not automatically load .env files.
 
-## Local development
+## GitHub Actions
 
-From the repository root, run `npm ci`. Create an isolated Python venv and install `tests/requirements.txt`. The Python runner does not auto-load `.env`; set credentials through the shell or an approved secret manager.
+Seven active workflows cover checks, daily/hourly weather, RID, TMD, national GISTDA publication and national GISTDA inspection. The inspector form contains only service and window; 3days is the default and all queries are unfiltered. Other explicitly selected windows remain diagnostics only and never become a publication fallback.
 
-Real local previews (each source can be fetched independently):
+`gistda.yml` targets 09:27 ICT daily. `gistda-access.yml` has no schedule and reads one diagnostic page without database writes. The former local candidate workflow is retired. Empty results do not establish safe conditions or full satellite coverage.
 
-```powershell
-.\.venv\Scripts\python.exe -m pipelines.open_meteo.run --level all --export apps/web/data/local/weather.json
-.\.venv\Scripts\python.exe -m pipelines.rid.run --export apps/web/data/local/dams.json
-.\.venv\Scripts\python.exe -m pipelines.tmd.run --export apps/web/data/local/warnings.json
-$env:HAZARD_LOCAL_SNAPSHOT='1'
-npm run dev
-```
+## Read APIs and health
 
-Local snapshot files are ignored and never used by production, even if the local-preview flag is set. Production without MongoDB shows unavailable data. Reload snapshot reads stored data only; no visitor action runs nationwide ingestion.
+[Data health](https://hazard-intelligence-lime.vercel.app/health) separates failed collection, overdue schedule, data freshness and source-quality issues. Reloading the page does not trigger provider collection. GitHub scheduling and API/CDN caches can delay visible updates.
 
-## Existing Vercel project
+Use `/api/flood-products?view=summary` for the national count without geometry. Add a canonical area_id to select any region, province or district. `view=detail` loads only that area's pages and pins one generation until its complete count is verified. The initial national view does not fetch all geometry; explicitly enabling the national layer does.
 
-User-selected target: **hazard-intelligence**. Set project Root Directory to `apps/web`; tracked `apps/web/vercel.json` installs/builds from the monorepo root. Use Node 22.x (or the project's eligible supported LTS version). Next.js target and lockfile versions are pinned.
+## Verify and recover
 
-The user confirmed this is a personal, non-commercial project shared publicly (2026-10-26). This matches the use category documented for Vercel Hobby and the Open-Meteo free API; retain attribution and stay within usage quotas. Re-evaluate the plans if the intended use changes. References: https://vercel.com/docs/plans/hobby and https://open-meteo.com/en/pricing.
+`python -m scripts.mongo_admin verify` checks only the five active product families. Historical stored products are audited only with `--include-retired`; normal Actions do not report them as active integrations. Retention remains bounded and failed refreshes keep the previous complete generation.
 
-Import the user-selected repository `tordave1150/hazard-intelligence` from Vercel's Add New → Project screen, and enable **Include source files outside of the Root Directory in the Build Step** because the app imports shared contracts. Creating a project requires an Owner or Member role, or a Developer role with the Create Project extended permission. Reference: https://vercel.com/docs/projects/managing-projects and https://vercel.com/docs/monorepos/monorepo-faq.
+`python -m scripts.mongo_admin rollback --source gistda` restores a validated previous three-day slot. Never delete stored snapshots or run history merely to change defaults.
 
-Set `MONGODB_URI` and `MONGODB_DB_NAME` in the project's server environment. Use an Atlas database user restricted to read access for Vercel; never prefix credentials with `NEXT_PUBLIC_`. Do not store source keys in the browser. Atlas network access must explicitly permit the selected runtime's egress path. Choose static egress/private networking where available; do not automatically open Atlas to all IPs.
+Run `python -m pytest -q`, `npm run typecheck`, `npm run test:web` and `npm run build` for code changes. Synthetic local snapshots must remain ignored and are disabled in production.
 
-The website also accepts `MONGODB_URL`, matching Vercel's storage-integration output when Custom Prefix is `MONGODB`. `MONGODB_URI` takes precedence if both are present. This alias is for the server reader; the independent Python/Actions ingestion still uses its separately configured `MONGODB_URI` writer credential.
-
-Production is deployed at https://hazard-intelligence-lime.vercel.app/. GitHub ingestion secrets are configured, the live audit passed, and manual run 40257438014 published the first complete snapshot on 2026-10-26 at 09:15:36 Asia/Bangkok. The public API and browser confirmed MongoDB storage, 1,005 valid points, FRESH, SUCCESS and four forecast days. The connected Vercel plugin still cannot see the project in its selected team (`team_V0dZUHXqiEyo9Tu4vJN3gCoO`); resolve connector visibility before platform changes and do not create another project. There is no installed/authenticated Vercel CLI fallback.
-
-## Scheduled ingestion
-
-`.github/workflows/etl.yml` runs once daily at 01:00 UTC / 08:00 Asia/Bangkok, or manually. It needs Actions secrets `MONGODB_URI` (write-capable, restricted to the latest collections), `MONGODB_DB_NAME`, and optionally `OPEN_METEO_API_KEY` for commercial/customer access. No workflow writes the Git repository, appends legacy history, or depends on Vercel uptime. Concurrency is serialized with cancellation disabled.
-
-In the new repository, the job explicitly skips ingestion with a notice until both MongoDB secrets are configured. Secrets are not copied from the legacy repository. Add them in GitHub repository Settings → Secrets and variables → Actions; add the server's read-only MongoDB credential separately in Vercel project Settings → Environment Variables. Never paste credentials into an issue, PR, chat or source file.
-
-Once configured, each run executes the read-only `scripts.mongo_admin audit` before fetching or publishing. A failed audit stops the job. The checkout and Python setup actions are pinned to verified official commit SHAs. First-run instructions for Atlas users and repository secrets are in `VERCEL_SETUP_TH.md`.
-
-Active workflows use official action commits whose manifests specify Node.js 24. The app build itself still targets Node.js 22. Pipeline requirements declare dnspython explicitly for SRV connections rather than relying on the removed pymongo[srv] extra. Successful ingestion clears the previous error_summary; the reader masks historical error summaries when the current status is not FAILED.
-
-```powershell
-.\.venv\Scripts\python.exe -m pipelines.open_meteo.run --level all --publish
-```
-
-Publication requires `--level all`; a province-only export cannot replace national Atlas coverage. Four daily variables × four forecast days for 1,005 locations are fetched in groups of 25, pausing three seconds per group. Coordinate accounting still applies; batching is not a quota bypass. Retry 429/5xx responses with capped backoff and Retry-After. Raw response/key/URI is not logged. Failed runs exit nonzero and retain last-success metadata and last-good published data.
-
-If transient transport, rate-limit or upstream failures leave gaps, the collector keeps successful batches and retries only failed batches in at most two recovery passes, each after a 60-second cooldown. Normal batch pacing still applies. Recovery does not relax schema, units, time, coverage or matching-period checks. Logs expose fixed reason codes and HTTP status only. A re-run from GitHub's failed-job action uses the original run commit; use a fresh manual run on main to exercise newly committed recovery code.
-
-The current GitHub connector can read workflow status/logs but its re-run mutation returned 403 `Resource not accessible by integration`. Until Actions write access is available, start a fresh run through the repository's Actions → Latest weather snapshot → Run workflow → main. The agent can then inspect its results through the read connector without retrieving secrets.
-
-## Audit and migration
-
-Before first write, run `python -m scripts.mongo_admin audit` with an authorized account. This reports collection counts, indexes, data/storage/index sizes without exposing documents or credentials. The first live workflow audit passed and reported an empty database. RID run 40287126263 captured post-publication measurements and verified both active products and their unique indexes/retention; see execution-status.md. Deployed restart/failover checks remain outstanding.
-
-No migration deletes legacy collections. The new publishers write only weather_latest, dam_latest, agency_warning_latest, snapshot_control, source_status and etl_locks. Existing forecasts and weather_historical remain preserved. The old Streamlit app is a reference; its probability labels are corrected, UI-triggered ingestion is retired, and the original version is recoverable at the baseline tag. Legacy CLI backfill is unsupported and not scheduled.
-
-## RID daily-storage ingestion
-
-`.github/workflows/rid.yml` is **Latest RID reservoir report**. It runs independently at 01:15 UTC / 08:15 Asia/Bangkok or via Run workflow → main. It uses the existing repository secrets `MONGODB_URI` and `MONGODB_DB_NAME=weather_db`; no new provider credential is needed for this public documented GET. The writer must have permission for `dam_latest` and the shared control/status/lock collections in that database. Do not broaden permissions if the existing database-scoped readWrite user already supplies this.
-
-The sequence is configuration check → read-only database audit → one 35-dam report fetch/validation/publication → read-only `verify` → actual post-write storage audit. The verifier checks both products' active coverage, schema, identity indexes and two-slot bounds, while allowing an unpublished product to remain UNAVAILABLE. It never creates indexes. The publisher creates its own required indexes only when publishing. RID and weather use separate concurrency groups and product locks; neither fetch is part of a website request.
-
-```powershell
-.\.venv\Scripts\python.exe -m pipelines.rid.run --publish
-.\.venv\Scripts\python.exe -m scripts.mongo_admin verify
-.\.venv\Scripts\python.exe -m scripts.mongo_admin rollback --source rid
-```
-
-Rollback requires an intact previous generation. For a confirmed stopped RID writer use `unlock --source rid --stopped-run-token <exact-token>` under the same stopped-process requirements as weather. Do not run recovery or rollback merely to test production without an agreed maintenance window.
-
-The accepted storage product excludes inflow/outflow. Its report date is independent of the forecast date; exact observation time is unavailable. Freshness cannot be reset by retrieving an old report. See [RID acceptance](rid-acceptance-2026-10-26.md) for measurement, coordinate and reuse evidence. The live page shows awaiting publication until the first complete Atlas report exists; local captures are never a production fallback.
-
-GitHub schedules are best-effort, not an exact wall-clock service guarantee. The observed 27 October weather/RID scheduled runs began at 12:45/13:18 ICT despite their 08:00/08:15 cron targets. Their actual retrieval/publication metadata remains authoritative; a schedule label must not reset freshness. GitHub documents delays and possible dropped scheduled jobs under high load: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule .
-
-## Rollback and interrupted runs
-
-For a frontend release, use Vercel's prior deployment promotion/rollback. For data, use `python -m scripts.mongo_admin rollback`; the command verifies that the recorded previous run still exists before switching pointers. Edge/server caches may retain the old response for up to roughly three minutes.
-
-After the 27 October CAP repair, **c573cb6 is the minimum compatible frontend commit for feeds containing unmapped source geocodes**. A frontend rollback target must include that reader change; pre-repair readers reject the raw R-07 geocode even though canonical area_ids are valid. If an older frontend is required, first plan/verify an appropriate intact previous data generation in a maintenance window. Do not roll production backward merely to test this. The real-fixture regression covers legacy feed → unmapped-code feed → rollback → re-publication in isolation.
-
-If a worker is killed during publication, the non-expiring product lock intentionally blocks another writer. Confirm that the process/workflow is stopped, inspect `etl_locks` with an authorized database console, then use `python -m scripts.mongo_admin unlock --stopped-run-token <exact-token>`. Never unlock a running writer. A failed inactive slot may invalidate the prior rollback generation; active data stays readable. Back up Atlas independently: A/B slots are not disaster recovery.
-
-## Checks
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q --basetemp artifacts/pytest-check
-npm run typecheck
-npm run test:web
-npm run build
-$env:HAZARD_TEST_URL='http://127.0.0.1:3000'
-.\.venv\Scripts\python.exe -m pytest tests/test_api_smoke.py -q --basetemp artifacts/pytest-http
-```
-
-Create the `artifacts` parent before using a new `--basetemp` path. Final local verification also started the production server with an intentionally unreachable local MongoDB URI and confirmed a sanitized unavailable response with no local-data fallback.
-
-Browser regression specification: `apps/web/tests/e2e_national_to_local_drilldown.spec.ts`. It was verified through browser interaction during development; the specification itself has not been executed by an automated Playwright runner. Physical mobile/GPU benchmarks and live Atlas failover remain release gates.
-
-## Source onboarding
-
-For RID, TMD, HII/ThaiWater and GISTDA, record official documented endpoint, auth, permission, commercial/redistribution rights, quota, real sample fetch, IDs, units, timestamps, latency and coverage. Add provider transform, validation/publication and failure tests; only then activate a layer. Official website links alone are not integration evidence. Basin data requires independently verified geometry and spatial intersections.
-
-Review Open-Meteo API eligibility, Vercel plan eligibility and Atlas capacity for intended public/commercial use. The free Open-Meteo endpoint is non-commercial. Data attribution does not grant commercial free-endpoint access.
-
-HII/GISTDA account and product-access steps are in [the Thai setup guide](HII_GISTDA_SETUP_TH.md). GISTDA account/key setup and the one-day client request are now verified; HII current-product access is still unconfigured. Do not configure ingestion from a borrowed dashboard key or import monthly archive readings as current gauge status.
-
-The current GISTDA diagnostic follows the user's newly supplied [Disaster Platform manual](https://disaster.gistda.or.th/manual_api.pdf) and live Swagger form. **Inspect GISTDA Disaster Features** (`gistda-access.yml`) makes one GET to the documented `/features/flood/{window}` endpoint using the `API-Key` header. Fresh Run workflow on main defaults to `window=1day`, `ap_idn=2604` (Ongkharak). Blank ap_idn means an unfiltered first page, not complete national retrieval. Other documented windows are explicit separate choices. Legacy version/lat/lon/area inputs no longer apply to the current form.
-
-The user's screenshot showed HTTP 200 with an empty FeatureCollection. Independent run 40364997446 subsequently verified the rewritten one-day client on `9659197`, with `ap_idn=2604`, HTTP 200 and zero matched/returned features at response time 27 October 2026 00:03:33.525 ICT. Two returned links were discarded; acquisition time remains unknown. This completes client access verification, not flood product acceptance. Reviewed requests 2026-10-27-01/02 successfully inspected one 30days feature of 184,323 reported matches; all 29 property names/types are now visible, with no raw values. Units and acquisition semantics remain unverified, and this is not a one-day replacement. Repository secret `GISTDA_API_KEY` has been rotated and updated by the user after screenshot exposure. The diagnostic never receives MongoDB credentials, schedules ingestion, follows pagination/redirects or logs raw response values. It discards response links before structural logging because the provider can echo a key inside href even after header authentication. An API response timestamp is never used as acquisition time. A valid empty query is not all-clear, a complete national mosaic or source acceptance.
-
-The specific Disaster Platform one-day resource says **License not specified**; do not import the separate legacy DGA catalog's Open Data Common terms. Public publication still requires product-specific terms/attribution, quota, coverage, geometry/CRS and actual acquisition-time/quality semantics. See [current review](gistda-disaster-features-review-2026-10-26.md). The connector cannot dispatch Actions directly. A reviewed change to `.github/gistda-inspection.json` on main now triggers the same bounded diagnostic, using the public `request_id`, allowlisted `window`, canonical/blank `ap_idn` and optional allowlisted `service` fields. Features is the default; explicit service=stac selects only the exact item URL linked by the official catalog and requires blank ap_idn. Links/assets are never followed; only validated item-time metadata is exposed, with nominal time kept distinct from actual per-pixel acquisition. Only that path triggers the diagnostic on push; there is no pull-request trigger, new token or permission. Manual Run workflow remains available. This is an explicitly selected request, not periodic polling, product-window fallback or publication. The one-day STAC request 2026-10-27-03 succeeded in run 40373514042, reporting nominal/search datetime 2026-10-26T00:10:00Z, not verified acquisition time. Four links and two assets were not followed. All reviewed requests are complete; none is scheduled to repeat. Actual field units, temporal/coverage definitions and reuse terms remain required before public product acceptance. No GISTDA production ETL is scheduled.
-
-Historical legacy probes at Bangkok (40340511359 v1.1, 40343281341 v1.0) and Ongkharak (40350186116 v1.1) all returned 404. The [legacy review](gistda-product-25-review-2026-10-26.md) and unsent support draft preserve those results; they do not describe the working new Features route and are not current run instructions. No agency message was sent.
-
-## DOPA directory compatibility
-
-The official downloadable DOPA directory dated 2023-09-01 was compared on 2026-10-26. Its pinned checksum and small corrections are recorded in [the geography review](dopa-geography-review-2026-10-26.md). New weather ingestion uses Wiang Kao's corrected `TH-D-4029`. Existing stored generations with `TH-D-4026` remain readable only at their exact original point; APIs disclose the mapping in `identity_migrations`, and `mongo_admin verify` reports historical alias counts without modifying the database. No one-time database rewrite or immediate nationwide provider refresh is necessary. Keep this reader compatibility while old A/B generations can still be restored. A changed reference workbook requires review before updating its checksum. This code/name audit does not certify registry changes after September 2023 or legal boundaries.
-
-
-## TMD public CAP ingestion
-
-`.github/workflows/tmd.yml` is **Latest TMD CAP messages**, scheduled hourly at minute 37 UTC (also minute 37 ICT), with manual Run workflow on main. It uses the existing database-scoped `MONGODB_URI` and `MONGODB_DB_NAME` secrets. No TMD API key or registration is needed for this explicitly published public CAP channel. Registered forecast/radar APIs are separate and must not use a borrowed or demo credential.
-
-A reviewed main push changing only `.github/tmd-publication-request.json` can request the same bounded publication job without a separate Actions dispatch. The JSON is limited to request_id, source_id=tmd and operation=publish_latest; it cannot set a URL, credential, database or another operation. It keeps the existing job/concurrency/secrets and adds no pull-request trigger. Deploy compatible readers before requesting a publication that depends on a reader change.
-
-Only exact recognized ISO province references enter canonical area_ids. All original source geocodes remain in source_areas, including unsupported values/namespaces; no province or region is guessed. The API reports geography_issues across the whole feed, and the UI discloses incomplete province filtering plus the selected message's original unresolved codes. See [the real R-07 recovery record](tmd-geocode-recovery-2026-10-27.md). Whole-feed validation and last-good fallback remain unchanged.
-
-The job audits first, retrieves the RSS index and every listed CAP document sequentially, validates complete feed accounting, then publishes one bounded envelope into the inactive slot. It verifies all three products and audits storage afterward. The two `agency_warning_latest` envelopes each have a 50-message and 2 MiB JSON/BSON bound. Empty successful feeds are published as an envelope with zero records; unavailable reads have no feed. The verifier's active_records=1 means one complete envelope, not one active warning.
-
-Use `python -m pipelines.tmd.run --publish` for an authorized writer, and `python -m scripts.mongo_admin rollback --source tmd` only when an intact prior generation and an appropriate maintenance decision exist. Stopped-worker recovery uses `unlock --source tmd --stopped-run-token <exact-token>`, with the same prior confirmation of process termination as other products. Failures retain the last complete feed; the UI pauses current colors when a refresh fails or the feed is delayed/stale.
-
-The existing GitHub connector cannot start Actions (403). For first publication, open Actions → Latest TMD CAP messages → Run workflow → main. This is a fresh workflow run, not a re-run of an old commit. Do not send secrets through chat. See [TMD CAP acceptance](tmd-cap-acceptance-2026-10-26.md) for attribution, timestamp discrepancy, message lifecycle and scope limitations.
-
-## Isolated real MongoDB qualification
-
-`scripts/qualify_local_mongo.py` starts only owned loopback MongoDB/Next.js processes on ports 27028 and 3002, uses a unique disposable `hazard_qualification_*` database under ignored artifacts, and overrides/removes inherited MongoDB settings. It does not accept an Atlas URI, call providers, change Atlas networking or mutate production data.
-
-Provide an official checksum-verified MongoDB executable and the three real ignored local preview captures, build the web app, then run:
-
-```powershell
-.\.venv\Scripts\python.exe -m scripts.qualify_local_mongo --mongod <official-local-mongod.exe>
-```
-
-The 26 October run used MongoDB 8.0.34 from MongoDB's official Windows archive, SHA-256 `6b021a0864494e4decf278b36477a29eb36072432773e4e62c2f42c302630db0`. It passed actual publication, CLI rollback for weather/RID/CAP, a synthetic empty CAP feed, interrupted candidate retention, rejected rollback into an overwritten slot, hard-process-exit orphan-lock recovery, production-mode HTTP outage responses without local fallback, and recovery of exact data/indexes after a database restart. Evidence is saved in ignored `artifacts/mongo-qualification-report.json`. This qualifies the local real-engine path; deployed Vercel rollback and Atlas infrastructure failover remain separate release checks. Test processes are stopped in a finally block.
-
-## GISTDA Ongkharak pilot snapshot
-
-The connected product is fixed to Features 1day / ap_idn=2604. It makes one bounded limit=100 query and publishes only when provider counts certify a complete response. It does not page, substitute another window or claim national satellite coverage. Acquisition remains null; area/depth/exposure metrics and raw provider properties/links are excluded. A successful empty response is connected data, never all-clear.
-
-Publish with `python -m pipelines.gistda.run --publish` using the existing server-side GISTDA/MongoDB secrets. The independent `gistda.yml` workflow targets 09:27 ICT daily and also accepts manual main runs or an explicit `.github/gistda-publication-request.json` change. The request contains exactly request_id, source_id=gistda and operation=publish_ongkharak_1day. It cannot choose an endpoint or credential.
-
-`python -m scripts.mongo_admin verify` includes satellite_flood_latest, bounded to two 2-MiB envelopes with unique slot/snapshot identities. `rollback --source gistda` requires an intact previous generation; stopped-worker unlock uses the same exact-token requirements as other products. Never run production rollback/outage merely for testing.
-
-The read API is `/api/flood-products?area_id=TH-D-2604`. EMPTY_RESULT, OUT_OF_SCOPE and UNAVAILABLE are separate. Query freshness is independent from UNKNOWN observation age. The layer is enabled by envelope existence, including zero rows. See `gistda-pilot-release-2026-10-27.md` for release evidence and limitations.
+HII targets the unfiltered national station response and remains unavailable until observation semantics are accepted. See [the current HII review](thaiwater-access-review-2026-10-29.md).

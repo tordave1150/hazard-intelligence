@@ -83,7 +83,7 @@
     "url": "https://www.thaiwater.net/",
     "terms_url": "https://data.hii.or.th/dataset/water-level",
     "cadence": "Planned: 1–3h where permitted",
-    "description": "Integration target: all Thailand stations from the unfiltered public portal response, with province/district filtering after collection; no Nakhon Nayok or Ongkharak station allowlist. The 23:12 ICT review on 2026-10-29 returned 805 automatic station IDs: 802 rows mapped to 76 Thai provinces and 3 provider-labelled Myanmar rows. No automatic row was returned for Amnat Charoen. Thirty-five separate manual rows supplied no water-level values or coordinate pairs. Observation timezone, per-station quality, integration quota and live-product republication terms remain unresolved; the gauge layer is not yet enabled.",
+    "description": "Integration target: all Thailand stations from the unfiltered public portal response, with province/district filtering after collection; no local station allowlist. The 23:12 ICT review on 2026-10-29 returned 805 automatic station IDs: 802 rows mapped to 76 Thai provinces and 3 provider-labelled Myanmar rows. No automatic row was returned for Amnat Charoen. Thirty-five separate manual rows supplied no water-level values or coordinate pairs. Observation timezone, per-station quality, integration quota and live-product republication terms remain unresolved; the gauge layer is not yet enabled.",
     "attribution": "HII / ThaiWater (when connected)",
     "endpoint": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load",
     "authentication": "One credential-free GET to the public portal endpoint succeeded on 2026-10-29; no embedded website credentials used",

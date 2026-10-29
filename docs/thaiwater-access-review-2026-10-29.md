@@ -4,7 +4,7 @@ One credential-free, bounded GET to the public endpoint used by [ThaiWater's own
 
 `https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load`
 
-The initial response had 804 automatic station rows with 804 unique station IDs and 35 separate manual rows. There were 7 automatic stations with provider province code `26` (Nakhon Nayok), including one with district code `04` (Ongkharak). The latter has station ID `189`, original station code `NYK000`. These 7 stations were inspected as examples, not a technical restriction or an ingestion allowlist. The user's requested integration scope is all Thailand stations supplied by the unfiltered endpoint.
+The initial response had 804 automatic station rows with 804 unique station IDs and 35 separate manual rows. Integration covers all Thailand stations supplied by the unfiltered endpoint; there is no station allowlist.
 
 A second unfiltered check at 23:12 ICT returned 805 automatic station IDs: 802 rows match canonical Thai province codes in 76 provinces, and 3 have provider country labels identifying Myanmar. Amnat Charoen (`TH-P-37`) had no automatic row in this response. This is observed response coverage, not a claim that the country has only this many stations. The count-only [national scope receipt](thaiwater-national-scope-2026-10-29.json) records all province counts and the absence of a station allowlist. Station counts can change between requests.
 
@@ -19,7 +19,7 @@ The count-only [receipt](thaiwater-access-receipt-2026-10-29.json) contains no c
 
 ## Concrete next implementation once these facts are established
 
-Fetch the unfiltered national response and retain every supplied record for validation and accounting. Do not send a Nakhon Nayok/Ongkharak filter or restrict ingestion to the 7 example IDs. Use recognized provider Thai administrative codes for national/province/district views. Keep records identified by the provider as another country outside Thai statistics, with original country labels preserved. Unrecognized codes must remain unassigned rather than being shortened or guessed.
+Fetch the unfiltered national response and retain every supplied record for validation and accounting. Do not restrict ingestion to a preferred district or a small example station list. Use recognized provider Thai administrative codes for national/province/district views. Keep records identified by the provider as another country outside Thai statistics, with original country labels preserved. Unrecognized codes must remain unassigned rather than being shortened or guessed.
 
 Use a separate station-observation contract and bounded A/B snapshot, station-specific observation/retrieval ages and missing-quality states. Counts must describe the current complete provider response, rather than requiring an invented permanent inventory of 802 stations or 77 populated provinces. Province navigation should include all 77 provinces, with an explicit unavailable state where no accepted station record exists. Keep HII and other contributing agencies attributed separately.
 

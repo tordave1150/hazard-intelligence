@@ -82,6 +82,7 @@ defs = {
         'feed_copyright':{'const':'public domain'}, 'feed_item_count':{'type':'integer','minimum':0,'maximum':50},
         'ignored_item_count':{'type':'integer','minimum':0,'maximum':50},
         'records':{'type':'array','maxItems':50,'items':{'$ref':'#/$defs/AgencyWarning'}}}),
+    # Retired stored-envelope identity for explicit historical audits only.
     'GistdaFloodFeed': obj({**common,'source_id':{'const':'gistda'},'product_id':{'const':'flood_1day_ongkharak'},
         'data_state':{'const':'satellite_observation'},'snapshot_id':{'const':'latest'},'product_window':{'const':'1day'},
         'area_id':{'const':'TH-D-2604'},'query':obj({'ap_idn':{'const':'2604'},'limit':{'const':100},'offset':{'const':0}}),

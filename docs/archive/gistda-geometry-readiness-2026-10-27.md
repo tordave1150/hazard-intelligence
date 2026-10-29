@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA geometry and identity readiness — 2026-10-27
 
 The user selected GISTDA as the next development priority. Technical work has resumed; the provider-question draft remains unsent. Public flood-data publication is not accepted by this diagnostic.

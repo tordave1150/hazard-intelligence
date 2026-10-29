@@ -4,7 +4,7 @@ import {damFreshness} from '../lib/dams';
 import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnmappedCodes} from '../lib/warnings';
 import {validatedForecast,validatedWarningFeed,validatedFloodFeed} from '../lib/contracts';
 import {floodInArea,floodQueryFreshness,floodColor,floodRecordsInArea,floodResponse,floodRefreshFailure} from '../lib/floods';
-import floodFixture from '../../../tests/fixtures/gistda/synthetic-feed.json';
+import floodFixture from '../../../tests/fixtures/gistda/synthetic-national-feed.json';
 import {monitorSource,healthError} from '../lib/source-health';
 
 describe('Source health separates collection, scheduling and source quality',()=>{
@@ -86,12 +86,12 @@ describe('GISTDA district query versus observation semantics',()=>{
     expect(floodQueryFreshness(feed,now)).toBe('FRESH');
     expect(feed.record_count).toBe(0);expect(feed.complete_provider_query).toBe(true);
   });
-  it('restricts scope to Ongkharak and its administrative parents, not neighboring districts',()=>{
+  it('supports every canonical administrative area without a preferred district',()=>{
     const feed=validatedFloodFeed(structuredClone(floodFixture));
-    for(const id of ['TH','TH-R-CENTRAL','TH-P-26','TH-D-2604'])expect(floodInArea(areas.find(a=>a.id===id)!,feed)).toBe(true);
-    for(const id of ['TH-P-10','TH-D-2601','TH-D-5709'])expect(floodInArea(areas.find(a=>a.id===id)!,feed)).toBe(false);
+    for(const area of areas.filter(a=>a.level!=='basin'))expect(floodInArea(area,feed)).toBe(true);
+    expect(()=>validatedFloodFeed({...feed,area_id:'TH-D-1001'})).toThrow();
   });
-  it('filters national results by supplied administrative codes beyond the pilot without claiming clipping',()=>{
+  it('filters national results by supplied administrative codes across the country without claiming clipping',()=>{
     const feed=validatedFloodFeed({...structuredClone(floodFixture),product_id:'flood_1day_thailand',area_id:'TH',
       query:{limit:100,offset:0},page_count:1,pagination_consistency:'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN',
       records:[{...structuredClone(floodFixture.records[0]),area_ids:['TH-P-10','TH-D-1001']}]});

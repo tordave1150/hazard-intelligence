@@ -84,17 +84,15 @@ def test_gistda_scoped_summary_and_detail_agree_without_national_geometry():
 
 def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknown():
     value=complete_flood_query()
-    assert value['source_id']=='gistda' and value['integration_status'] in ['pilot','national_query']
+    assert value['source_id']=='gistda' and value['integration_status']=='national_query'
     if value['feed']:
-        assert value['scope_area_id'] in ['TH','TH-D-2604'] and value['in_scope'] is True
+        assert value['scope_area_id']=='TH' and value['in_scope'] is True
         assert value['status'] in ['AVAILABLE','EMPTY_RESULT'] and value['freshness']=='UNKNOWN'
         assert value['feed']['observed_at'] is None and value['feed']['complete_provider_query'] is True
         assert value['feed']['record_count']==len(value['records'])<=20000
         assert value['feed']['product_window']=='3days'
-        if value['scope_area_id']=='TH':
-            assert 'ap_idn' not in value['feed']['query']
-            assert all(row['area_ids'] for row in value['records'])
-        else:assert value['feed']['query']['ap_idn']=='2604'
+        assert 'ap_idn' not in value['feed']['query']
+        assert all(row['area_ids'] for row in value['records'])
         assert all(row['properties'] is None for row in value['records'])
     else:assert value['status']=='UNAVAILABLE' and value['records']==[]
 

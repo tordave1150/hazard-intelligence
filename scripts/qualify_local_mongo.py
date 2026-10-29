@@ -144,7 +144,7 @@ def main():
         assert read('/api/overview')['records']==weather and read('/api/dams')['records']==dams
         assert read('/api/warnings')['records']==feed['records']
         assert read('/api/flood-products')['records']==flood['records']
-        report=verify_database(db)
+        report=verify_database(db,include_retired=True)
         assert all(r['status']=='VERIFIED' for r in report if r['product_id']!='flood_1day_ongkharak')
         assert next(r for r in report if r['product_id']=='flood_1day_ongkharak')['status']=='UNAVAILABLE'
         record('database_restart_recovers_previous_data_and_indexes',verification=report)

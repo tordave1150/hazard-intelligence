@@ -24,9 +24,9 @@ def test_real_envelope_shape_empty_is_observed_without_link_or_key_exposure():
     def get(url,**kwargs):calls.append((url,kwargs));return Response(page())
     report,code=probe.inspect_features(KEY,get=get)
     assert code==0 and report['result']=='EMPTY_FEATURE_COLLECTION_OBSERVED'
-    assert calls[0][0]==probe.BASE+'1day' and len(calls)==1
+    assert calls[0][0]==probe.BASE+'3days' and len(calls)==1
     assert calls[0][1]['headers']=={'Accept':'application/json','API-Key':KEY}
-    assert calls[0][1]['params']=={'limit':1,'offset':0,'ap_idn':'2604'}
+    assert calls[0][1]['params']=={'limit':1,'offset':0}
     assert not calls[0][1]['allow_redirects']
     output=json.dumps(report)
     assert KEY not in output and 'example.invalid' not in output and 'href' not in output

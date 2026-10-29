@@ -1,4 +1,4 @@
-name: Inspect GISTDA Disaster Features
+name: Inspect GISTDA Thailand Disaster Features
 on:
   push:
     branches: [main]
@@ -24,19 +24,6 @@ on:
           - 3days
           - 7days
           - 30days
-      query_scope:
-        description: 'national = no administrative filter; district = use ap_idn below. STAC requires national.'
-        required: true
-        default: national
-        type: choice
-        options:
-          - national
-          - district
-      ap_idn:
-        description: 'Only for district scope: four-digit code, e.g. 2604 = Ongkharak. Ignored for national.'
-        required: false
-        default: ''
-        type: string
 permissions:
   contents: read
 concurrency:
@@ -60,11 +47,10 @@ jobs:
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           GISTDA_FEATURE_WINDOW: ${{ inputs.window }}
-          GISTDA_QUERY_SCOPE: ${{ inputs.query_scope }}
-          GISTDA_FEATURE_AP_IDN: ${{ inputs.ap_idn }}
+          GISTDA_QUERY_SCOPE: national
           GISTDA_INSPECTION_SERVICE: ${{ inputs.service }}
         run: python -m scripts.probe_gistda_features
-      - name: Inspect the versioned main request without database writes
+      - name: Inspect the national versioned main request without database writes
         if: github.event_name == 'push'
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}

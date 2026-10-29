@@ -1,7 +1,8 @@
-"""Complete, bounded nationwide 1day query; no district/bbox filter or window fallback.
+"""Complete, bounded nationwide query; defaults to the retrospective 3days product.
 
 Only canonical administrative references and validated geometry are retained.
 Pagination checks counts and duplicates, but the provider supplies no snapshot token.
+The one-day mode is available explicitly for historical offline validation only.
 """
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
@@ -11,7 +12,7 @@ import time
 
 import requests
 
-from scripts.gistda_candidate import CandidateError, ENDPOINT, _strict_object
+from scripts.gistda_common import CandidateError, ENDPOINT, _strict_object
 from scripts.gistda_sample_quality import administrative_quality, geometry_quality
 from scripts.probe_gistda_features import page_metadata
 
@@ -24,7 +25,7 @@ MAX_BYTES = 4 * 1024 * 1024
 MAX_POSITIONS = 100_000
 
 
-def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None, *, three_day=False):
+def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None, *, three_day=True):
     api_key = api_key.strip()
     if not 8 <= len(api_key) <= 4096 or any(c in api_key for c in '\r\n') or api_key.lower().startswith(('http:', 'https:', 'gistda_api_key=')):
         raise CandidateError('INVALID_OR_MISSING_SECRET')

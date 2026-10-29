@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA pilot connection and warning-boundary repair
 
 Started 2026-10-27 (Asia/Bangkok). Story: enabling Flood observations reads a bounded Atlas snapshot through `/api/flood-products`, opens the source panel and displays returned footprints or the genuine empty-query state. Browser requests never start ingestion. The initial product is **1day, Ongkharak ap_idn=2604 only**, not a nationwide flood-coverage claim.

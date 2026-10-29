@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA nationwide daily query — 28 October 2026
 
 The Ongkharak-only view was an application pilot restriction (`ap_idn=2604`), not a provider restriction. The active implementation now supports an unfiltered Features `1day` query and local administrative filtering for Thailand, regions, provinces and districts. This does not assert nationwide satellite acquisition coverage.

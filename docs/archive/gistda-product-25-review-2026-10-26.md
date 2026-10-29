@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA product #25 — historical legacy point-route investigation
 
 **Superseded current instructions:** the user subsequently supplied the official Disaster Platform manual and a successful Features API screenshot. The active workflow now inspects `/features/flood/1day` with an `API-Key` header and optional `ap_idn=2604`, rather than the legacy point routes below. See [current Features review](gistda-disaster-features-review-2026-10-26.md). The three legacy 404 runs are historical evidence; they do not describe the new Features API. The sections below preserve the sequence of that earlier investigation and are not current run instructions.

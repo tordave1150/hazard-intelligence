@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA engineering scope correction — 2026-10-27
 
 **Subsequent release:** the [Ongkharak pilot is now connected to Atlas/API/map](gistda-pilot-release-2026-10-27.md). The candidate-only stage below is preserved as its development record; publication no longer remains a future task for this pilot.

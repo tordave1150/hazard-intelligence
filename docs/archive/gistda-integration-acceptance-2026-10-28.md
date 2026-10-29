@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA integration scope and acceptance — 28 October 2026
 
 This is the current interpretation of the supplied `GISTDA_Data_Dictionary_Integration_Notes.md`, reconciled with the [national release evidence](gistda-national-query-release-2026-10-28.md). The original Downloads file is unchanged. Its statement that Disaster Platform is not connected is historical: the bounded national reader/collector is connected. Connected engineering does not establish complete satellite coverage, scientific accuracy or unrestricted redistribution rights.

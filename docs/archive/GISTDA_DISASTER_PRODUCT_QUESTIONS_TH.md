@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # ร่างคำถามเกี่ยวกับ Disaster Platform Features
 
 เตรียมวันที่ 27 ตุลาคม 2569 **ยังไม่ได้ส่งให้หน่วยงาน** ไม่มี key, token หรือ URL ที่มี credential

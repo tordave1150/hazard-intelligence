@@ -12,7 +12,6 @@ ajv.addSchema(schema);
 const validate = ajv.compile<Forecast>({$ref:`${schema.$id}#/$defs/Forecast`});
 const validateDam=ajv.compile<DamObservation>({$ref:`${schema.$id}#/$defs/DamObservation`});
 const validateWarnings=ajv.compile<WarningFeed>({$ref:`${schema.$id}#/$defs/WarningFeed`});
-const validateFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaFloodFeed`});
 const validateNationalFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaNationalFloodFeed`});
 const validateThreeDayFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaThreeDayFeed`});
 const validateThreeDayChunk=ajv.compile<FloodChunk>({$ref:`${schema.$id}#/$defs/GistdaThreeDayChunk`});
@@ -28,7 +27,7 @@ export function validatedHourly(value:unknown):HourlyForecast{
   return record;
 }
 export function validatedFloodFeed(value:unknown):FloodFeed{
-  if(!validateFlood(value)&&!validateNationalFlood(value)&&!validateThreeDayFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
+  if(!validateNationalFlood(value)&&!validateThreeDayFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
   const feed=value as FloodFeed;
   const national=feed.area_id==='TH';
   if(feed.record_count!==feed.records.length||new Set(feed.records.map(r=>r.id)).size!==feed.records.length)throw new Error('Incomplete GISTDA query');

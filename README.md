@@ -4,14 +4,14 @@ GISTDA update (29 October 2026): [retrospective three-day product, bounded pages
 
 Previous release (28 October 2026): [Today modes, clock themes, hourly forecast and offline diagnostics](docs/current-execution-release-2026-10-28.md). The current GISTDA change is documented above.
 
-Historical GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](docs/gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older pilot instructions below are historical.
+Project scope: **Thailand nationwide**. See [current scope](docs/current-scope.md). Local examples and archived trials do not define defaults or preferred locations.
 
 
 A single Thailand map for weather and water situation awareness, built with Next.js, TypeScript, MapLibre, deck.gl and independent Python ingestion. Active direction: [Roadmap V2](docs/THAILAND_HAZARD_INTELLIGENCE_ROADMAP_V2.md).
 
 Project repository: [tordave1150/hazard-intelligence](https://github.com/tordave1150/hazard-intelligence). The legacy `weather_api` repository remains the migration baseline.
 
-The live weather path covers **77 provinces + 928 districts, four forecast periods, 1,005 validated point forecasts**. The RID daily-storage adapter accepts 35 official large-dam reports with verified published point coordinates; see [product acceptance](docs/rid-acceptance-2026-10-26.md). TMD CAP preserves issued validity, cancellation references and polygons; delayed retrieval keeps gray reference boundaries rather than implying no warning. The **GISTDA retrospective 3days Thailand query** is connected to Atlas, a read API and the 2D/3D map, with administrative filtering and distinct empty/unavailable states. The product covers the previous three-day window; exact observation date and acquisition remain unknown, and unverified area metrics are excluded. See [the national release](docs/gistda-national-query-release-2026-10-28.md) and [current acceptance scope](docs/gistda-integration-acceptance-2026-10-28.md). River gauges, verified nationwide satellite coverage and basins remain unfinished. This build does not publish a flood-risk score, depth or ETA.
+The live weather path covers **77 provinces + 928 districts, four forecast periods, 1,005 validated point forecasts**. The RID daily-storage adapter accepts 35 official large-dam reports with verified published point coordinates; see [product acceptance](docs/rid-acceptance-2026-10-26.md). TMD CAP preserves issued validity, cancellation references and polygons; delayed retrieval keeps gray reference boundaries rather than implying no warning. The **GISTDA retrospective 3days Thailand query** is connected to Atlas, a read API and the 2D/3D map, with administrative filtering and distinct empty/unavailable states. The product covers the previous three-day window; exact observation date and acquisition remain unknown, and unverified area metrics are excluded. See [the current three-day release](docs/gistda-three-day-release-2026-10-29.md) and [current acceptance scope](docs/source-acceptance.md). River gauges, verified nationwide satellite coverage and basins remain unfinished. This build does not publish a flood-risk score, depth or ETA.
 
 ## Run locally
 

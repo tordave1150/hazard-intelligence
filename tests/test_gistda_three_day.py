@@ -7,7 +7,7 @@ import mongomock
 import pytest
 
 from scripts.gistda_national import collect_national_candidate
-from scripts.gistda_candidate import CandidateError
+from scripts.gistda_common import CandidateError
 from pipelines.gistda import limits
 from pipelines.gistda.data import normalize
 from pipelines.gistda.chunks import ThreeDayPublisher, split_feed, check_chunks, size
@@ -126,7 +126,7 @@ def test_three_day_request_and_schema_cannot_be_relabelled_as_one_day(tmp_path):
     path=tmp_path/'request.json'
     path.write_text(json.dumps({'request_id':'2026-10-29-01','source_id':'gistda','operation':'publish_thailand_3days'}))
     check_request(path,three_day=True)
-    with pytest.raises(ValueError):check_request(path,national=True)
+    with pytest.raises(ValueError):check_request(path,three_day=False)
     value=feed(1)
     validate_record('GistdaThreeDayFeed',value)
     value['source_url']=value['source_url'].replace('3days','1day')
@@ -142,7 +142,7 @@ def test_failed_refresh_retains_previous_complete_three_day_generation(monkeypat
     chunks=split_feed(feed(1));publisher.publish(chunks,['0000'])
     before=db.snapshot_control.find_one({'_id':'gistda:'+limits.PRODUCT})
     def failure(*args,**kwargs):raise CandidateError('PROVIDER_COUNT_CHANGED_DURING_PAGINATION')
-    monkeypatch.setattr(gistda_national,'collect_national_candidate',failure)
+    monkeypatch.setattr(run,'collect_national_candidate',failure)
     monkeypatch.setattr(run,'MongoClient',lambda *args,**kwargs:client)
     monkeypatch.setenv('MONGODB_URI','mongodb://unused-test')
     monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
@@ -151,3 +151,22 @@ def test_failed_refresh_retains_previous_complete_three_day_generation(monkeypat
     assert db.snapshot_control.find_one({'_id':'gistda:'+limits.PRODUCT})==before
     assert db.source_status.find_one({'_id':'gistda:'+limits.PRODUCT})['status']=='FAILED'
     assert KEY not in capsys.readouterr().out
+
+
+def test_default_publication_succeeds_for_thailand_and_clears_previous_failure(monkeypatch,capsys):
+    from pipelines.gistda import run
+    client=mongomock.MongoClient();db=client.weather_db
+    candidate=feed(1)
+    candidate['schema_version']='gistda-candidate/1'
+    for key in ('snapshot_id','data_state','ingested_at'):candidate.pop(key)
+    monkeypatch.setattr(run,'collect_national_candidate',lambda key,**options:candidate)
+    monkeypatch.setattr(run,'MongoClient',lambda *args,**kwargs:client)
+    monkeypatch.setenv('MONGODB_URI','mongodb://unused-test')
+    monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
+    monkeypatch.setattr(sys,'argv',['gistda','--publish'])
+    db.source_status.insert_one({'_id':'gistda:'+limits.PRODUCT,'status':'FAILED','error_summary':'old'})
+    run.main()
+    status=db.source_status.find_one({'_id':'gistda:'+limits.PRODUCT})
+    assert status['status']=='SUCCESS' and status['scope_area_id']=='TH' and status['record_count']==1
+    assert 'error_summary' not in status
+    assert json.loads(capsys.readouterr().out)['product_window']=='3days'

@@ -31,7 +31,7 @@ def test_empty_query_is_a_published_envelope_and_rollback_restores_nonempty_feed
     empty=deepcopy(feed);empty.update(records=[],record_count=0)
     p.publish([empty],['latest'])
     assert p.read()==[empty]
-    report=next(r for r in verify_database(db) if r['source_id']=='gistda')
+    report=next(r for r in verify_database(db,include_retired=True) if r['product_id']==feed['product_id'])
     assert report['active_records']==1 and report['document_limit']==report['total_documents']==2
     p.rollback();assert p.read()==[feed]
 
@@ -68,38 +68,16 @@ def test_missing_unique_index_and_unbounded_documents_fail_verification(feed):
     db=mongomock.MongoClient().test;p=FloodPublisher(db);p.publish([feed],['latest'])
     index=next(name for name,definition in db.satellite_flood_latest.index_information().items() if definition.get('unique'))
     db.satellite_flood_latest.drop_index(index)
-    with pytest.raises(ValueError,match='unique'):verify_database(db)
+    with pytest.raises(ValueError,match='unique'):verify_database(db,include_retired=True)
     p=FloodPublisher(db);p.publish([feed],['latest'])
     db.satellite_flood_latest.insert_one({'unrelated':'not permitted in bounded latest collection'})
-    with pytest.raises(ValueError,match='bounded'):verify_database(db)
+    with pytest.raises(ValueError,match='bounded'):verify_database(db,include_retired=True)
 
-
-def test_success_clears_failure_and_failed_collection_retains_active_snapshot(feed,monkeypatch,capsys):
-    from pipelines.gistda import run
-    client=mongomock.MongoClient();db=client.weather_db
-    candidate={k:v for k,v in feed.items() if k not in ('snapshot_id','data_state','ingested_at')}
-    candidate['schema_version']='gistda-candidate/1'
-    monkeypatch.setenv('MONGODB_URI','mongodb://unused-test-host')
-    monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
-    monkeypatch.setattr(run,'MongoClient',lambda *a,**k:client)
-    monkeypatch.setattr(run,'collect_candidate',lambda key:candidate)
-    monkeypatch.setattr(sys,'argv',['gistda','--publish'])
-    db.source_status.insert_one({'_id':KEY,'status':'FAILED','error_summary':'old-failure'})
-    run.main()
-    status=db.source_status.find_one({'_id':KEY})
-    assert status['status']=='SUCCESS' and 'error_summary' not in status
-    before=db.snapshot_control.find_one({'_id':KEY})
-    def fail(key):raise ValueError('private URI or upstream credential')
-    monkeypatch.setattr(run,'collect_candidate',fail)
-    with pytest.raises(RuntimeError):run.main()
-    assert db.snapshot_control.find_one({'_id':KEY})==before
-    assert db.source_status.find_one({'_id':KEY})['status']=='FAILED'
-    assert 'private URI' not in capsys.readouterr().out
 
 
 def test_reviewed_publication_request_cannot_change_source_product_or_credentials(tmp_path):
     from pipelines.gistda.run import check_request
-    request={'request_id':'2026-10-27-01','source_id':'gistda','operation':'publish_ongkharak_1day'}
+    request={'request_id':'2026-10-27-01','source_id':'gistda','operation':'publish_thailand_3days'}
     path=tmp_path/'request.json';path.write_text(json.dumps(request),encoding='utf-8');check_request(path)
     for change in ({'source_id':'tmd'},{'operation':'publish_national'},{'api_key':'private'},{'request_id':False}):
         path.write_text(json.dumps({**request,**change}),encoding='utf-8')

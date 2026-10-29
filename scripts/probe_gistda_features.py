@@ -94,7 +94,7 @@ def page_metadata(payload,limit=1):
             'acquisition_time_status':'UNVERIFIED'}
 
 
-def inspect_features(api_key,window='1day',ap_idn='2604',get=None,clock=time.monotonic,service='features'):
+def inspect_features(api_key,window='3days',ap_idn='',get=None,clock=time.monotonic,service='features'):
     api_key=api_key.strip();ap_idn=ap_idn.strip()
     if len(api_key)<8 or len(api_key)>4096 or any(c in api_key for c in '\r\n') or api_key.lower().startswith(('http:','https:','gistda_api_key=')):
         return {'result':'INVALID_OR_MISSING_SECRET'},1
@@ -164,7 +164,7 @@ def main(reviewed_request=False):
         except (OSError,ValueError,TypeError):
             print(json.dumps({'result':'INVALID_REVIEWED_REQUEST'}))
             raise SystemExit(1) from None
-    window=request['window'] if request else os.getenv('GISTDA_FEATURE_WINDOW','1day')
+    window=request['window'] if request else os.getenv('GISTDA_FEATURE_WINDOW','3days')
     if request:
         ap_idn=request['ap_idn']
     else:

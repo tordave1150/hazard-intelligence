@@ -18,16 +18,17 @@ from pipelines.gistda.chunks import ThreeDayPublisher, check_chunks
 from pipelines.gistda import limits as flood_limits
 
 
-def verify_database(db):
+def verify_database(db, include_retired=False):
     """Read-only active-generation, index and retention audit; no index creation."""
     specs=[('open_meteo','daily_forecast','weather_latest','location_id','Forecast',
             [a['id'] for a in weather_locations('all')],check_weather),
            ('rid',PRODUCT,'dam_latest','dam_id','DamObservation',[a['dam_id'] for a in DAMS.values()],check_dams),
            ('tmd','cap_warnings','agency_warning_latest','snapshot_id','WarningFeed',['latest'],check_envelope),
-           ('gistda','flood_1day_ongkharak','satellite_flood_latest','snapshot_id','GistdaFloodFeed',['latest'],check_flood_envelope),
-           ('gistda','flood_1day_thailand','satellite_flood_national_latest','snapshot_id','GistdaNationalFloodFeed',['latest'],check_national_envelope),
            ('gistda',flood_limits.PRODUCT,flood_limits.COLLECTION,'chunk_id','GistdaThreeDayChunk',None,check_chunks),
            ('open_meteo','today_hourly','weather_hourly_latest','location_id','HourlyForecast',[a['id'] for a in weather_locations('all')],check_hourly_batch)]
+    if include_retired:
+        specs += [('gistda','flood_1day_ongkharak','satellite_flood_latest','snapshot_id','GistdaFloodFeed',['latest'],check_flood_envelope),
+                  ('gistda','flood_1day_thailand','satellite_flood_national_latest','snapshot_id','GistdaNationalFloodFeed',['latest'],check_national_envelope)]
     result=[]
     for source,product,collection,identity,kind,expected,check in specs:
         store=db[collection]
@@ -75,6 +76,7 @@ def main():
     parser.add_argument('command',choices=['audit','verify','rollback','unlock'])
     parser.add_argument('--source',choices=['open_meteo','hourly','rid','tmd','gistda','gistda_1day','gistda_pilot'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
+    parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
     args=parser.parse_args()
     with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
         db=client[os.getenv('MONGODB_DB_NAME','weather_db')]
@@ -88,7 +90,7 @@ def main():
                               'index_bytes':collstats.get('totalIndexSize'),'indexes':list(c.list_indexes())})
             print(json.dumps(stats,default=str,indent=2))
         elif args.command=='verify':
-            print(json.dumps(verify_database(db),default=str,indent=2))
+            print(json.dumps(verify_database(db,include_retired=args.include_retired),default=str,indent=2))
         elif args.command=='rollback':
             {'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')

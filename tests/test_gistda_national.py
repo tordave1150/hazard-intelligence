@@ -8,7 +8,7 @@ import pytest
 from jsonschema import ValidationError
 
 from scripts import gistda_national as national
-from scripts.gistda_candidate import CandidateError
+from scripts.gistda_common import CandidateError
 from pipelines.gistda.data import normalize
 from pipelines.gistda.publication import NationalFloodPublisher
 from pipelines.shared.schemas import validate_record
@@ -40,7 +40,7 @@ class Response:
 def collect(pages):
     iterator=iter(pages);calls=[]
     def get(url,**kwargs):calls.append((url,kwargs));return Response(next(iterator))
-    return national.collect_national_candidate(KEY,get=get,now=lambda:NOW),calls
+    return national.collect_national_candidate(KEY,get=get,now=lambda:NOW,three_day=False),calls
 
 
 def test_national_empty_query_does_not_apply_the_ongkharak_or_bangkok_example_filter():
@@ -75,34 +75,12 @@ def test_full_supported_capacity_completes_all_ten_pages_without_raw_properties(
     validate_record('GistdaNationalFloodFeed', normalize(result, NOW))
 
 
-def test_national_budget_failure_records_reason_and_keeps_last_complete_generation(monkeypatch, capsys):
+def test_retired_one_day_cli_is_rejected_before_any_collection(monkeypatch):
     from pipelines.gistda import run
-    client = mongomock.MongoClient()
-    db = client.weather_db
-    candidate, _ = collect([page([feature()])])
-    publisher = NationalFloodPublisher(db)
-    publisher.publish([normalize(candidate, NOW)], ['latest'])
-    control_key = 'gistda:' + national.PRODUCT
-    before = db.snapshot_control.find_one({'_id': control_key})
-    real_collect = national.collect_national_candidate
-
-    def oversized_query(key):
-        return real_collect(key, get=lambda *args, **kwargs: Response(page([], 1001)), now=lambda: NOW)
-
-    monkeypatch.setattr(national, 'collect_national_candidate', oversized_query)
-    monkeypatch.setattr(run, 'MongoClient', lambda *args, **kwargs: client)
-    monkeypatch.setenv('MONGODB_URI', 'mongodb://unused-test-host')
-    monkeypatch.setenv('MONGODB_DB_NAME', 'weather_db')
-    monkeypatch.setenv('GISTDA_API_KEY', KEY)
-    monkeypatch.setattr(sys, 'argv', ['gistda', '--publish', '--national'])
-    with pytest.raises(RuntimeError):
-        run.main()
-    assert db.snapshot_control.find_one({'_id': control_key}) == before
-    assert publisher.read()[0]['record_count'] == 1
-    assert db.satellite_flood_national_latest.count_documents({}) == 1
-    status = db.source_status.find_one({'_id': control_key})
-    assert status['status'] == 'FAILED' and status['error_summary'] == 'NATIONAL_FEATURE_BUDGET_EXCEEDED'
-    assert KEY not in capsys.readouterr().out
+    monkeypatch.setattr(sys,'argv',['gistda','--publish','--national'])
+    monkeypatch.setattr(run,'MongoClient',lambda *a,**k:pytest.fail('Retired arguments must not access a database'))
+    with pytest.raises(SystemExit) as error:run.main()
+    assert error.value.code==2
 
 
 @pytest.mark.parametrize('pages,reason',[
@@ -133,7 +111,7 @@ def test_page_time_byte_position_and_page_count_budgets_fail_closed(monkeypatch)
     with pytest.raises(CandidateError,match='CANDIDATE_GEOMETRY_LIMIT'):collect([page([feature()])])
     ticks=iter([0,121])
     with pytest.raises(CandidateError,match='DEADLINE_EXCEEDED'):
-        national.collect_national_candidate(KEY,clock=lambda:next(ticks))
+        national.collect_national_candidate(KEY,clock=lambda:next(ticks),three_day=False)
 
 
 def test_new_product_preserves_pilot_and_retains_rollback_with_two_documents():
@@ -146,7 +124,7 @@ def test_new_product_preserves_pilot_and_retains_rollback_with_two_documents():
     empty=deepcopy(feed);empty.update(records=[],record_count=0)
     publisher.publish([empty],['latest']);publisher.rollback()
     assert publisher.read()==[feed] and FloodPublisher(db).read()==[pilot]
-    report=next(r for r in verify_database(db) if r['product_id']==national.PRODUCT)
+    report=next(r for r in verify_database(db,include_retired=True) if r['product_id']==national.PRODUCT)
     assert report['active_records']==1 and report['document_limit']==report['total_documents']==2
     before=db.snapshot_control.find_one({'_id':'gistda:'+national.PRODUCT})
     invalid=deepcopy(feed);invalid['record_count']=0
@@ -165,5 +143,5 @@ def test_reviewed_national_request_is_explicit_and_rejects_other_operations(tmp_
     from pipelines.gistda.run import check_request
     path=tmp_path/'request.json'
     path.write_text(json.dumps({'request_id':'2026-10-28-01','source_id':'gistda','operation':'publish_thailand_1day'}),encoding='utf-8')
-    check_request(path,national=True)
     with pytest.raises(ValueError):check_request(path)
+    with pytest.raises(ValueError):check_request(path,three_day=False)

@@ -10,17 +10,7 @@
   "original_time_min": "2026-10-22 14:00",
   "original_time_max": "2026-10-29 22:20",
   "timezone_status": "NOT_EXPLICIT_IN_RESPONSE",
-  "nakhon_nayok_station_ids": [
-    189,
-    505003,
-    2687,
-    175,
-    1396858,
-    1396860,
-    2689
-  ],
-  "ongkharak_station_ids": [
-    189
-  ],
-  "accepted_for_production": false
+  "accepted_for_production": false,
+  "integration_target": "ALL_THAILAND_STATIONS_FROM_UNFILTERED_PROVIDER_RESPONSE",
+  "station_allowlist": null
 }

@@ -4,9 +4,13 @@ import hashlib
 import json
 
 from pipelines.shared.time_units import instant, utc_now
-from scripts.gistda_candidate import ENDPOINT, AREA_ID, MAX_POSITIONS
+from scripts.gistda_common import ENDPOINT
 from scripts.gistda_sample_quality import geometry_quality
 
+# Read-only compatibility for already-stored retired district envelopes. These
+# identities are never used to select a current collection or publication scope.
+AREA_ID = 'TH-D-2604'
+MAX_POSITIONS = 20_000
 PRODUCT = 'flood_1day_ongkharak'
 KEY = 'gistda:' + PRODUCT
 COLLECTION = 'satellite_flood_latest'

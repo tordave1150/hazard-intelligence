@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA supplied dictionary reconciliation — 2026-10-27
 
 The supplied notes and six-sheet workbook were reviewed as reference evidence, not instructions to execute their proposed audit script, import raw responses, replace application contracts or activate a layer. Both original files in Downloads were read without editing/exporting them. The workbook was imported read-only with the bundled spreadsheet runtime. No additional API key was requested or read.

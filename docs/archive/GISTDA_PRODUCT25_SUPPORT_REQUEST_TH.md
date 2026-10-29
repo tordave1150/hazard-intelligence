@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # ข้อความสอบถาม GISTDA: ผลิตภัณฑ์ #25 ตอบ HTTP 404
 
 **เอกสารประวัติ ยังไม่ได้ส่ง:** หลังจากเตรียมข้อความนี้ ผู้ใช้พบคู่มือ Disaster Platform และเรียก `/features/flood/1day` สำเร็จด้วย `API-Key` header แล้ว คำขอให้ตรวจ route เก่าด้านล่างจึงไม่ใช่ขั้นตอนปัจจุบัน ดู [ผลตรวจ Features API ล่าสุด](gistda-disaster-features-review-2026-10-26.md) สำหรับ route ใหม่และสิทธิ์/ความหมายข้อมูลที่ยังต้องยืนยัน

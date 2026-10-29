@@ -1,3 +1,5 @@
+> HISTORICAL RECORD — Superseded. Use [current scope](../current-scope.md). Sample locations and retired commands here are not user preferences or current run instructions.
+
 # GISTDA Disaster Platform Features — current access review
 
 References reviewed 2026-10-26; Actions verification added 2026-10-27, Asia/Bangkok. This replaces the legacy point-route diagnostic as the current integration path; it does not grant product acceptance or public redistribution rights.
