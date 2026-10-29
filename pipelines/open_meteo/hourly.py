@@ -136,7 +136,7 @@ def main():
             try:db.source_status.update_one({'_id': 'open_meteo:' + PRODUCT}, {'$set': status}, upsert=True)
             except Exception:pass
         print(json.dumps({'status': 'FAILED', 'product_id': PRODUCT, 'stage': stage, 'reason': reason,
-            'http_status': status.get('http_status')}), flush=True)
+            'http_status': status.get('http_status'), 'transport_type': getattr(exc,'transport_type',None)}), flush=True)
         raise RuntimeError('Hourly refresh failed; last complete hourly product retained') from None
     finally:
         if client is not None: client.close()

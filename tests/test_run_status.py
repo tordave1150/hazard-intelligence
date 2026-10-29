@@ -26,5 +26,5 @@ def test_hourly_failure_reports_safe_reason_without_response_or_credentials(tmp_
     monkeypatch.setattr(hourly,'collect',fail)
     import pytest,json
     with pytest.raises(RuntimeError):hourly.main()
-    assert json.loads(capsys.readouterr().out)=={'status':'FAILED','product_id':'today_hourly','stage':'collect','reason':'rate_limited','http_status':429}
+    assert json.loads(capsys.readouterr().out)=={'status':'FAILED','product_id':'today_hourly','stage':'collect','reason':'rate_limited','http_status':429,'transport_type':None}
     assert not (tmp_path/'unused.json').exists()

@@ -40,6 +40,8 @@ jobs:
               raise ValueError('Invalid publication request ID')
           print('Validated Today hourly publication request')
           PY
+      - name: Check provider HTTPS reachability without credentials
+        run: python -m scripts.open_meteo_connectivity
       - name: Publish independent hourly snapshot within the shared provider budget
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

@@ -10,10 +10,11 @@ DAILY = 'precipitation_sum,precipitation_probability_max,temperature_2m_max,temp
 
 class ProviderRequestError(RuntimeError):
     """Safe request diagnostics: never retain a response, URL, key or body."""
-    def __init__(self, reason, status_code=None, retryable=True):
+    def __init__(self, reason, status_code=None, retryable=True, transport_type=None):
         self.reason = reason
         self.status_code = status_code
         self.retryable = retryable
+        self.transport_type = transport_type
         super().__init__(f'Open-Meteo {reason}' + (f' (HTTP {status_code})' if status_code is not None else ''))
 
 
@@ -53,8 +54,8 @@ def _fetch(locations, params, session, sleep):
         response = None
         try:
             response = session.get(url, params=params, timeout=(10, 60), allow_redirects=False, stream=True)
-        except requests.RequestException:
-            failure = ProviderRequestError('transport_error')
+        except requests.RequestException as exc:
+            failure = ProviderRequestError('transport_error', transport_type=type(exc).__name__)
         else:
             if not 200 <= response.status_code < 300 and hasattr(response, 'close'):
                 response.close()
@@ -77,8 +78,8 @@ def _fetch(locations, params, session, sleep):
                             response.close()
                     else:
                         payload = response.json() # In-memory test doubles; real HTTP is streamed above.
-                except requests.RequestException:
-                    failure = ProviderRequestError('transport_error')
+                except requests.RequestException as exc:
+                    failure = ProviderRequestError('transport_error', transport_type=type(exc).__name__)
                 except ValueError:
                     failure = ProviderRequestError('invalid_json')
                 else:
