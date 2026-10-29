@@ -149,6 +149,52 @@ def test_reviewed_request_selects_explicit_window_without_manual_environment_fal
     assert json.loads(capsys.readouterr().out)=={'result':'INVALID_REVIEWED_REQUEST'}
 
 
+@pytest.mark.parametrize('query_scope',[None,'national'])
+def test_manual_national_scope_ignores_retained_district_default(query_scope,monkeypatch,capsys):
+    monkeypatch.setenv('GISTDA_API_KEY',KEY)
+    monkeypatch.setenv('GISTDA_FEATURE_WINDOW','7days')
+    monkeypatch.setenv('GISTDA_FEATURE_AP_IDN','2604')
+    monkeypatch.setenv('GISTDA_INSPECTION_SERVICE','features')
+    if query_scope is None:monkeypatch.delenv('GISTDA_QUERY_SCOPE',raising=False)
+    else:monkeypatch.setenv('GISTDA_QUERY_SCOPE',query_scope)
+    calls=[]
+    def get(url,**kwargs):calls.append((url,kwargs));return Response(page())
+    monkeypatch.setattr(probe.requests,'get',get)
+    with pytest.raises(SystemExit) as exit:probe.main()
+    assert exit.value.code==0 and len(calls)==1
+    assert calls[0][0]==probe.BASE+'7days'
+    assert calls[0][1]['params']=={'limit':1,'offset':0}
+    report=json.loads(capsys.readouterr().out)
+    assert report['requested_scope']=='national' and report['requested_filter']['ap_idn'] is None
+
+
+def test_manual_district_scope_requires_explicit_nonempty_code(monkeypatch,capsys):
+    monkeypatch.setenv('GISTDA_API_KEY',KEY)
+    monkeypatch.setenv('GISTDA_QUERY_SCOPE','district')
+    monkeypatch.setenv('GISTDA_FEATURE_WINDOW','7days')
+    monkeypatch.setenv('GISTDA_INSPECTION_SERVICE','features')
+    monkeypatch.setenv('GISTDA_FEATURE_AP_IDN','2604')
+    calls=[]
+    def get(url,**kwargs):calls.append((url,kwargs));return Response(page())
+    monkeypatch.setattr(probe.requests,'get',get)
+    with pytest.raises(SystemExit) as exit:probe.main()
+    assert exit.value.code==0 and calls[0][1]['params']['ap_idn']=='2604'
+    assert json.loads(capsys.readouterr().out)['requested_scope']=='district'
+    monkeypatch.setenv('GISTDA_FEATURE_AP_IDN',' ')
+    with pytest.raises(SystemExit) as exit:probe.main()
+    assert exit.value.code==1 and len(calls)==1
+    assert json.loads(capsys.readouterr().out)=={'result':'DISTRICT_FILTER_REQUIRED'}
+
+
+def test_invalid_manual_scope_never_becomes_an_unfiltered_request(monkeypatch,capsys):
+    monkeypatch.setenv('GISTDA_QUERY_SCOPE',KEY)
+    def forbidden(*args,**kwargs):pytest.fail('Invalid scope must not make a request')
+    monkeypatch.setattr(probe.requests,'get',forbidden)
+    with pytest.raises(SystemExit) as exit:probe.main()
+    assert exit.value.code==1
+    assert json.loads(capsys.readouterr().out)=={'result':'INVALID_QUERY_SCOPE'}
+
+
 def stac_item(**times):
     return {'type':'Feature','stac_version':'1.0.0','id':'not-logged','geometry':None,
             'properties':{'datetime':'2026-10-26T00:00:00Z',**times},

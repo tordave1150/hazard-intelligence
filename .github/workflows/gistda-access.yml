@@ -24,10 +24,18 @@ on:
           - 3days
           - 7days
           - 30days
+      query_scope:
+        description: 'national = no administrative filter; district = use ap_idn below. STAC requires national.'
+        required: true
+        default: national
+        type: choice
+        options:
+          - national
+          - district
       ap_idn:
-        description: 'Features: 2604 = Ongkharak; clear for unfiltered page. STAC: must be blank. No keys or URLs.'
+        description: 'Only for district scope: four-digit code, e.g. 2604 = Ongkharak. Ignored for national.'
         required: false
-        default: '2604'
+        default: ''
         type: string
 permissions:
   contents: read
@@ -52,6 +60,7 @@ jobs:
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           GISTDA_FEATURE_WINDOW: ${{ inputs.window }}
+          GISTDA_QUERY_SCOPE: ${{ inputs.query_scope }}
           GISTDA_FEATURE_AP_IDN: ${{ inputs.ap_idn }}
           GISTDA_INSPECTION_SERVICE: ${{ inputs.service }}
         run: python -m scripts.probe_gistda_features

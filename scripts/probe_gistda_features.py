@@ -165,10 +165,23 @@ def main(reviewed_request=False):
             print(json.dumps({'result':'INVALID_REVIEWED_REQUEST'}))
             raise SystemExit(1) from None
     window=request['window'] if request else os.getenv('GISTDA_FEATURE_WINDOW','1day')
-    ap_idn=request['ap_idn'] if request else os.getenv('GISTDA_FEATURE_AP_IDN','2604')
+    if request:
+        ap_idn=request['ap_idn']
+    else:
+        query_scope=os.getenv('GISTDA_QUERY_SCOPE','national')
+        if query_scope not in ('national','district'):
+            print(json.dumps({'result':'INVALID_QUERY_SCOPE'}))
+            raise SystemExit(1) from None
+        # National scope must not depend on whether GitHub preserves an empty
+        # text input. Ignore even a retained/default district value explicitly.
+        ap_idn='' if query_scope=='national' else os.getenv('GISTDA_FEATURE_AP_IDN','').strip()
+        if query_scope=='district' and not ap_idn:
+            print(json.dumps({'result':'DISTRICT_FILTER_REQUIRED'}))
+            raise SystemExit(1) from None
     service=request.get('service','features') if request else os.getenv('GISTDA_INSPECTION_SERVICE','features')
     report,code=inspect_features(os.getenv('GISTDA_API_KEY',''),window,ap_idn,service=service)
     if request:report['reviewed_request_id']=request['request_id']
+    else:report['requested_scope']=query_scope
     print(json.dumps(report,ensure_ascii=True,allow_nan=False))
     raise SystemExit(code)
 
