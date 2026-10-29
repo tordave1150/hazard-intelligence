@@ -32,6 +32,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   const [warningSnapshot,setWarningSnapshot]=useState<WarningSnapshot>(emptyWarnings),[showWarnings,setShowWarnings]=useState(true),[selectedWarning,setSelectedWarning]=useState<string|null>(null);
   const [floodSnapshot,setFloodSnapshot]=useState<FloodSnapshot>(emptyFloods),[showFloods,setShowFloods]=useState(false),[selectedFlood,setSelectedFlood]=useState<string|null>(null);
   const floodSnapshotRef=useRef<FloodSnapshot>(emptyFloods);
+  const [floodLoading,setFloodLoading]=useState(true);
   const [metric,setMetric]=useState<Metric>('rainfall_mm'),[selectedDate,setSelectedDate]=useState<string|null>(null),[todayMode,setTodayMode]=useState<DashboardMode>('situation'),[rainfall,setRainfall]=useState(true),[is3d,setIs3d]=useState(false),[terrain,setTerrain]=useState(true),[extrude,setExtrude]=useState(false),[opacity,setOpacity]=useState(74);
   const [activeEvidence,setActiveEvidence]=useState<'tmd'|'gistda'|'rid'>('tmd');
   const [sourcesOpen,setSourcesOpen]=useState(false),[leftOpen,setLeftOpen]=useState(false),[rightOpen,setRightOpen]=useState(false),[refresh,setRefresh]=useState(0);
@@ -81,11 +82,11 @@ export default function Dashboard({areas}:{areas:Area[]}){
   },[refresh]);
   useEffect(()=>{
     const controller=new AbortController();let active=true;
-    const load=()=>loadFloodSnapshot(controller.signal,fetch,floodSnapshotRef.current)
+    const load=()=>{setFloodLoading(true);return loadFloodSnapshot(controller.signal,fetch,floodSnapshotRef.current)
       .then(value=>{if(active){floodSnapshotRef.current=value;setFloodSnapshot(value);}}).catch(()=>{if(active){
         const previous=floodSnapshotRef.current;
         setFloodSnapshot(previous.feed?{...previous,health:{...previous.health,status:'FAILED'},query_freshness:'DELAYED',error:'GISTDA refresh failed; showing the last complete three-day product.'}:{...emptyFloods,error:'GISTDA three-day product is temporarily unavailable'});
-      }});
+      }}).finally(()=>{if(active)setFloodLoading(false);});};
     void load();const timer=setInterval(load,300000);
     return()=>{active=false;controller.abort();clearInterval(timer);};
   },[refresh]);
@@ -153,7 +154,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
       {mode==='situation'?<div className="summary-card"><span className="summary-icon teal"><Waves size={21}/></span><div><label>Rain & river observations</label><strong>—<small>Unavailable</small></strong><p>No accepted live gauge or radar source</p></div><span className="mini-tag">OBSERVATIONS</span></div>:<div className="summary-card"><span className="summary-icon teal"><CloudRain size={21}/></span><div><label>Forecast rainfall · {mode==='hourly'&&activeHour?hourLabel(activeHour):dateLabel}</label><strong>{max===null?'—':max.toFixed(1)}<small>{max===null?'No data':displayUnit}</small></strong><p>{max===null?'Waiting for a validated snapshot':`Maximum point forecast · ${area.level==='national'?'Thailand':area.name}`}</p></div><span className="mini-tag">FORECAST</span></div>}
       <div className="summary-card"><span className="summary-icon blue"><Radio size={21}/></span><div><label>TMD CAP messages</label><strong>{warningSnapshot.feed?validWarnings:'—'}<small>{warningSnapshot.feed?'within validity window':'Unavailable'}</small></strong><p>{warningSnapshot.feed?`${warningsInScope.length} latest-feed messages · ${tmdStatus}`:'Awaiting published CAP feed'}</p></div></div>
       <div className="summary-card"><span className="summary-icon violet"><Droplets size={21}/></span><div><label>Reservoir reports</label><strong>{damSnapshot.records.length?damsInScope.length:'—'}<small>{damSnapshot.records.length?'dam points':ridStatus}</small></strong><p>{damSnapshot.records.length?`RID daily report · ${reportDate(damSnapshot.records[0].report_date)}`:'RID · awaiting published report'}</p></div></div>
-      <div className="summary-card"><span className="summary-icon sand"><Satellite size={21}/></span><div><label>Satellite product results</label><strong>{floodSnapshot.feed&&floodInScope?floodsInScope.length:'—'}<small>{!floodSnapshot.feed?'Awaiting snapshot':floodInScope?'returned features':'Outside scope'}</small></strong><p>GISTDA · 3 days · {floodScope} · acquisition unknown</p></div></div>
+      <div className="summary-card"><span className="summary-icon sand"><Satellite size={21}/></span><div><label>Satellite product results</label><strong>{floodSnapshot.feed&&floodInScope?floodsInScope.length:'—'}<small>{!floodSnapshot.feed?(floodLoading?'Loading three-day product':'Awaiting snapshot'):floodInScope?'returned features':'Outside scope'}</small></strong><p>GISTDA · 3 days · {floodScope} · acquisition unknown</p></div></div>
     </section>
     <section className="map-workspace">
       <div className="workspace-bar"><nav aria-label="Geography breadcrumb">{trail.map((a,i)=><span key={a.id}>{i>0&&<ChevronRight size={12}/>}<button onClick={()=>select(a.id)} aria-current={i===trail.length-1?'location':undefined}>{a.level==='national'?<><Compass size={14}/> Thailand</>:a.name}</button></span>)}</nav><div className="view-controls"><button className="mobile-control" onClick={()=>setLeftOpen(!leftOpen)}><SlidersHorizontal size={15}/> Layers</button><button className={is3d?'':'active'} aria-pressed={!is3d} onClick={()=>setIs3d(false)}>2D</button><button className={is3d?'active':''} aria-pressed={is3d} onClick={()=>setIs3d(true)}>3D</button><button className="mobile-control" onClick={()=>setRightOpen(!rightOpen)}><Info size={15}/> Area</button></div></div>

@@ -35,6 +35,20 @@ describe('Complete three-day GISTDA loading',()=>{
     expect(fetcher).toHaveBeenCalledTimes(1);expect(result.records).toHaveLength(3);
     expect(result.health?.status).toBe('FAILED');expect(result.query_freshness).toBe('DELAYED');
   });
+  it('bounds concurrent requests to four while preserving page order',async()=>{
+    let active=0,maximum=0;
+    const fetcher=vi.fn(async(url:RequestInfo|URL)=>{
+      active++;maximum=Math.max(maximum,active);
+      const index=Number(new URL(String(url),'https://example.invalid').searchParams.get('chunk')??0);
+      await new Promise(resolve=>setTimeout(resolve,1));active--;
+      const row=structuredClone(records[index%records.length]);row.id=row.id.split('-')[0]+'-'+index;
+      return {ok:true,json:async()=>page(index,{feed:{...metadata,record_count:6},records:[row],
+        pagination:{generation:'test-generation',chunk:index,chunk_count:6,next_chunk:index<5?index+1:null,complete:false}})};
+    }) as unknown as typeof fetch;
+    const result=await loadFloodSnapshot(new AbortController().signal,fetcher);
+    expect(maximum).toBe(4);expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(result.records.map(row=>row.id.split('-').at(-1))).toEqual(['0','1','2','3','4','5']);
+  });
   it.each(['generation','duplicate','missing','cursor','metadata'])('rejects %s corruption before returning anything to the map',async(corruption)=>{
     const first=page(0),second=page(1);
     if(corruption==='generation')second.pagination!.generation='different-generation';

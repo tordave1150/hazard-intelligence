@@ -1,34 +1,39 @@
 import type {FloodSnapshot} from './types';
 
-/** Assemble one complete generation before it can reach the map. */
+/** Load one complete generation with at most four page requests in flight. */
 export async function loadFloodSnapshot(signal:AbortSignal,fetcher:typeof fetch=fetch,previous?:FloodSnapshot):Promise<FloodSnapshot>{
-  let result:FloodSnapshot|null=null,chunk=0,generation:string|undefined;
-  const records:FloodSnapshot['records']=[],ids=new Set<string>();
-  for(let page=0;page<512;page++){
+  async function read(chunk:number,generation?:string){
     const query=chunk?`?chunk=${chunk}&generation=${encodeURIComponent(generation!)}`:'';
     const response=await fetcher('/api/flood-products'+query,{cache:'no-store',signal});
     if(!response.ok)throw new Error('GISTDA page failed');
-    const value=await response.json() as FloodSnapshot;
-    if(!value.feed){if(page===0&&!value.error)return value;throw new Error('GISTDA generation unavailable');}
-    if(value.feed.product_window!=='3days'||value.feed.product_id!=='flood_3days_thailand')throw new Error('Unexpected GISTDA product');
-    const pagination=value.pagination;
-    if(!pagination||pagination.chunk!==chunk||!Number.isInteger(pagination.chunk_count)||pagination.chunk_count<1||pagination.chunk_count>512||
-      (result&&(pagination.generation!==generation||JSON.stringify(value.feed)!==JSON.stringify(result.feed)||pagination.chunk_count!==result.pagination!.chunk_count)))throw new Error('GISTDA generation changed');
-    if(page===0&&previous?.pagination?.complete&&previous.pagination.generation===pagination.generation&&
-      previous.records.length===value.feed.record_count&&JSON.stringify(previous.feed)===JSON.stringify(value.feed))return {...previous,health:value.health,query_freshness:value.query_freshness};
+    return await response.json() as FloodSnapshot;
+  }
+  const first=await read(0);
+  if(!first.feed){if(!first.error)return first;throw new Error('GISTDA generation unavailable');}
+  const pagination=first.pagination,count=pagination?.chunk_count??0;
+  if(!pagination||!Number.isInteger(count)||count<1||count>512||!Number.isInteger(first.feed.record_count)||
+    first.feed.record_count<0||first.feed.record_count>20000||first.feed.product_window!=='3days'||first.feed.product_id!=='flood_3days_thailand')throw new Error('Invalid GISTDA generation');
+  const generation=pagination.generation,metadata=JSON.stringify(first.feed);
+  const records:FloodSnapshot['records']=[],ids=new Set<string>();
+  function append(value:FloodSnapshot,index:number){
+    const page=value.pagination,expectedNext=index+1<count?index+1:null;
+    if(!value.feed||!page||page.chunk!==index||page.chunk_count!==count||page.generation!==generation||
+      page.next_chunk!==expectedNext||JSON.stringify(value.feed)!==metadata)throw new Error('GISTDA generation changed');
     if(!Array.isArray(value.records)||value.records.length>100)throw new Error('Invalid GISTDA page');
     for(const row of value.records){
       if(ids.has(row.id)||records.length>=20000)throw new Error('Duplicate or oversized GISTDA generation');
       ids.add(row.id);records.push(row);
     }
-    result??=value;generation=pagination.generation;
-    if(pagination.next_chunk===null){
-      if(chunk!==pagination.chunk_count-1||records.length!==value.feed.record_count)throw new Error('Incomplete GISTDA generation');
-      return {feed:result.feed,health:result.health,freshness:result.freshness,query_freshness:result.query_freshness,
-        storage:result.storage,error:null,records,pagination:{...pagination,complete:true}};
-    }
-    if(pagination.next_chunk!==chunk+1||pagination.next_chunk>=pagination.chunk_count)throw new Error('Invalid GISTDA cursor');
-    chunk=pagination.next_chunk;
   }
-  throw new Error('GISTDA page budget exceeded');
+  append(first,0);
+  if(previous?.pagination?.complete&&previous.pagination.generation===generation&&previous.records.length===first.feed.record_count&&
+    JSON.stringify(previous.feed)===metadata)return {...previous,health:first.health,query_freshness:first.query_freshness};
+  for(let start=1;start<count;start+=4){
+    const indices=Array.from({length:Math.min(4,count-start)},(_,offset)=>start+offset);
+    const pages=await Promise.all(indices.map(index=>read(index,generation)));
+    pages.forEach((page,index)=>append(page,indices[index]));
+  }
+  if(records.length!==first.feed.record_count)throw new Error('Incomplete GISTDA generation');
+  return {feed:first.feed,health:first.health,freshness:first.freshness,query_freshness:first.query_freshness,
+    storage:first.storage,error:null,records,pagination:{...pagination,complete:true,next_chunk:null}};
 }
