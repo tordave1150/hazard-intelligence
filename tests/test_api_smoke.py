@@ -54,6 +54,34 @@ def test_planned_sources_are_never_normal(route):
     assert value['status']=='UNAVAILABLE' and value['records']==[]
 
 
+def test_source_health_separates_planned_source_and_supplies_schedule_evidence():
+    value=requests.get(BASE+'/api/sources/status',timeout=25).json()
+    assert value['checked_at'] and len(value['sources'])==6
+    for source in value['sources']:
+        monitor=source['monitoring']
+        if source['id']=='thaiwater':assert monitor['state']=='PLANNED' and not monitor['needs_attention']
+        else:assert monitor['cadence_hours'] and monitor['actions_url'].startswith('https://github.com/tordave1150/hazard-intelligence/actions/workflows/')
+
+
+def test_gistda_scoped_summary_and_detail_agree_without_national_geometry():
+    first=requests.get(BASE+'/api/flood-products',params={'area_id':'TH-P-26','view':'summary'},timeout=25)
+    assert first.status_code==200
+    summary=first.json()
+    if not summary['feed']:return
+    assert summary['status']=='SUMMARY_ONLY' and summary['records']==[]
+    assert summary['scope']['area_id']=='TH-P-26' and summary['scope']['mode']=='summary'
+    detail=requests.get(BASE+'/api/flood-products',params={'area_id':'TH-P-26','view':'detail'},timeout=25).json()
+    records=list(detail['records']);page=detail['pagination']
+    while page['next_chunk'] is not None:
+        value=requests.get(BASE+'/api/flood-products',params={'area_id':'TH-P-26','view':'detail','chunk':page['next_chunk'],'generation':page['generation']},timeout=25).json()
+        assert value['scope']==detail['scope'] and value['feed']==detail['feed']
+        records.extend(value['records']);page=value['pagination']
+    assert len(records)==summary['scope']['record_count']==len({r['id'] for r in records})
+    assert all('TH-P-26' in row['area_ids'] for row in records)
+    for query in ['view=bogus','view=summary&chunk=1&generation=local','view=summary&view=detail']:
+        assert requests.get(BASE+'/api/flood-products?'+query,timeout=15).status_code==400
+
+
 def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknown():
     value=complete_flood_query()
     assert value['source_id']=='gistda' and value['integration_status'] in ['pilot','national_query']

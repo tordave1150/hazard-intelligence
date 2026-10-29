@@ -1,0 +1,26 @@
+{
+  "reviewed_on": "2026-10-29",
+  "endpoint": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load",
+  "discovered_from": "https://www.thaiwater.net/dist/js/app.chunk.js",
+  "http_status": 200,
+  "authentication": "No credentials used",
+  "automatic_rows": 804,
+  "manual_rows": 35,
+  "unique_automatic_station_ids": 804,
+  "original_time_min": "2026-10-22 14:00",
+  "original_time_max": "2026-10-29 22:20",
+  "timezone_status": "NOT_EXPLICIT_IN_RESPONSE",
+  "nakhon_nayok_station_ids": [
+    189,
+    505003,
+    2687,
+    175,
+    1396858,
+    1396860,
+    2689
+  ],
+  "ongkharak_station_ids": [
+    189
+  ],
+  "accepted_for_production": false
+}

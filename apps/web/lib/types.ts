@@ -59,6 +59,7 @@ export type FloodFeed={schema_version:'2.0';source_id:'gistda';product_id:'flood
   records:FloodFeature[];coverage:string;area_metrics:'NOT_USED_UNITS_UNVERIFIED';interpretation:string};
 export type FloodSnapshot={feed:Omit<FloodFeed,'records'>|null;records:FloodFeature[];health:Record<string,unknown>|null;
   freshness:Freshness;query_freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null;
+  scope?:{area_id:string;record_count:number;mode:'summary'|'detail'};
   pagination?:{generation:string;chunk:number;chunk_count:number;next_chunk:number|null;complete:boolean}};
 export type FloodChunk={source_id:'gistda';product_id:'flood_3days_thailand';chunk_id:string;chunk_count:number;
   feed:Omit<FloodFeed,'records'>;records:FloodFeature[]};

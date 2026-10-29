@@ -8,6 +8,9 @@ import {loadFloodSnapshot} from '../lib/flood-client';
 import {validatedFloodChunk} from '../lib/contracts';
 import type {FloodFeed,FloodSnapshot} from '../lib/types';
 import threeDayFixture from '../../../tests/fixtures/gistda/synthetic-three-day-feed.json';
+import {buildFloodAreaIndex} from '../lib/flood-area-index';
+import {floodResultCount} from '../lib/floods';
+import {areaById} from '../lib/geography';
 
 describe('Complete three-day GISTDA loading',()=>{
   const full=threeDayFixture as FloodFeed;
@@ -34,6 +37,36 @@ describe('Complete three-day GISTDA loading',()=>{
     const result=await loadFloodSnapshot(new AbortController().signal,fetcher,previous);
     expect(fetcher).toHaveBeenCalledTimes(1);expect(result.records).toHaveLength(3);
     expect(result.health?.status).toBe('FAILED');expect(result.query_freshness).toBe('DELAYED');
+  });
+  it('loads a national count without downloading geometry or treating an unloaded view as empty',async()=>{
+    const summary=page(0,{records:[],scope:{area_id:'TH',record_count:3,mode:'summary'},
+      pagination:{generation:'test-generation',chunk:0,chunk_count:1,next_chunk:null,complete:false}});
+    const fetcher=fetchPages([summary]);
+    const result=await loadFloodSnapshot(new AbortController().signal,fetcher,undefined,{areaId:'TH',mode:'summary'});
+    expect(fetcher).toHaveBeenCalledTimes(1);expect(result.records).toHaveLength(0);
+    expect(floodResultCount(result,areaById.get('TH')!)).toBe(3);
+    expect(floodResultCount(result,areaById.get('TH-P-26')!)).toBeNull();
+    expect(String(vi.mocked(fetcher).mock.calls[0][0])).toContain('view=summary');
+  });
+  it('checks scoped totals rather than the national total and rejects mismatched areas',async()=>{
+    const scoped=page(0,{records:records.slice(0,1),scope:{area_id:'TH-P-26',record_count:1,mode:'detail'},
+      pagination:{generation:'test-generation',chunk:0,chunk_count:1,next_chunk:null,complete:true}});
+    const result=await loadFloodSnapshot(new AbortController().signal,fetchPages([scoped]),undefined,{areaId:'TH-P-26',mode:'detail'});
+    expect(result.records).toHaveLength(1);expect(result.feed?.record_count).toBe(3);
+    await expect(loadFloodSnapshot(new AbortController().signal,fetchPages([scoped]),undefined,{areaId:'TH-P-25',mode:'detail'})).rejects.toThrow();
+    await expect(loadFloodSnapshot(new AbortController().signal,fetchPages([{...scoped,records:[]}]),undefined,{areaId:'TH-P-26',mode:'detail'})).rejects.toThrow();
+  });
+  it('builds a geometry-free page index with deduplicated ancestors and no guessed district coverage',()=>{
+    const rows=[{chunk_id:'0000',records:[{id:'one',area_ids:['TH-P-26','TH-D-2604']},{id:'two',area_ids:['TH-P-26']}]},
+      {chunk_id:'0001',records:[{id:'three',area_ids:['TH-P-25','TH-D-2501']}]}];
+    const index=buildFloodAreaIndex(rows,3,2);
+    expect(index.get('TH')).toEqual({count:3,chunks:[0,1]});
+    expect(index.get('TH-P-26')).toEqual({count:2,chunks:[0]});
+    expect(index.get('TH-D-2604')).toEqual({count:1,chunks:[0]});
+    expect(index.has('TH-D-2601')).toBe(false);
+    expect(()=>buildFloodAreaIndex(rows,4,2)).toThrow();
+    expect(()=>buildFloodAreaIndex([...rows,rows[0]],5,3)).toThrow();
+    expect(()=>buildFloodAreaIndex([{chunk_id:'0000',records:[{id:'one'},{id:'one'}]}],2,1)).toThrow();
   });
   it('bounds concurrent requests to four while preserving page order',async()=>{
     let active=0,maximum=0;

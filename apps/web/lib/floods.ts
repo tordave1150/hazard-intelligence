@@ -28,6 +28,11 @@ export function floodRecordsInArea(snapshot:Pick<FloodSnapshot,'feed'|'records'>
     const member=areaById.get(id);return member&&contains(area,member);
   }));
 }
+export function floodResultCount(snapshot:FloodSnapshot,area:Area):number|null{
+  if(!snapshot.feed||!floodInArea(area,snapshot.feed))return null;
+  if(snapshot.scope)return snapshot.scope.area_id===area.id?snapshot.scope.record_count:null;
+  return floodRecordsInArea(snapshot,area).length;
+}
 export function floodQueryFreshness(feed:Pick<FloodFeed,'response_at'|'fetched_at'>|null,now=Date.now(),failed=false):Freshness{
   if(!feed)return 'UNAVAILABLE';
   const times=[Date.parse(feed.response_at),Date.parse(feed.fetched_at)];
@@ -40,6 +45,6 @@ export function floodResponse(snapshot:FloodSnapshot,area:Area){
   const inScope=floodInArea(area,snapshot.feed),records=floodRecordsInArea(snapshot,area);
   return {...snapshot,records,source_id:'gistda',integration_status:snapshot.feed?.area_id==='TH'?'national_query':'pilot',
     scope_area_id:snapshot.feed?.area_id??null,selected_area_id:area.id,in_scope:inScope,
-    status:!snapshot.feed?'UNAVAILABLE':!inScope?'OUT_OF_SCOPE':snapshot.pagination&&!snapshot.pagination.complete?'PARTIAL_RESULT':records.length?'AVAILABLE':'EMPTY_RESULT',
+    status:!snapshot.feed?'UNAVAILABLE':!inScope?'OUT_OF_SCOPE':snapshot.scope?.mode==='summary'?'SUMMARY_ONLY':snapshot.pagination&&!snapshot.pagination.complete?'PARTIAL_RESULT':records.length?'AVAILABLE':'EMPTY_RESULT',
     observation_freshness:snapshot.freshness};
 }
