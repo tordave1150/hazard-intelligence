@@ -8,6 +8,7 @@ export function warningState(row:AgencyWarning,records:AgencyWarning[],now=Date.
   const replacement=records.filter(r=>(r.message_type==='Update'||r.message_type==='Cancel')&&r.references.some(ref=>identity(ref)===identity(row)))
     .sort((a,b)=>Date.parse(b.issued_at)-Date.parse(a.issued_at)||Number(b.message_type==='Cancel')-Number(a.message_type==='Cancel'))[0];
   if(replacement)return replacement.message_type==='Cancel'?'CANCELLED':'SUPERSEDED';
+  if(row.time_quality==='INVALID_PROVIDER_INTERVAL')return 'TIME_UNKNOWN';
   if(!row.effective_start||!row.expires_at)return 'TIME_UNKNOWN';
   const start=Date.parse(row.effective_start),end=Date.parse(row.expires_at);
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return 'TIME_UNKNOWN';

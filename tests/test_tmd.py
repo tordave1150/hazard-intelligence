@@ -52,6 +52,24 @@ def test_real_provider_unmapped_code_keeps_complete_warning_without_inventing_a_
     publisher.publish([feed],['latest']);assert publisher.read()[0]['records'][0]==row
 
 
+def test_provider_inverted_interval_is_preserved_flagged_and_does_not_block_feed(cap_feed):
+    fetched='2026-10-29T15:25:00Z'
+    row=normalize((FIXTURES/'alert-2026-10-28-invalid-interval.xml').read_bytes(),
+        'https://www.tmd.go.th/uploads/CAP/CAPTMD20261028172215_2.xml',fetched)
+    assert row['effective_start']=='2026-10-28T11:00:00Z'
+    assert row['expires_at']=='2026-10-27T23:00:00Z'
+    assert row['time_quality']=='INVALID_PROVIDER_INTERVAL'
+    feed=make_feed([{'id':row['warning_id'],'url':row['content_ref']}],fetched,[row],fetched)
+    publisher=WarningPublisher(mongomock.MongoClient().test)
+    publisher.publish([cap_feed],['latest']);publisher.publish([feed],['latest'])
+    assert publisher.read()[0]['records']==[row]
+    for quality in (None,'VALID_INTERVAL','NOT_SUPPLIED'):
+        bad=deepcopy(row)
+        if quality is None:bad.pop('time_quality')
+        else:bad['time_quality']=quality
+        with pytest.raises(ValueError):validate_record('AgencyWarning',bad)
+
+
 @pytest.mark.parametrize('code',['R-07','TH-99','TH-1'])
 def test_unmapped_agency_geocodes_stay_verbatim_outside_canonical_scope(code):
     raw=(FIXTURES/'alert-0.xml').read_bytes().replace(b'<value>TH-80</value>',f'<value>{code}</value>'.encode())

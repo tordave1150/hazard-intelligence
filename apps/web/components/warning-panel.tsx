@@ -12,15 +12,18 @@ export default function WarningPanel({snapshot,freshness,area,areas,selectedId,n
   const selected=snapshot.records.find(r=>r.warning_id===selectedId);
   const current=scoped.filter(r=>warningState(r,snapshot.records,now)==='CURRENT').length;
   const unresolved=snapshot.records.filter(row=>warningUnmappedCodes(row).length).length;
+  const invalidTimes=snapshot.records.filter(row=>row.time_quality==='INVALID_PROVIDER_INTERVAL').length;
   const selectedCodes=selected?warningUnmappedCodes(selected):[];
   return <section className="warning-evidence" aria-label="TMD CAP messages">
     <div className="dam-heading"><Radio size={16}/><b>Agency warnings</b><span className={`freshness ${freshness.toLowerCase()}`} title="Feed freshness, separate from message validity">FEED {freshness}</span></div>
     <p className="dam-source-caption">กรมอุตุนิยมวิทยา · TMD CAP feed</p>
+    {invalidTimes>0&&<p className="warning-archive-note">{invalidTimes} message(s) contain an expiry before their effective time. Original TMD timestamps are retained; their validity is unknown. Other valid messages remain available.</p>}
     {unresolved>0&&<p className="warning-archive-note">{unresolved} messages in this feed include area codes that could not be matched to a province. Province filtering may show only part of their scope; check the original TMD message for the full area.</p>}
     {!snapshot.feed?<p>{snapshot.error?'TMD messages are temporarily unavailable.':'Awaiting the first published CAP snapshot.'}</p>:selected?<>
       <button className="dam-back" onClick={()=>onSelect(null)}><ArrowLeft size={12}/> Back to CAP messages</button>
       <span className="warning-state">{warningState(selected,snapshot.records,now)==='CURRENT'&&freshness!=='FRESH'?'VALIDITY WINDOW · CURRENCY UNVERIFIED':warningState(selected,snapshot.records,now)}</span>
       <h3>{selected.headline??selected.message_type}</h3><p className="dam-id">{selected.warning_id}</p>
+      {selected.time_quality==='INVALID_PROVIDER_INTERVAL'&&<p className="warning-archive-note">Provider time conflict · วันหมดอายุก่อนวันเริ่มมีผล จึงยืนยันช่วงเวลาของประกาศนี้ไม่ได้ วันที่ด้านล่างเป็นค่าต้นฉบับจาก TMD</p>}
       <dl className="dam-details"><dt>Issued by TMD</dt><dd>{bangkokTime(selected.issued_at)}</dd>
         <dt>Effective</dt><dd>{bangkokTime(selected.effective_start)}</dd><dt>Expires</dt><dd>{bangkokTime(selected.expires_at)}</dd>
         <dt>Agency severity</dt><dd>{selected.agency_severity??'Not supplied'}</dd>

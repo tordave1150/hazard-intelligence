@@ -4,8 +4,9 @@ import math
 from pipelines.shared.time_units import instant, daily_period, utc_now, BANGKOK
 from pipelines.shared.publication import Publisher, export_local
 from pipelines.shared.locations import weather_locations
+from pipelines.shared.run_status import start_run
 from .budget import request_budget
-from .client import fetch_hourly_batch
+from .client import fetch_hourly_batch, ProviderRequestError
 
 PRODUCT = 'today_hourly'
 COLLECTION = 'weather_hourly_latest'
@@ -110,21 +111,32 @@ def main():
     db = client[os.getenv('MONGODB_DB_NAME', 'weather_db')] if client is not None else None
     day = instant(utc_now()).astimezone(BANGKOK).date().isoformat()
     status = {'source_id': 'open_meteo', 'product_id': PRODUCT, 'last_attempt': utc_now()}
+    stage = 'collect'
     try:
+        start_run(db, 'open_meteo:' + PRODUCT, status)
         locations = weather_locations('all')
         with request_budget(db):
             records = collect(locations, day)
-        status.update(status='SUCCESS', last_success=utc_now(), completed_at=utc_now(), record_count=len(records), forecast_date=day)
+        stage = 'publish'
         if db is not None:
             pointer = HourlyPublisher(db).publish(records, [a['id'] for a in locations])
             status['active_generation'] = pointer['active_run_id']
-            db.source_status.update_one({'_id': 'open_meteo:' + PRODUCT}, {'$set': status, '$unset': {'error_summary': ''}}, upsert=True)
+        status.update(status='SUCCESS', last_success=utc_now(), completed_at=utc_now(), record_count=len(records), forecast_date=day)
+        stage = 'save_status'
+        if db is not None:
+            db.source_status.update_one({'_id': 'open_meteo:' + PRODUCT}, {'$set': status,
+                '$unset': {'error_summary': '', 'error_stage': '', 'http_status': ''}}, upsert=True)
         if args.export: export_local(args.export, records, [a['id'] for a in locations], status, kind='HourlyForecast', check=check_hourly_batch)
         print(json.dumps({'status': 'SUCCESS', 'product_id': PRODUCT, 'record_count': len(records), 'forecast_date': day}))
-    except Exception:
+    except Exception as exc:
+        reason = exc.reason if isinstance(exc, ProviderRequestError) else type(exc).__name__
+        status.update(status='FAILED', completed_at=utc_now(), error_summary=reason, error_stage=stage)
+        if isinstance(exc, ProviderRequestError):status['http_status'] = exc.status_code
         if db is not None:
-            status.update(status='FAILED', completed_at=utc_now(), error_summary='Hourly collection or publication failed')
-            db.source_status.update_one({'_id': 'open_meteo:' + PRODUCT}, {'$set': status}, upsert=True)
+            try:db.source_status.update_one({'_id': 'open_meteo:' + PRODUCT}, {'$set': status}, upsert=True)
+            except Exception:pass
+        print(json.dumps({'status': 'FAILED', 'product_id': PRODUCT, 'stage': stage, 'reason': reason,
+            'http_status': status.get('http_status')}), flush=True)
         raise RuntimeError('Hourly refresh failed; last complete hourly product retained') from None
     finally:
         if client is not None: client.close()

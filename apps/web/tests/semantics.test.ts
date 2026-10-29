@@ -5,6 +5,28 @@ import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnm
 import {validatedForecast,validatedWarningFeed,validatedFloodFeed} from '../lib/contracts';
 import {floodInArea,floodQueryFreshness,floodColor,floodRecordsInArea,floodResponse,floodRefreshFailure} from '../lib/floods';
 import floodFixture from '../../../tests/fixtures/gistda/synthetic-feed.json';
+import {monitorSource,healthError} from '../lib/source-health';
+
+describe('Source health separates collection, scheduling and source quality',()=>{
+  const now=Date.parse('2026-10-29T12:00:00Z');
+  it('distinguishes overdue scheduling from an upstream failure and flags a stuck run',()=>{
+    const health={last_attempt:'2026-10-29T04:00:00Z',last_success:'2026-10-29T04:10:00Z',status:'SUCCESS'};
+    expect(monitorSource('open_meteo_hourly','DELAYED',health,now).state).toBe('OVERDUE');
+    expect(monitorSource('open_meteo_hourly','DELAYED',{...health,status:'FAILED'},now)).toMatchObject({state:'FAILED',overdue:true});
+    expect(monitorSource('tmd','FRESH',{...health,status:'RUNNING'},now).state).toBe('STALLED');
+    expect(monitorSource('tmd','FRESH',{...health,status:'RUNNING',last_attempt:'2026-10-29T11:59:00Z'},now).state).toBe('RUNNING');
+  });
+  it('keeps planned access separate and source quality visible after a successful run',()=>{
+    expect(monitorSource('thaiwater','UNAVAILABLE',null,now)).toMatchObject({state:'PLANNED',needs_attention:false});
+    expect(monitorSource('tmd','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T11:50:00Z',last_success:'2026-10-29T11:51:00Z',quality_issue_count:1},now)).toMatchObject({state:'ATTENTION',quality_issue_count:1});
+    expect(monitorSource('gistda','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T11:00:00Z',last_success:'2026-10-29T11:10:00Z'},now).state).toBe('OK');
+  });
+  it('does not expose arbitrary failure text or link to untrusted workflow URLs',()=>{
+    expect(healthError({status:'FAILED',error_summary:'secret credentials'})).not.toContain('secret');
+    expect(monitorSource('tmd','STALE',{run_url:'https://private.invalid/secret'},now).run_url).toBeNull();
+    expect(monitorSource('tmd','FRESH',{last_attempt:'2099-01-01T00:00:00Z'},now).state).toBe('UNKNOWN');
+  });
+});
 import {areas} from '../lib/geography';
 import type {AgencyWarning,DamObservation,Forecast} from '../lib/types';
 import {canonicalStoredForecast,geographyIdentityMigrations} from '../lib/geography-migrations';
@@ -117,6 +139,12 @@ describe('CAP validity and feed freshness',()=>{
     expect(warningState(unknown,[unknown],now)).toBe('TIME_UNKNOWN');
     expect(warningState(future,[future],now)).toBe('UPCOMING');
     expect(warningMapRecords([unknown,future],null,'FRESH',now)).toEqual([]);
+  });
+  it('never paints an explicitly flagged provider time conflict as current',()=>{
+    const row=message({expires_at:'2026-10-25T06:00:00Z',time_quality:'INVALID_PROVIDER_INTERVAL'});
+    expect(warningState(row,[row],now)).toBe('TIME_UNKNOWN');
+    expect(warningMapRecords([row],null,'FRESH',now)).toEqual([]);
+    expect(warningMapRecords([row],row.warning_id,'FRESH',now)[0]).toMatchObject({display_state:'TIME_UNKNOWN',archived:true});
   });
   it('applies exact CAP update and cancellation references',()=>{
     const first=message(),ref={sender:first.sender,warning_id:first.warning_id,issued_at:first.issued_at};

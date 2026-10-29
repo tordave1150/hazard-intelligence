@@ -1008,6 +1008,13 @@
         },
         "terms_url": {
           "const": "https://www.tmd.go.th/content/copyright"
+        },
+        "time_quality": {
+          "enum": [
+            "VALID_INTERVAL",
+            "NOT_SUPPLIED",
+            "INVALID_PROVIDER_INTERVAL"
+          ]
         }
       },
       "required": [

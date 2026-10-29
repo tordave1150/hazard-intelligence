@@ -24,7 +24,7 @@ export async function readWarningSnapshot():Promise<WarningSnapshot>{
         if(attempt===2)throw new Error('CAP snapshot changed during read');
       }
       const status=await db.collection('source_status').findOne({_id:key as never},{maxTimeMS:5000});
-      const health=status?Object.fromEntries(['status','last_attempt','last_success','completed_at','record_count','feed_item_count','ignored_item_count','completeness'].map(k=>[k,status[k]??null])):null;
+      const health=status?Object.fromEntries(['status','last_attempt','last_success','completed_at','record_count','feed_item_count','ignored_item_count','completeness','quality_issue_count','run_url','run_trigger','error_stage','http_status'].map(k=>[k,status[k]??null])):null;
       if(health)health.error_summary=status?.status==='FAILED'?status.error_summary??null:null;
       result={...result,feed:metadata(feed),records:feed?.records??[],health,freshness:warningFreshness(feed)};
     }else if(process.env.NODE_ENV!=='production'&&process.env.HAZARD_LOCAL_SNAPSHOT==='1'){

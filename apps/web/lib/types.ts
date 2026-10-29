@@ -38,6 +38,7 @@ export type AgencyWarning={schema_version:'2.0';source_id:'tmd';product_id:'cap_
   warning_id:string;sender:'TMD';message_type:'Alert'|'Update'|'Cancel';status:'Actual';scope:'Public';
   references:{sender:string;warning_id:string;issued_at:string}[];issued_at:string;fetched_at:string;ingested_at:string;
   effective_start:string|null;expires_at:string|null;effective_time_source:'CAP effective'|'CAP sent'|'not supplied';
+  time_quality?:'VALID_INTERVAL'|'NOT_SUPPLIED'|'INVALID_PROVIDER_INTERVAL';
   language:string|null;event:string|null;headline:string|null;description:string|null;instruction:string|null;
   agency_severity:'Extreme'|'Severe'|'Moderate'|'Minor'|'Unknown'|null;urgency:string|null;certainty:string|null;
   area_ids:string[];source_areas:{description:string;geocodes:{value_name:string;value:string}[]}[];

@@ -79,7 +79,9 @@ export function validatedWarningFeed(value:unknown):WarningFeed{
     if(row.references.some(ref=>ref.sender!=='TMD'||Date.parse(ref.issued_at)>Date.parse(row.issued_at)))throw new Error('Invalid CAP reference');
     if(row.message_type!=='Alert'&&!row.references.length)throw new Error('Missing CAP reference');
     if(row.message_type!=='Cancel'&&[row.effective_start,row.event,row.headline,row.language,row.agency_severity,row.urgency,row.certainty].some(v=>v===null))throw new Error('Missing CAP information');
-    if(row.expires_at&&(!row.effective_start||Date.parse(row.expires_at)<=Date.parse(row.effective_start)))throw new Error('Invalid CAP interval');
+    const timeQuality=!row.effective_start||!row.expires_at?'NOT_SUPPLIED':Date.parse(row.expires_at)<=Date.parse(row.effective_start)?'INVALID_PROVIDER_INTERVAL':'VALID_INTERVAL';
+    if(row.time_quality&&row.time_quality!==timeQuality)throw new Error('CAP time quality does not match timestamps');
+    if(timeQuality==='INVALID_PROVIDER_INTERVAL'&&row.time_quality!==timeQuality)throw new Error('Unflagged invalid CAP interval');
     const sourceCodes=row.source_areas.flatMap(a=>a.geocodes.filter(c=>c.value_name==='ISO3166-2').map(c=>c.value));
     // Unrecognized agency codes remain verbatim in source_areas. Only exact,
     // known province references may enter canonical area_ids.

@@ -25,6 +25,13 @@ def mapped_provinces(source_areas):
             and 'TH-P-'+code['value'][3:] in PROVINCES}
 
 
+def warning_time_quality(row):
+    if not row['effective_start'] or not row['expires_at']:
+        return 'NOT_SUPPLIED'
+    return ('INVALID_PROVIDER_INTERVAL' if instant(row['expires_at'])<=instant(row['effective_start'])
+            else 'VALID_INTERVAL')
+
+
 def check_warning(row):
     if not allowed_document(row['content_ref']) or row['content_ref'].rsplit('/CAP',1)[-1][:-4]!=row['warning_id']:
         raise ValueError('Unverified CAP document identity')
@@ -35,8 +42,11 @@ def check_warning(row):
     if row['message_type'] in ['Update','Cancel'] and not row['references']:raise ValueError('CAP update/cancel requires references')
     if row['message_type']!='Cancel' and any(row[k] is None for k in ['effective_start','event','headline','language','agency_severity','urgency','certainty']):
         raise ValueError('Missing CAP information')
-    if row['expires_at'] and (not row['effective_start'] or instant(row['expires_at'])<=instant(row['effective_start'])):
-        raise ValueError('Invalid CAP effective interval')
+    quality=warning_time_quality(row)
+    if row.get('time_quality') is not None and row['time_quality']!=quality:
+        raise ValueError('CAP time quality does not match original timestamps')
+    if quality=='INVALID_PROVIDER_INTERVAL' and row.get('time_quality')!=quality:
+        raise ValueError('Invalid CAP effective interval must be explicitly flagged')
     codes=mapped_provinces(row['source_areas'])
     if codes!=set(row['area_ids']) or not codes<=PROVINCES:raise ValueError('Unverified CAP province code')
     if row['geometry']:

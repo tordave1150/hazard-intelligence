@@ -129,7 +129,7 @@
     "name": "Today's hourly point forecast",
     "organization": "Open-Meteo",
     "state": "forecast",
-    "status": "Implemented · one real point validated; first national production publication pending",
+    "status": "Connected · 1,005 hourly point forecasts published to Atlas and verified on production",
     "url": "https://open-meteo.com/en/docs",
     "terms_url": "https://open-meteo.com/en/terms",
     "cadence": "Every 4 hours · 00:17/04:17/08:17/12:17/16:17/20:17 ICT; actual execution may be delayed",

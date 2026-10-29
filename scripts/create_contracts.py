@@ -98,6 +98,7 @@ defs = {
         'error_summary':{'type':['string','null']}})
 }
 from copy import deepcopy
+defs['AgencyWarning']['properties']['time_quality']={'enum':['VALID_INTERVAL','NOT_SUPPLIED','INVALID_PROVIDER_INTERVAL']}
 national_flood = deepcopy(defs['GistdaFloodFeed'])
 national_props = national_flood['properties']
 national_props.update(product_id={'const':'flood_1day_thailand'}, area_id={'const':'TH'},

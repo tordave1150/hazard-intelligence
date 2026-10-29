@@ -4,7 +4,7 @@ from email.utils import parsedate_to_datetime
 from datetime import timezone
 from pipelines.shared.time_units import instant,utc_now
 from pipelines.shared.schemas import validate_record
-from .data import SOURCE,PRODUCT,MAX_ITEMS,allowed_document,mapped_provinces
+from .data import SOURCE,PRODUCT,MAX_ITEMS,allowed_document,mapped_provinces,warning_time_quality
 
 NS={'c':'urn:oasis:names:tc:emergency:cap:1.2'}
 
@@ -71,6 +71,7 @@ def normalize(raw,content_ref,fetched_at):
         'urgency':get('urgency'),'certainty':get('certainty'),'area_ids':sorted(mapped_provinces(areas)),'source_areas':areas,
         'geometry':{'type':'MultiPolygon','coordinates':polygons} if polygons else None,
         'content_ref':content_ref,'source_url':SOURCE,'terms_url':'https://www.tmd.go.th/content/copyright'}
+    row['time_quality']=warning_time_quality(row)
     return validate_record('AgencyWarning',row)
 
 

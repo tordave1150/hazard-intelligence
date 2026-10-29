@@ -1,5 +1,9 @@
 name: Latest Today hourly forecast
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/hourly-publication-request.json'
   schedule:
     - cron: '17 1,5,9,13,17,21 * * *' # 00:17/04:17/08:17/12:17/16:17/20:17 ICT
   workflow_dispatch:
@@ -21,6 +25,21 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install -r pipelines/requirements.txt
+      - name: Validate hourly publication request
+        if: github.event_name == 'push'
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          path=Path('.github/hourly-publication-request.json')
+          if path.stat().st_size>1024:raise ValueError('Publication request too large')
+          request=json.loads(path.read_text(encoding='utf-8'))
+          if set(request)!={'request_id','source_id','operation'} or request['source_id']!='open_meteo' or request['operation']!='publish_today_hourly':
+              raise ValueError('Invalid hourly publication request')
+          if not isinstance(request['request_id'],str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):
+              raise ValueError('Invalid publication request ID')
+          print('Validated Today hourly publication request')
+          PY
       - name: Publish independent hourly snapshot within the shared provider budget
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

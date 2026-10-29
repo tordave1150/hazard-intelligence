@@ -27,7 +27,8 @@ export async function readHourlySnapshot():Promise<HourlySnapshot>{
       }
       if(!complete)throw Error('Hourly generation changed');
       const status=await db.collection('source_status').findOne({_id:key as never},{maxTimeMS:5000});
-      result.health=status?Object.fromEntries(['status','last_attempt','last_success','completed_at','forecast_date','record_count'].map(k=>[k,status[k]??null])):null;
+      result.health=status?Object.fromEntries(['status','last_attempt','last_success','completed_at','forecast_date','record_count','run_url','run_trigger','error_stage','http_status'].map(k=>[k,status[k]??null])):null;
+      if(result.health)result.health.error_summary=status?.status==='FAILED'?status.error_summary??null:null;
     }else if(process.env.NODE_ENV!=='production'&&process.env.HAZARD_LOCAL_SNAPSHOT==='1'){
       const payload=JSON.parse(await readFile(path.join(process.cwd(),'data/local/hourly.json'),'utf8'));
       if(!Array.isArray(payload.records)||payload.records.length>1005)throw Error('Invalid local hourly snapshot');
