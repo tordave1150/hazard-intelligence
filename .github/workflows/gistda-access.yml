@@ -15,9 +15,9 @@ on:
           - features
           - stac
       window:
-        description: 'Separate documented product windows. Default is one day; no automatic fallback to another window.'
+        description: 'Inspect a documented window. The published map uses 3days.'
         required: true
-        default: '1day'
+        default: '3days'
         type: choice
         options:
           - 1day

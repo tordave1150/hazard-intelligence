@@ -3,8 +3,8 @@ import {areaById} from './geography';
 import {contains} from './semantics';
 
 export const floodScopeId='TH-D-2604';
-export const floodSourceUrl='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/1day';
-export const floodWindowLabel='Previous 1-day window · ย้อนหลัง 1 วัน';
+export const floodSourceUrl='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/3days';
+export const floodWindowLabel='Previous 3-day window · ย้อนหลัง 3 วัน';
 export function floodRefreshFailure(health:FloodSnapshot['health']):string|null{
   if(health?.status!=='FAILED')return null;
   switch(health.error_summary){
@@ -40,6 +40,6 @@ export function floodResponse(snapshot:FloodSnapshot,area:Area){
   const inScope=floodInArea(area,snapshot.feed),records=floodRecordsInArea(snapshot,area);
   return {...snapshot,records,source_id:'gistda',integration_status:snapshot.feed?.area_id==='TH'?'national_query':'pilot',
     scope_area_id:snapshot.feed?.area_id??null,selected_area_id:area.id,in_scope:inScope,
-    status:!snapshot.feed?'UNAVAILABLE':!inScope?'OUT_OF_SCOPE':records.length?'AVAILABLE':'EMPTY_RESULT',
+    status:!snapshot.feed?'UNAVAILABLE':!inScope?'OUT_OF_SCOPE':snapshot.pagination&&!snapshot.pagination.complete?'PARTIAL_RESULT':records.length?'AVAILABLE':'EMPTY_RESULT',
     observation_freshness:snapshot.freshness};
 }

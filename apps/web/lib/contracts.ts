@@ -1,7 +1,7 @@
 import Ajv from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import schema from '../../../packages/contracts/schema.json';
-import type {DamObservation,Forecast,WarningFeed,FloodFeed,HourlyForecast} from './types';
+import type {DamObservation,Forecast,WarningFeed,FloodFeed,FloodChunk,HourlyForecast} from './types';
 import {allowedWarningDocument} from './warnings';
 import {areaById} from './geography';
 import {damById,damLicenseUrl,damMetadataUrl,damSourceUrl} from './dams';
@@ -14,6 +14,8 @@ const validateDam=ajv.compile<DamObservation>({$ref:`${schema.$id}#/$defs/DamObs
 const validateWarnings=ajv.compile<WarningFeed>({$ref:`${schema.$id}#/$defs/WarningFeed`});
 const validateFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaFloodFeed`});
 const validateNationalFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaNationalFloodFeed`});
+const validateThreeDayFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaThreeDayFeed`});
+const validateThreeDayChunk=ajv.compile<FloodChunk>({$ref:`${schema.$id}#/$defs/GistdaThreeDayChunk`});
 const validateHourly=ajv.compile<HourlyForecast>({$ref:`${schema.$id}#/$defs/HourlyForecast`});
 export function validatedHourly(value:unknown):HourlyForecast{
   if(!validateHourly(value))throw new Error('Invalid hourly forecast contract');
@@ -26,15 +28,19 @@ export function validatedHourly(value:unknown):HourlyForecast{
   return record;
 }
 export function validatedFloodFeed(value:unknown):FloodFeed{
-  if(!validateFlood(value)&&!validateNationalFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
+  if(!validateFlood(value)&&!validateNationalFlood(value)&&!validateThreeDayFlood(value))throw new Error('Stored GISTDA snapshot does not match contract');
   const feed=value as FloodFeed;
   const national=feed.area_id==='TH';
   if(feed.record_count!==feed.records.length||new Set(feed.records.map(r=>r.id)).size!==feed.records.length)throw new Error('Incomplete GISTDA query');
   if(Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at)||Date.parse(feed.response_at)>Date.parse(feed.fetched_at)+300000)throw new Error('Invalid GISTDA time');
-  if(new TextEncoder().encode(JSON.stringify(feed)).length>(national?4:2)*1024*1024)throw new Error('GISTDA response too large');
+  if(new TextEncoder().encode(JSON.stringify(feed)).length>(feed.product_window==='3days'?32:national?4:2)*1024*1024)throw new Error('GISTDA response too large');
   if(national&&(!feed.record_count?feed.page_count!==1:!feed.page_count||feed.page_count>feed.record_count||feed.record_count>feed.page_count*100))throw new Error('Invalid GISTDA page accounting');
+  checkedFloodRows(feed.records,national,feed.product_window==='3days');
+  return feed;
+}
+function checkedFloodRows(records:FloodFeed['records'],national:boolean,threeDay:boolean){
   const bounds=areaById.get('TH')!.bbox;let positions=0,rings=0;
-  for(const row of feed.records){
+  for(const row of records){
     if(national){
       const [province,district]=row.area_ids??[],member=areaById.get(district);
       if(!member||member.level!=='district'||member.province_id!==province)throw new Error('Invalid GISTDA administrative hierarchy');
@@ -48,8 +54,19 @@ export function validatedFloodFeed(value:unknown):FloodFeed{
     }
     if(featureRings>256)throw new Error('GISTDA feature ring limit exceeded');
   }
-  if(positions>(national?100000:20000)||rings>256*(national?1000:100))throw new Error('GISTDA geometry limit exceeded');
-  return feed;
+  if(positions>(threeDay?2000000:national?100000:20000)||rings>256*(threeDay?20000:national?1000:100))throw new Error('GISTDA geometry limit exceeded');
+}
+export function validatedFloodChunk(value:unknown):FloodChunk{
+  if(!validateThreeDayChunk(value))throw new Error('Invalid three-day GISTDA chunk');
+  const chunk=value as FloodChunk,feed=chunk.feed;
+  if(Number(chunk.chunk_id)>=chunk.chunk_count||chunk.records.length>feed.record_count)throw new Error('Invalid GISTDA chunk accounting');
+  if(Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at)||Date.parse(feed.response_at)>Date.parse(feed.fetched_at)+300000)throw new Error('Invalid GISTDA time');
+  if(!feed.record_count?feed.page_count!==1:!feed.page_count||feed.page_count>feed.record_count||feed.record_count>feed.page_count*100)throw new Error('Invalid GISTDA page accounting');
+  if(new TextEncoder().encode(JSON.stringify(chunk)).length>1024*1024)throw new Error('GISTDA chunk too large');
+  if(!chunk.records.length&&feed.record_count)throw new Error('Unexpected empty GISTDA chunk');
+  if(new Set(chunk.records.map(row=>row.id)).size!==chunk.records.length)throw new Error('Duplicate GISTDA chunk features');
+  checkedFloodRows(chunk.records,true,true);
+  return chunk;
 }
 export function validatedWarningFeed(value:unknown):WarningFeed{
   if(!validateWarnings(value))throw new Error('Stored CAP feed does not match contract');

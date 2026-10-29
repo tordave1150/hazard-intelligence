@@ -24,21 +24,27 @@ MAX_BYTES = 4 * 1024 * 1024
 MAX_POSITIONS = 100_000
 
 
-def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None):
+def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None, *, three_day=False):
     api_key = api_key.strip()
     if not 8 <= len(api_key) <= 4096 or any(c in api_key for c in '\r\n') or api_key.lower().startswith(('http:', 'https:', 'gistda_api_key=')):
         raise CandidateError('INVALID_OR_MISSING_SECRET')
-    deadline = clock() + 120
+    from pipelines.gistda import limits
+    product, window, endpoint = (limits.PRODUCT, limits.WINDOW, limits.ENDPOINT) if three_day else (PRODUCT, '1day', ENDPOINT)
+    page_limit = limits.MAX_PAGES if three_day else MAX_PAGES
+    feature_limit = limits.MAX_FEATURES if three_day else MAX_FEATURES
+    byte_limit = limits.MAX_SOURCE_BYTES if three_day else MAX_BYTES
+    position_limit = limits.MAX_POSITIONS if three_day else MAX_POSITIONS
+    deadline = clock() + (limits.MAX_SECONDS if three_day else 120)
     records, seen, stamps = [], set(), []
     matched = None
     size = positions = 0
     fetched_at = None
     try:
-        for page in range(MAX_PAGES):
+        for page in range(page_limit):
             if clock() > deadline:
                 raise CandidateError('DEADLINE_EXCEEDED')
             # No returned href is ever followed: it may contain a credential.
-            with (get or requests.get)(ENDPOINT, params={'limit': PAGE_SIZE, 'offset': len(records)},
+            with (get or requests.get)(endpoint, params={'limit': PAGE_SIZE, 'offset': len(records)},
                     headers={'Accept': 'application/json', 'API-Key': api_key},
                     timeout=(5, 25), allow_redirects=False, stream=True) as response:
                 if 300 <= response.status_code < 400:
@@ -52,7 +58,7 @@ def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None
                 chunks = []
                 for chunk in response.iter_content(65536):
                     size += len(chunk)
-                    if size > MAX_BYTES:
+                    if size > byte_limit:
                         raise CandidateError('RESPONSE_TOO_LARGE')
                     if clock() > deadline:
                         raise CandidateError('DEADLINE_EXCEEDED')
@@ -79,7 +85,7 @@ def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None
                 matched = meta['number_matched']
             if meta['number_matched'] != matched:
                 raise CandidateError('PROVIDER_COUNT_CHANGED_DURING_PAGINATION')
-            if matched > MAX_FEATURES:
+            if matched > feature_limit:
                 raise CandidateError('NATIONAL_FEATURE_BUDGET_EXCEEDED')
             if 'crs' in payload:
                 raise CandidateError('UNVERIFIED_COORDINATE_REFERENCE')
@@ -93,7 +99,7 @@ def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None
                 if quality['status'] != 'SYNTAX_AND_TOPOLOGY_VALID' or not quality['within_pinned_thailand_bbox']:
                     raise CandidateError('INVALID_OR_UNVERIFIED_GEOMETRY')
                 positions += quality['positions_checked']
-                if positions > MAX_POSITIONS:
+                if positions > position_limit:
                     raise CandidateError('CANDIDATE_GEOMETRY_LIMIT')
                 geometry = {k: deepcopy(feature['geometry'][k]) for k in ('type', 'coordinates')}
                 digest = hashlib.sha256(json.dumps(geometry, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
@@ -114,14 +120,14 @@ def collect_national_candidate(api_key, get=None, clock=time.monotonic, now=None
             raise CandidateError('INCOMPLETE_QUERY_NOT_PUBLISHABLE')
         result = {
             'schema_version': 'gistda-candidate/1', 'source_id': 'gistda',
-            'product_id': PRODUCT, 'product_window': '1day', 'area_id': 'TH',
+            'product_id': product, 'product_window': window, 'area_id': 'TH',
             'query': {'limit': PAGE_SIZE, 'offset': 0}, 'page_count': len(stamps),
             'pagination_consistency': 'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN',
-            'source_url': ENDPOINT, 'attribution': 'GISTDA Disaster Platform',
+            'source_url': endpoint, 'attribution': 'GISTDA Disaster Platform',
             'response_at': min(stamps, key=lambda s: datetime.fromisoformat(s.replace('Z', '+00:00'))),
             'fetched_at': fetched_at, 'observed_at': None, 'observation_time_status': 'NOT_SUPPLIED',
             'complete_provider_query': True, 'record_count': len(records), 'records': records,
-            'coverage': 'Unfiltered provider 1day query; not a certification of nationwide satellite coverage or polygon clipping',
+            'coverage': f'Unfiltered provider {window} query; not a certification of nationwide satellite coverage or polygon clipping',
             'area_metrics': 'NOT_USED_UNITS_UNVERIFIED',
             'interpretation': 'Empty is no returned feature; never an all-clear, water depth or current flood severity',
         }

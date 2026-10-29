@@ -11,29 +11,38 @@ from .data import normalize, KEY, PRODUCT
 from .publication import FloodPublisher
 
 
-def check_request(path=None, national=False):
+def check_request(path=None, national=False, three_day=False):
     path=path or Path(__file__).resolve().parents[2]/'.github/gistda-publication-request.json'
     if path.stat().st_size>1024:raise ValueError('Request too large')
     request=json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(request,dict) or set(request)!={'request_id','source_id','operation'}:
         raise ValueError('Invalid publication request')
-    if request['source_id']!='gistda' or request['operation']!=('publish_thailand_1day' if national else 'publish_ongkharak_1day'):
+    operation='publish_thailand_3days' if three_day else 'publish_thailand_1day' if national else 'publish_ongkharak_1day'
+    if request['source_id']!='gistda' or request['operation']!=operation:
         raise ValueError('Invalid fixed publication scope')
     if not isinstance(request['request_id'],str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):
         raise ValueError('Invalid publication request ID')
-    print(json.dumps({'reviewed_request_id':request['request_id'],'source_id':'gistda','scope':'1day Thailand' if national else '1day Ongkharak only'}))
+    print(json.dumps({'reviewed_request_id':request['request_id'],'source_id':'gistda','scope':'3days Thailand' if three_day else '1day Thailand' if national else '1day Ongkharak only'}))
 
 
 def main():
     parser = argparse.ArgumentParser(description='Publish one bounded daily Ongkharak GISTDA snapshot')
     parser.add_argument('--publish', action='store_true', required=True)
     parser.add_argument('--national', action='store_true', help='Complete unfiltered 1day provider query')
+    parser.add_argument('--three-day', action='store_true', help='Current complete unfiltered 3days query, chunked storage')
     args=parser.parse_args()
     product=PRODUCT;key=KEY;collector=collect_candidate;publisher=FloodPublisher
     if args.national:
         from scripts.gistda_national import PRODUCT as national_product, collect_national_candidate
         from .publication import NationalFloodPublisher
         product=national_product;key='gistda:'+product;collector=collect_national_candidate;publisher=NationalFloodPublisher
+    if args.three_day:
+        from functools import partial
+        from scripts.gistda_national import collect_national_candidate
+        from .chunks import ThreeDayPublisher
+        from .limits import PRODUCT as three_day_product
+        product=three_day_product;key='gistda:'+product
+        collector=partial(collect_national_candidate, three_day=True);publisher=ThreeDayPublisher
     if not os.getenv('MONGODB_URI'): parser.error('MONGODB_URI is required')
     status={'source_id':'gistda','product_id':product,'etl_run_id':str(uuid4()),
             'last_attempt':utc_now(),'status':'RUNNING'}
@@ -44,13 +53,20 @@ def main():
         db=client[os.getenv('MONGODB_DB_NAME','weather_db')]
         feed=normalize(collector(os.getenv('GISTDA_API_KEY','')))
         stage='publish'
-        pointer=publisher(db).publish([feed],['latest'])
+        if args.three_day:
+            from .chunks import split_feed
+            chunks=split_feed(feed)
+            pointer=publisher(db).publish(chunks,[row['chunk_id'] for row in chunks])
+        else:
+            pointer=publisher(db).publish([feed],['latest'])
         status.update(status='SUCCESS',last_success=utc_now(),completed_at=utc_now(),
                       record_count=feed['record_count'],completeness=1.0,scope_area_id=feed['area_id'],
                       active_generation=pointer['active_run_id'])
         stage='save_status'
         db.source_status.update_one({'_id':key},{'$set':status,'$unset':{'error_summary':''}},upsert=True)
         print(json.dumps({'source_id':'gistda','status':'SUCCESS','records':feed['record_count'],
+                          'product_id':product,'product_window':feed['product_window'],
+                          'page_count':feed.get('page_count'), 'stored_documents':pointer['record_count'],
                           'area_id':feed['area_id'],'observed_at':None,'complete_provider_query':True}))
     except Exception as error:
         reason=error.reason if isinstance(error,CandidateError) else type(error).__name__

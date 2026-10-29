@@ -26,7 +26,9 @@ def check_feed(feed, national=False):
     fetched, ingested, responded = (instant(feed[k]) for k in ('fetched_at','ingested_at','response_at'))
     if fetched > ingested or responded > fetched + timedelta(minutes=5):
         raise ValueError('Invalid GISTDA response/retrieval time')
-    if feed['source_url'] != ENDPOINT or feed['area_id'] != ('TH' if national else AREA_ID):
+    from . import limits
+    three_day = feed['product_id'] == limits.PRODUCT
+    if feed['source_url'] != (limits.ENDPOINT if three_day else ENDPOINT) or feed['area_id'] != ('TH' if national else AREA_ID):
         raise ValueError('Unexpected GISTDA product provenance')
     positions = 0
     for index, record in enumerate(feed['records']):
@@ -50,5 +52,7 @@ def check_feed(feed, national=False):
             raise ValueError('Invalid GISTDA page accounting')
     else:
         position_limit = MAX_POSITIONS
+    if three_day:
+        position_limit = limits.MAX_POSITIONS
     if positions > position_limit:
         raise ValueError('GISTDA geometry limit exceeded')

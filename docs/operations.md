@@ -1,5 +1,7 @@
 # Operations and release runbook
 
+Current GISTDA operation (29 October 2026): [three-day product, chunked API, workflow cleanup and rollback](gistda-three-day-release-2026-10-29.md). Publish with `python -m pipelines.gistda.run --publish --three-day`; `--source gistda` rolls back the three-day collection. `gistda_1day` and `gistda_pilot` explicitly address historical products. Older one-day/candidate/cadence instructions below are superseded for active GISTDA operation.
+
 Current local candidate: [Today/hourly/theme operation and rollback](current-execution-release-2026-10-28.md). Hourly has independent storage and rollback; daily/hourly share the provider request budget. Cadence recording reuses existing GISTDA publication evidence with no extra provider request.
 
 GISTDA update (28 October 2026): the national `1day` query supersedes the Ongkharak-only pilot. See [the national query release](gistda-national-query-release-2026-10-28.md) for scope, bbox order, bounded pagination, retained pilot compatibility and current verification. Older diagnostic/pilot instructions below are historical, including references to an unscheduled or unpublished GISTDA integration. For current commands, rollback source names, retention, acceptance and limits, use [the current integration scope](gistda-integration-acceptance-2026-10-28.md).

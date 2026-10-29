@@ -10,6 +10,24 @@ BASE=os.getenv('HAZARD_TEST_URL')
 pytestmark=pytest.mark.skipif(not BASE,reason='Set HAZARD_TEST_URL for running-app HTTP checks')
 
 
+def complete_flood_query(area_id='TH'):
+    first=requests.get(BASE+'/api/flood-products',params={'area_id':area_id},timeout=25)
+    assert first.status_code==200
+    value=first.json();records=list(value['records']);cursor=value.get('pagination')
+    if not value['feed']:return value
+    generation=cursor['generation'];chunk_count=cursor['chunk_count']
+    assert 1<=chunk_count<=512
+    while cursor['next_chunk'] is not None:
+        response=requests.get(BASE+'/api/flood-products',params={'area_id':area_id,'chunk':cursor['next_chunk'],'generation':generation},timeout=25)
+        assert response.status_code==200 and len(response.content)<2*1024*1024
+        page=response.json()
+        assert page['feed']==value['feed'] and page['pagination']['generation']==generation
+        assert page['pagination']['chunk']==cursor['chunk']+1
+        records.extend(page['records']);cursor=page['pagination']
+    assert cursor['chunk']==chunk_count-1 and len({r['id'] for r in records})==len(records)
+    return {**value,'records':records,'status':'AVAILABLE' if records else 'EMPTY_RESULT'}
+
+
 @pytest.mark.parametrize('route',['/api/overview','/api/areas?level=province','/api/area/TH-D-5709/summary','/api/weather?area_id=TH-P-57','/api/sources/status'])
 def test_read_endpoints(route):
     response=requests.get(BASE+route,timeout=15)
@@ -37,15 +55,14 @@ def test_planned_sources_are_never_normal(route):
 
 
 def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknown():
-    response=requests.get(BASE+'/api/flood-products',timeout=20);assert response.status_code==200
-    value=response.json()
+    value=complete_flood_query()
     assert value['source_id']=='gistda' and value['integration_status'] in ['pilot','national_query']
     if value['feed']:
         assert value['scope_area_id'] in ['TH','TH-D-2604'] and value['in_scope'] is True
         assert value['status'] in ['AVAILABLE','EMPTY_RESULT'] and value['freshness']=='UNKNOWN'
         assert value['feed']['observed_at'] is None and value['feed']['complete_provider_query'] is True
-        assert value['feed']['record_count']==len(value['records'])<=1000
-        assert value['feed']['product_window']=='1day'
+        assert value['feed']['record_count']==len(value['records'])<=20000
+        assert value['feed']['product_window']=='3days'
         if value['scope_area_id']=='TH':
             assert 'ap_idn' not in value['feed']['query']
             assert all(row['area_ids'] for row in value['records'])
@@ -55,7 +72,7 @@ def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknow
 
 
 def test_gistda_rejects_other_windows_and_never_turns_outside_scope_into_no_flood():
-    value=requests.get(BASE+'/api/flood-products?area_id=TH-D-5709',timeout=20).json()
+    value=complete_flood_query('TH-D-5709')
     if value['feed'] and value['feed']['area_id']=='TH':
         assert value['in_scope'] is True and value['status'] in ['AVAILABLE','EMPTY_RESULT']
         assert all('TH-D-5709' in row['area_ids'] for row in value['records'])
@@ -65,6 +82,8 @@ def test_gistda_rejects_other_windows_and_never_turns_outside_scope_into_no_floo
     assert requests.get(BASE+'/api/flood-products?window=30days',timeout=15).status_code==400
     assert requests.get(BASE+'/api/flood-products?area_id=TH-P-99',timeout=15).status_code==404
     assert requests.post(BASE+'/api/flood-products',timeout=15).status_code==405
+    for query in ['chunk=1','chunk=512','chunk=-1','generation=invalid','chunk=0&chunk=1']:
+        assert requests.get(BASE+'/api/flood-products?'+query,timeout=15).status_code==400
 
 
 def test_dam_endpoint_has_independent_report_semantics():

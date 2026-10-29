@@ -113,5 +113,107 @@ national_feature['required'].append('area_ids')
 national_flood['required'] += ['page_count','pagination_consistency']
 defs['GistdaNationalFloodFeed'] = national_flood
 
+# The current three-day product is stored and served in bounded chunks, while
+# the earlier one-day contracts remain available only for historical auditing.
+from pipelines.gistda import limits as flood_limits
+three_day = deepcopy(national_flood)
+three_props = three_day['properties']
+three_props.update(product_id={'const':flood_limits.PRODUCT}, product_window={'const':'3days'},
+    source_url={'const':flood_limits.ENDPOINT}, page_count={'type':'integer','minimum':1,'maximum':flood_limits.MAX_PAGES})
+three_props['record_count']['maximum'] = three_props['records']['maxItems'] = flood_limits.MAX_FEATURES
+three_props['records']['items']['properties']['id']['pattern'] = '^[a-f0-9]{24}-[0-9]{1,5}$'
+defs['GistdaThreeDayFeed'] = three_day
+metadata = deepcopy(three_day)
+del metadata['properties']['records']
+metadata['required'].remove('records')
+defs['GistdaThreeDayMetadata'] = metadata
+defs['GistdaThreeDayChunk'] = obj({'source_id':{'const':'gistda'},'product_id':{'const':flood_limits.PRODUCT},
+    'chunk_id':{'type':'string','pattern':'^[0-9]{4}$'},
+    'chunk_count':{'type':'integer','minimum':1,'maximum':flood_limits.MAX_CHUNKS},
+    'feed':{'$ref':'#/$defs/GistdaThreeDayMetadata'},
+    'records':{'type':'array','maxItems':flood_limits.CHUNK_FEATURES,'items':deepcopy(three_props['records']['items'])}})
+
+# Preserve the independently introduced hourly contract in reproducible generation.
+defs['HourlyForecast'] = {'type': 'object',
+ 'properties': {'schema_version': {'const': '2.0'},
+                'source_id': {'const': 'open_meteo'},
+                'data_state': {'const': 'forecast'},
+                'ingested_at': {'type': 'string',
+                                'format': 'date-time',
+                                'pattern': '(Z|\\+00:00)$'},
+                'product_id': {'const': 'today_hourly'},
+                'location_id': {'type': 'string', 'pattern': '^TH-(P-[0-9]{2}|D-[0-9]{4})$'},
+                'forecast_reference_time': {'type': 'null'},
+                'fetched_at': {'type': 'string', 'format': 'date-time', 'pattern': '(Z|\\+00:00)$'},
+                'point': {'type': 'object',
+                          'properties': {'lat': {'type': 'number', 'minimum': -90, 'maximum': 90},
+                                         'lon': {'type': 'number',
+                                                 'minimum': -180,
+                                                 'maximum': 180}},
+                          'required': ['lat', 'lon'],
+                          'additionalProperties': False},
+                'model_point': {'type': 'object',
+                                'properties': {'lat': {'type': 'number',
+                                                       'minimum': -90,
+                                                       'maximum': 90},
+                                               'lon': {'type': 'number',
+                                                       'minimum': -180,
+                                                       'maximum': 180}},
+                                'required': ['lat', 'lon'],
+                                'additionalProperties': False},
+                'spatial_method': {'type': 'string', 'minLength': 1},
+                'source_url': {'const': 'https://open-meteo.com/en/docs'},
+                'units': {'type': 'object',
+                          'properties': {'rainfall': {'const': 'mm/1h'},
+                                         'probability': {'const': '%'},
+                                         'temperature': {'const': '°C'}},
+                          'required': ['rainfall', 'probability', 'temperature'],
+                          'additionalProperties': False},
+                'forecast_date': {'type': 'string', 'format': 'date'},
+                'valid_hours': {'type': 'array',
+                                'minItems': 24,
+                                'maxItems': 24,
+                                'items': {'type': 'object',
+                                          'properties': {'valid_start': {'type': 'string',
+                                                                         'format': 'date-time',
+                                                                         'pattern': '(Z|\\+00:00)$'},
+                                                         'valid_end': {'type': 'string',
+                                                                       'format': 'date-time',
+                                                                       'pattern': '(Z|\\+00:00)$'},
+                                                         'temperature_valid_at': {'type': 'string',
+                                                                                  'format': 'date-time',
+                                                                                  'pattern': '(Z|\\+00:00)$'},
+                                                         'rainfall_mm': {'type': ['number', 'null'],
+                                                                         'minimum': 0},
+                                                         'rain_probability_pct': {'type': ['number',
+                                                                                           'null'],
+                                                                                  'minimum': 0,
+                                                                                  'maximum': 100},
+                                                         'temperature_c': {'type': ['number',
+                                                                                    'null']}},
+                                          'required': ['valid_start',
+                                                       'valid_end',
+                                                       'temperature_valid_at',
+                                                       'rainfall_mm',
+                                                       'rain_probability_pct',
+                                                       'temperature_c'],
+                                          'additionalProperties': False}}},
+ 'required': ['schema_version',
+              'source_id',
+              'data_state',
+              'ingested_at',
+              'product_id',
+              'location_id',
+              'forecast_reference_time',
+              'fetched_at',
+              'point',
+              'model_point',
+              'spatial_method',
+              'source_url',
+              'units',
+              'forecast_date',
+              'valid_hours'],
+ 'additionalProperties': False}
+
 destination = Path(__file__).resolve().parents[1] / 'packages/contracts/schema.json'
 destination.write_text(json.dumps({'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'https://hazard.local/contracts/2.0','$defs':defs},indent=2,ensure_ascii=False)+'\n',encoding='utf-8')

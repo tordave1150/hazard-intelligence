@@ -1,0 +1,125 @@
+{
+  "schema_version": "2.0",
+  "source_id": "gistda",
+  "product_id": "flood_3days_thailand",
+  "product_window": "3days",
+  "area_id": "TH",
+  "query": {
+    "limit": 100,
+    "offset": 0
+  },
+  "page_count": 1,
+  "pagination_consistency": "COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN",
+  "source_url": "https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/3days",
+  "attribution": "GISTDA Disaster Platform",
+  "response_at": "2026-10-29T14:00:00Z",
+  "fetched_at": "2026-10-29T14:00:00Z",
+  "observed_at": null,
+  "observation_time_status": "NOT_SUPPLIED",
+  "complete_provider_query": true,
+  "record_count": 3,
+  "records": [
+    {
+      "type": "Feature",
+      "id": "dd25b0898c73ccd2943d0aa3-0",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.0,
+              13
+            ],
+            [
+              100.000001,
+              13
+            ],
+            [
+              100.000001,
+              13.000001
+            ],
+            [
+              100.0,
+              13
+            ]
+          ]
+        ]
+      },
+      "properties": null,
+      "area_ids": [
+        "TH-P-10",
+        "TH-D-1001"
+      ]
+    },
+    {
+      "type": "Feature",
+      "id": "5af05b2e95398f0a32f9cfbe-1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.00001,
+              13
+            ],
+            [
+              100.000011,
+              13
+            ],
+            [
+              100.000011,
+              13.000001
+            ],
+            [
+              100.00001,
+              13
+            ]
+          ]
+        ]
+      },
+      "properties": null,
+      "area_ids": [
+        "TH-P-10",
+        "TH-D-1001"
+      ]
+    },
+    {
+      "type": "Feature",
+      "id": "e9bb2c0647a81a71cbb0dcbf-2",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.00002,
+              13
+            ],
+            [
+              100.000021,
+              13
+            ],
+            [
+              100.000021,
+              13.000001
+            ],
+            [
+              100.00002,
+              13
+            ]
+          ]
+        ]
+      },
+      "properties": null,
+      "area_ids": [
+        "TH-P-10",
+        "TH-D-1001"
+      ]
+    }
+  ],
+  "coverage": "Unfiltered provider 3days query; not a certification of nationwide satellite coverage or polygon clipping",
+  "area_metrics": "NOT_USED_UNITS_UNVERIFIED",
+  "interpretation": "Empty is no returned feature; never an all-clear, water depth or current flood severity",
+  "snapshot_id": "latest",
+  "data_state": "satellite_observation",
+  "ingested_at": "2026-10-29T14:00:00Z"
+}

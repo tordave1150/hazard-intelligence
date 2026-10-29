@@ -1,4 +1,4 @@
-name: Latest GISTDA Thailand flood product
+name: Latest GISTDA Thailand 3-day flood product
 on:
   push:
     branches: [main]
@@ -15,10 +15,8 @@ jobs:
   ingest:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
-      - name: Mark this publication interval
-        run: echo "GISTDA_DIAGNOSTIC_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -28,7 +26,7 @@ jobs:
       - run: pip install -r pipelines/requirements.txt
       - name: Validate fixed-scope reviewed request
         if: github.event_name == 'push'
-        run: python -c "from pipelines.gistda.run import check_request; check_request(national=True)"
+        run: python -c "from pipelines.gistda.run import check_request; check_request(three_day=True)"
       - name: Check ingestion configuration
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
@@ -44,20 +42,14 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
-      - name: Publish the complete bounded one-day Thailand query
+      - name: Publish the complete three-day Thailand query in bounded chunks
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
-        run: python -m pipelines.gistda.run --publish --national
+        run: python -m pipelines.gistda.run --publish --three-day
       - name: Verify unique indexes and A/B retention after publication
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
-      - name: Record bounded publication diagnostics without another provider query
-        if: always()
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
-        run: python -m scripts.gistda_cadence --record-published --attempt-after "$GISTDA_DIAGNOSTIC_START"

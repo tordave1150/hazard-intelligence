@@ -4,6 +4,57 @@ import {timeTheme,applyTimeTheme} from '../lib/map-theme';
 import {remainingHours,hourlyFreshness,hourlyValue} from '../lib/hourly';
 import {metricColor,metricUnit} from '../lib/semantics';
 import type {HourlyForecast} from '../lib/types';
+import {loadFloodSnapshot} from '../lib/flood-client';
+import {validatedFloodChunk} from '../lib/contracts';
+import type {FloodFeed,FloodSnapshot} from '../lib/types';
+import threeDayFixture from '../../../tests/fixtures/gistda/synthetic-three-day-feed.json';
+
+describe('Complete three-day GISTDA loading',()=>{
+  const full=threeDayFixture as FloodFeed;
+  const {records,...metadata}=full;
+  const page=(chunk:number,changes:Partial<FloodSnapshot>={}):FloodSnapshot=>({
+    feed:structuredClone(metadata),records:structuredClone(records.slice(chunk*2,chunk*2+2)),
+    health:{status:'SUCCESS'},freshness:'UNKNOWN',query_freshness:'FRESH',storage:'mongo',error:null,
+    pagination:{generation:'test-generation',chunk,chunk_count:2,next_chunk:chunk===0?1:null,complete:false},...changes});
+  function fetchPages(values:FloodSnapshot[]){
+    let index=0;
+    return vi.fn(async()=>({ok:true,json:async()=>values[index++]})) as unknown as typeof fetch;
+  }
+  it('assembles every page from one generation and retains explicit three-day/unknown acquisition labels',async()=>{
+    const fetcher=fetchPages([page(0),page(1)]);
+    const result=await loadFloodSnapshot(new AbortController().signal,fetcher);
+    expect(result.records).toHaveLength(3);expect(result.pagination?.complete).toBe(true);
+    expect(result.feed?.product_window).toBe('3days');expect(result.feed?.observed_at).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetcher).mock.calls[1][0]).toContain('chunk=1&generation=test-generation');
+  });
+  it('does not redownload unchanged geometry on the five-minute health poll',async()=>{
+    const previous=await loadFloodSnapshot(new AbortController().signal,fetchPages([page(0),page(1)]));
+    const fetcher=fetchPages([page(0,{health:{status:'FAILED'},query_freshness:'DELAYED'})]);
+    const result=await loadFloodSnapshot(new AbortController().signal,fetcher,previous);
+    expect(fetcher).toHaveBeenCalledTimes(1);expect(result.records).toHaveLength(3);
+    expect(result.health?.status).toBe('FAILED');expect(result.query_freshness).toBe('DELAYED');
+  });
+  it.each(['generation','duplicate','missing','cursor','metadata'])('rejects %s corruption before returning anything to the map',async(corruption)=>{
+    const first=page(0),second=page(1);
+    if(corruption==='generation')second.pagination!.generation='different-generation';
+    if(corruption==='duplicate')second.records=[first.records[0]];
+    if(corruption==='missing')second.records=[];
+    if(corruption==='cursor')first.pagination!.next_chunk=0;
+    if(corruption==='metadata')second.feed!.response_at='2026-10-28T00:00:00Z';
+    await expect(loadFloodSnapshot(new AbortController().signal,fetchPages([first,second]))).rejects.toThrow();
+  });
+  it('validates a bounded stored chunk without treating it as a complete feed',()=>{
+    const chunk={source_id:'gistda',product_id:'flood_3days_thailand',chunk_id:'0000',chunk_count:2,
+      feed:metadata,records:records.slice(0,2)};
+    expect(validatedFloodChunk(chunk).feed.record_count).toBe(3);
+    expect(()=>validatedFloodChunk({...chunk,chunk_id:'0002'})).toThrow();
+    expect(()=>validatedFloodChunk({...chunk,records:[]})).toThrow();
+    expect(()=>validatedFloodChunk({...chunk,feed:{...metadata,product_window:'1day'}})).toThrow();
+    const bad=structuredClone(chunk);bad.records[0].geometry.coordinates=[];
+    expect(()=>validatedFloodChunk(bad)).toThrow();
+  });
+});
 describe('Bangkok calendar and mode',()=>{
   it('keeps Today independent of missing daily forecasts and follows Bangkok rollover',()=>{
     expect(dashboardDates(Date.parse('2026-10-28T16:59:00Z'))).toEqual(['2026-10-28','2026-10-29','2026-10-30','2026-10-31']);
