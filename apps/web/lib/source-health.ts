@@ -1,9 +1,10 @@
 import type {Freshness,Source} from './types';
 
-const policies:Record<string,{hours:number;grace:number;workflow:string}>={
-  open_meteo:{hours:24,grace:6,workflow:'etl.yml'},rid:{hours:24,grace:6,workflow:'rid.yml'},
-  tmd:{hours:1,grace:1,workflow:'tmd.yml'},gistda:{hours:24,grace:6,workflow:'gistda.yml'},
-  open_meteo_hourly:{hours:4,grace:2,workflow:'hourly.yml'},
+const policies:Record<string,{hours:number;grace:number;workflow:string;utcHours:number[];minute:number}>={
+  open_meteo:{hours:24,grace:6,workflow:'etl.yml',utcHours:[1],minute:0},rid:{hours:24,grace:6,workflow:'rid.yml',utcHours:[1],minute:15},
+  tmd:{hours:1,grace:1,workflow:'tmd.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:37},
+  gistda:{hours:24,grace:6,workflow:'gistda.yml',utcHours:[2],minute:27},
+  open_meteo_hourly:{hours:4,grace:2,workflow:'hourly.yml',utcHours:[1,5,9,13,17,21],minute:17},
 };
 const repository='https://github.com/tordave1150/hazard-intelligence';
 export type RuntimeSource=Source & {freshness:Freshness;query_freshness?:Freshness;available?:boolean;
@@ -17,7 +18,14 @@ function age(value:unknown,now:number){
 }
 export function monitorSource(id:string,freshness:Freshness,health:Record<string,unknown>|null,now=Date.now()):SourceMonitoring{
   const policy=policies[id],attempt=age(health?.last_attempt,now),success=age(health?.last_success,now);
-  const overdue=!!policy&&attempt!==null&&attempt>policy.hours+policy.grace;
+  let expected:number|null=null;
+  if(policy&&attempt!==null){
+    const last=now-attempt*3600000,date=new Date(last);
+    const midnight=Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate());
+    const slots=[0,1].flatMap(day=>policy.utcHours.map(hour=>midnight+day*86400000+hour*3600000+policy.minute*60000));
+    expected=slots.filter(slot=>slot>last).sort((a,b)=>a-b)[0]+policy.grace*3600000;
+  }
+  const overdue=expected!==null&&now>expected;
   const quality=Number.isInteger(health?.quality_issue_count)&&Number(health?.quality_issue_count)>0?Number(health?.quality_issue_count):0;
   const run=typeof health?.run_url==='string'&&/^https:\/\/github\.com\/tordave1150\/hazard-intelligence\/actions\/runs\/[0-9]+$/.test(health.run_url)?health.run_url:null;
   let state:SourceMonitoring['state']=!policy?'PLANNED':health?.status==='FAILED'?'FAILED':
@@ -31,7 +39,7 @@ export function monitorSource(id:string,freshness:Freshness,health:Record<string
     id==='gistda'?'การดึงข้อมูลเป็นปัจจุบัน แต่ไม่ทราบเวลาถ่ายภาพดาวเทียม':'รอบล่าสุดสำเร็จและอยู่ในช่วงความสดที่กำหนด';
   return {state,needs_attention:['ATTENTION','FAILED','OVERDUE','STALLED','UNKNOWN'].includes(state),cadence_hours:policy?.hours??null,
     overdue,quality_issue_count:quality,attempt_age_hours:attempt,success_age_hours:success,
-    expected_by:policy&&attempt!==null?new Date(now+(policy.hours+policy.grace-attempt)*3600000).toISOString():null,
+    expected_by:expected!==null?new Date(expected).toISOString():null,
     actions_url:policy?`${repository}/actions/workflows/${policy.workflow}`:null,run_url:run,reason};
 }
 export function healthError(health:Record<string,unknown>|null){

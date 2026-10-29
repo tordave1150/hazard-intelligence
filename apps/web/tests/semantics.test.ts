@@ -21,6 +21,11 @@ describe('Source health separates collection, scheduling and source quality',()=
     expect(monitorSource('tmd','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T11:50:00Z',last_success:'2026-10-29T11:51:00Z',quality_issue_count:1},now)).toMatchObject({state:'ATTENTION',quality_issue_count:1});
     expect(monitorSource('gistda','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T11:00:00Z',last_success:'2026-10-29T11:10:00Z'},now).state).toBe('OK');
   });
+  it('uses the actual daily cron slot after a late manual run instead of shifting the schedule',()=>{
+    const result=monitorSource('gistda','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T14:38:00Z',last_success:'2026-10-29T14:43:00Z'},Date.parse('2026-10-30T09:00:00Z'));
+    expect(result.expected_by).toBe('2026-10-30T08:27:00.000Z');
+    expect(result.state).toBe('OVERDUE');
+  });
   it('does not expose arbitrary failure text or link to untrusted workflow URLs',()=>{
     expect(healthError({status:'FAILED',error_summary:'secret credentials'})).not.toContain('secret');
     expect(monitorSource('tmd','STALE',{run_url:'https://private.invalid/secret'},now).run_url).toBeNull();

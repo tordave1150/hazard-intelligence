@@ -43,6 +43,40 @@ def test_hourly_contract_preserves_full_intervals_including_last_hour_and_null_i
             validate_record('HourlyForecast', bad)
 
 
+def test_slow_multi_coordinate_batch_is_split_without_skipping_or_repeating_completed_points(hourly_record):
+    locations=weather_locations('all')[:50]
+    payload={'latitude':13.75,'longitude':100.5,'timezone':'Asia/Bangkok','utc_offset_seconds':25200,
+        'hourly_units':{'time':'unixtime','precipitation':'mm','precipitation_probability':'%','temperature_2m':'°C'},
+        'hourly':{'time':[int(instant(p['valid_end']).timestamp()) for p in hourly_record['valid_hours']],
+            'precipitation':[1.5]*24,'precipitation_probability':[60]*24,'temperature_2m':[29]*24}}
+    calls=[]
+    def fetcher(batch,day):
+        calls.append([a['id'] for a in batch])
+        if len(calls)==2:raise ProviderRequestError('transport_error',transport_type='ReadTimeout')
+        return [deepcopy(payload) for _ in batch],FETCHED
+    records=hourly.collect(locations,DAY,fetcher=fetcher,sleep=lambda _:None)
+    assert [r['location_id'] for r in records]==[a['id'] for a in locations]
+    assert [len(c) for c in calls]==[25,25,5,5,5,5,5]
+    assert calls[2][0]==locations[25]['id']
+    hourly.check_hourly_batch(records,[a['id'] for a in locations])
+
+
+def test_hourly_large_read_timeout_yields_to_splitter_but_small_batches_keep_bounded_retries():
+    import requests
+    class Session:
+        calls=0
+        def get(self,*args,**kwargs):
+            self.calls+=1
+            raise requests.ReadTimeout('private-url-with-key')
+    large=Session();small=Session()
+    with pytest.raises(ProviderRequestError) as error:
+        fetch_hourly_batch(weather_locations('all')[:25],DAY,session=large,sleep=lambda _:None)
+    assert large.calls==1 and error.value.transport_type=='ReadTimeout' and 'private' not in str(error.value)
+    with pytest.raises(ProviderRequestError):
+        fetch_hourly_batch(weather_locations('all')[:5],DAY,session=small,sleep=lambda _:None)
+    assert small.calls==4
+
+
 def test_hourly_publication_is_independent_bounded_atomic_and_can_rollback(hourly_record, tmp_path):
     db = mongomock.MongoClient().test
     p = hourly.HourlyPublisher(db); ids = [hourly_record['location_id']]

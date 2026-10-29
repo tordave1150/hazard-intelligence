@@ -35,10 +35,10 @@ def fetch_hourly_batch(locations, day, session=None, sleep=time.sleep):
     params = {'latitude': ','.join(str(x['lat']) for x in locations), 'longitude': ','.join(str(x['lon']) for x in locations),
               'hourly': 'precipitation,precipitation_probability,temperature_2m', 'timezone': 'Asia/Bangkok',
               'timeformat': 'unixtime', 'start_hour': day + 'T01:00', 'end_hour': end + 'T00:00'}
-    return _fetch(locations, params, session, sleep)
+    return _fetch(locations, params, session, sleep, split_timeouts=True)
 
 
-def _fetch(locations, params, session, sleep):
+def _fetch(locations, params, session, sleep, split_timeouts=False):
     session = session or requests.Session()
     key = os.getenv('OPEN_METEO_API_KEY')
     url = 'https://customer-api.open-meteo.com/v1/forecast' if key else 'https://api.open-meteo.com/v1/forecast'
@@ -56,6 +56,10 @@ def _fetch(locations, params, session, sleep):
             response = session.get(url, params=params, timeout=(10, 60), allow_redirects=False, stream=True)
         except requests.RequestException as exc:
             failure = ProviderRequestError('transport_error', transport_type=type(exc).__name__)
+            # Let the hourly collector retry these same coordinates in smaller
+            # batches instead of repeating a slow multi-coordinate query four times.
+            if split_timeouts and len(locations)>5 and isinstance(exc,requests.ReadTimeout):
+                raise failure from None
         else:
             if not 200 <= response.status_code < 300 and hasattr(response, 'close'):
                 response.close()

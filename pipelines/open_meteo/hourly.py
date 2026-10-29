@@ -84,14 +84,23 @@ class HourlyPublisher(Publisher):
 
 
 def collect(locations, day, fetcher=fetch_hourly_batch, sleep=__import__('time').sleep):
-    records = []
-    for offset in range(0, len(locations), 25):
-        batch = locations[offset:offset + 25]
-        payloads, fetched = fetcher(batch, day)
+    records,offset,batch_size = [],0,25
+    while offset<len(locations):
+        batch = locations[offset:offset + batch_size]
+        try:
+            payloads, fetched = fetcher(batch, day)
+        except ProviderRequestError as exc:
+            if batch_size==25 and len(batch)>5 and exc.reason=='transport_error' and exc.transport_type=='ReadTimeout':
+                batch_size=5
+                print(__import__('json').dumps({'event':'hourly_batch_size_reduced','from':25,'to':5,
+                    'reason':'ReadTimeout','completed_locations':len(records)}),flush=True)
+                continue
+            raise
         if len(payloads) != len(batch):
             raise ValueError('Incomplete hourly provider batch')
         records.extend(normalize(p, area, day, fetched) for p, area in zip(payloads, batch))
-        sleep(3)
+        offset+=len(batch)
+        sleep(1 if batch_size==5 else 3)
     check_hourly_batch(records, [a['id'] for a in locations])
     return records
 
