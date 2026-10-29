@@ -83,7 +83,14 @@ class HourlyPublisher(Publisher):
     def rollback(self, source='open_meteo', product=PRODUCT): return super().rollback(source, product)
 
 
-def collect(locations, day, fetcher=fetch_hourly_batch, sleep=__import__('time').sleep):
+def collect(locations, day, fetcher=None, sleep=__import__('time').sleep):
+    if fetcher is None:
+        from functools import partial
+        import requests
+        # Reuse the provider connection across all batches and retries. Opening
+        # a fresh TLS session for every batch causes unnecessary runner latency.
+        with requests.Session() as session:
+            return collect(locations,day,fetcher=partial(fetch_hourly_batch,session=session),sleep=sleep)
     records,offset,batch_size = [],0,25
     while offset<len(locations):
         batch = locations[offset:offset + batch_size]
