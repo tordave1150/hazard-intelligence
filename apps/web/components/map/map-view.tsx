@@ -255,6 +255,7 @@ export default function MapView(props:Props){
     // MapLibre drapes its own fill/extrusion geometry on DEM terrain. The deck
     // layer handles 2D, where a flat z=0 mesh cannot be buried below terrain.
     const warningRgb=(f:Feature):[number,number,number,number]=>{const hex=String(f.properties?.color??'#7a8088');return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255];};
+    const gaugeHit=(x:number,y:number)=>latest.current.showGauges&&!!map.current?.getLayer('gauge-point')&&!!map.current.queryRenderedFeatures([x,y],{layers:['gauge-point','gauge-clusters']}).length;
     overlay.current.setProps({layers:props.is3d?[]:[new GeoJsonLayer({id:'weather-geography',data:{type:'FeatureCollection',features} as FeatureCollection,
       pickable:true,filled:props.rainfall,stroked:true,extruded:extrusion,
       getFillColor:(f:Feature)=>props.rainfall?metricColor(f.properties?.value??null,props.metric,props.hourly?'hourly':'daily'):[228,236,232,190],
@@ -264,7 +265,7 @@ export default function MapView(props:Props){
       opacity:props.opacity/100,autoHighlight:true,highlightColor:[38,156,156,65],
       onHover:({object})=>{if(map.current)map.current.getCanvas().style.cursor=object?'pointer':'';},
       onClick:({object,x,y})=>{
-        if(latest.current.showGauges&&map.current?.getLayer('gauge-point')&&map.current.queryRenderedFeatures([x,y],{layers:['gauge-point','gauge-clusters']}).length)return true;
+        if(gaugeHit(x,y))return true;
         if(!object)return;
         const id=object.properties.id;
         latest.current.onSelect(latest.current.area.level==='national'?object.properties.region_id:id);
@@ -272,12 +273,12 @@ export default function MapView(props:Props){
     }),new GeoJsonLayer({id:'gistda-flood-polygons',data:floodGeometry,pickable:true,filled:true,stroked:true,
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=40;return color;},getLineColor:warningRgb,
       getLineWidth:(f:Feature)=>f.properties?.selected?3:1.8,lineWidthUnits:'pixels',lineWidthMinPixels:1.8,
-      onClick:({object})=>{if(object)latest.current.onSelectFlood(object.properties.feature_id);return true;}
+      onClick:({object,x,y})=>{if(gaugeHit(x,y))return true;if(object)latest.current.onSelectFlood(object.properties.feature_id);return true;}
     }),new GeoJsonLayer({id:'tmd-cap-polygons',data:warningGeometry,pickable:true,filled:true,stroked:true,
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
       getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
-      onClick:({object})=>{if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
-    })],getTooltip:({object})=>object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n${floodWindowLabel}\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric,props.hourly?'hourly':'daily')} · forecast`}\nOpen-Meteo · ${props.validTimeLabel}\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
+      onClick:({object,x,y})=>{if(gaugeHit(x,y))return true;if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
+    })],getTooltip:({object,x,y})=>gaugeHit(x,y)?null:object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n${floodWindowLabel}\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric,props.hourly?'hourly':'daily')} · forecast`}\nOpen-Meteo · ${props.validTimeLabel}\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
   },[ready,geometry,warningGeometry,floodGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,props.hourly,props.validTimeLabel,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>
