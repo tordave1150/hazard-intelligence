@@ -27,4 +27,15 @@ def definitions():
         'coverage_by_province':{'type':'array','maxItems':77,'items':obj({'area_id':{'type':'string','pattern':'^TH-P-[0-9]{2}$'},'record_count':count})},
         'quality_issue_count':count,'time_unknown_count':count,'records':{'type':'array','maxItems':5000,'items':station},
         'coverage':text,'units':obj({'water_level_msl':{'const':'m above mean sea level'},'water_level_m':{'const':'m as reported'}})})
-    return {'ThaiWaterStation':station,'ThaiWaterFeed':feed}
+    from copy import deepcopy
+    rain=deepcopy(station);rp=rain['properties'];rp['gauge_id']['pattern']='^THR-[0-9]{1,12}$'
+    for k in ['water_level_msl','water_level_m']:del rp[k]
+    rp.update(rain_24h_mm={'type':['number','null'],'minimum':0,'maximum':5000},rain_1h_mm={'type':['number','null'],'minimum':0,'maximum':1000},
+        district_mapping={'enum':['EXACT_NAME_WITHIN_PROVIDER_PROVINCE','UNCONFIRMED']})
+    rp['quality_flags']['items']['enum']=['INVALID_POINT','INVALID_PROVIDER_TIME','INVALID_RAIN','NO_24H_RAIN'];rain['required']=list(rp)
+    rainfeed=deepcopy(feed);fp=rainfeed['properties'];del fp['provider_manual_count']
+    fp['product_id']={'const':'national_rain_24h'};fp['source_url']={'const':'https://api-v3.thaiwater.net/api/v1/thaiwater30/public/rain_24h'}
+    fp['records']={'type':'array','maxItems':10000,'items':rain}
+    fp['units']=obj({'rain_24h_mm':{'const':'mm / 24h as reported'},'rain_1h_mm':{'const':'mm / 1h as reported'}})
+    fp.update(window_start={'type':'null'},window_end={'type':'null'});rainfeed['required']=list(fp)
+    return {'ThaiWaterStation':station,'ThaiWaterFeed':feed,'ThaiWaterRainStation':rain,'ThaiWaterRainFeed':rainfeed}

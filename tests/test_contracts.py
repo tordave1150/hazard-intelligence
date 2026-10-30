@@ -82,7 +82,7 @@ def test_geo_contract_parent_identity_and_coverage():
 def test_actual_polygon_geometry_and_ids():
     from shapely.geometry import shape,Point
     root=Path(__file__).resolve().parents[1]
-    areas={a['id']:a for a in json.loads((root/'apps/web/data/areas.json').read_text(encoding='utf-8'))}
+    areas={a['id']:a for a in json.loads((root/'apps/web/data/areas.json').read_text(encoding='utf-8'))+json.loads((root/'apps/web/data/basins.json').read_text(encoding='utf-8'))}
     files=list((root/'apps/web/public/data').rglob('*.geojson'))
     seen=[]
     for f in files:
@@ -91,4 +91,6 @@ def test_actual_polygon_geometry_and_ids():
             assert geom.is_valid and not geom.is_empty
             assert geom.buffer(.004).covers(Point(a['lon'],a['lat']))
             seen.append(a['id'])
-    assert len(seen)==len(set(seen))==1011
+    assert len(seen)==len(set(seen))==1033
+    assert sum(a.startswith('TH-B-') for a in seen)==22
+    assert sum(not a.startswith('TH-B-') for a in seen)==1011

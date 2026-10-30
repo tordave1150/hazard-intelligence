@@ -1,7 +1,8 @@
 import data from '../data/areas.json';
+import basinData from '../data/basins.json';
 import type {Area, Level} from './types';
 import {contains} from './semantics';
-export const areas = data as Area[];
+export const areas = [...data,...basinData] as Area[];
 export const areaById = new Map(areas.map(a=>[a.id,a]));
 export const national = areaById.get('TH')!;
 export function areaMembers(id: string, level?: Level) {

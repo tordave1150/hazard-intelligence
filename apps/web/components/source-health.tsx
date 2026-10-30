@@ -41,11 +41,11 @@ export default function SourceHealth(){
         <p className="health-reason">{m.reason}</p>
         {m.state!=='PLANNED'&&<dl><dt>รอบล่าสุด</dt><dd>{String(h?.status??'ไม่พบสถานะ')}{m.run_url&&<> · <a href={m.run_url} target="_blank" rel="noreferrer">เปิดรัน <ArrowUpRight size={11}/></a></>}</dd>
           <dt>เริ่มดึงล่าสุด</dt><dd>{time(h?.last_attempt)}</dd><dt>สำเร็จล่าสุด</dt><dd>{time(h?.last_success)}</dd>
-          <dt>ความสด{['gistda','thaiwater'].includes(source.id)?'ของการดึง':''}</dt><dd>{source.query_freshness??source.freshness}{source.id==='gistda'&&' · เวลาถ่ายภาพไม่ทราบ'}{source.id==='thaiwater'&&' · เวลาตรวจวัดไม่ระบุเขตเวลา'}</dd>
+          <dt>ความสด{['gistda','thaiwater','thaiwater_rain'].includes(source.id)?'ของการดึง':''}</dt><dd>{source.query_freshness??source.freshness}{source.id==='gistda'&&' · เวลาถ่ายภาพไม่ทราบ'}{source.id.startsWith('thaiwater')&&' · เวลาตรวจวัดไม่ระบุเขตเวลา'}</dd>
           <dt>รอบเป้าหมาย</dt><dd>ทุก {m.cadence_hours} ชั่วโมง</dd><dt>ควรพบรอบใหม่ภายใน</dt><dd>{time(m.expected_by)}{m.overdue?' · เลยช่วงแล้ว':''}</dd>
           <dt>จำนวนในชุดล่าสุด</dt><dd>{typeof h?.record_count==='number'?h.record_count.toLocaleString('en-US'):typeof h?.successful_locations==='number'?h.successful_locations.toLocaleString('en-US'):'ไม่ระบุ'}</dd>
           {!!m.quality_issue_count&&<><dt>ปัญหาคุณภาพต้นทาง</dt><dd>{m.quality_issue_count} รายการ · เก็บข้อมูลเดิมพร้อมป้ายกำกับ</dd></>}
-          {source.id==='thaiwater'&&typeof h?.time_unknown_count==='number'&&<><dt>อายุการตรวจวัดยังไม่ยืนยัน</dt><dd>{h.time_unknown_count} สถานี · แยกจากปัญหาคุณภาพรายการ</dd></>}
+          {source.id.startsWith('thaiwater')&&typeof h?.time_unknown_count==='number'&&<><dt>อายุการตรวจวัดยังไม่ยืนยัน</dt><dd>{h.time_unknown_count} สถานี · แยกจากปัญหาคุณภาพรายการ</dd></>}
         </dl>}
         {reason&&<p className="health-error-detail">{reason}{typeof h?.http_status==='number'?` (HTTP ${h.http_status})`:''}</p>}
         <div className="health-card-links">{m.actions_url&&<a href={m.actions_url} target="_blank" rel="noreferrer">ประวัติ GitHub Actions <ArrowUpRight size={13}/></a>}<a href={source.url} target="_blank" rel="noreferrer">ต้นทาง <ArrowUpRight size={13}/></a></div>

@@ -31,6 +31,17 @@ async function areaIndex(first:FloodSnapshot):Promise<AreaIndex>{
   try{return await value;}finally{if(pending?.value===value)pending=null;}
 }
 
+/** One pinned generation, ID/admin projections only; never 77 geometry queries. */
+export async function readFloodProvinceCounts(){
+  const first=await readFloodSnapshot(0);
+  if(!first.feed)return {available:false,counts:{} as Record<string,number>,fetched_at:null,query_freshness:first.query_freshness,generation:null};
+  try{
+    const index=await areaIndex(first);
+    return {available:true,counts:Object.fromEntries([...index].filter(([id])=>id.startsWith('TH-P-')).map(([id,value])=>[id,value.count])),
+      fetched_at:first.feed.fetched_at,query_freshness:first.query_freshness,generation:first.pagination!.generation};
+  }catch{return {available:false,counts:{} as Record<string,number>,fetched_at:null,query_freshness:'UNAVAILABLE' as const,generation:null};}
+}
+
 export async function readFloodAreaSnapshot(area:Area,mode:'summary'|'detail',chunk=0,generation?:string):Promise<FloodSnapshot>{
   const first=await readFloodSnapshot(0);
   if(!first.feed)return first;

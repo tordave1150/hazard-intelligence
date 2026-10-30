@@ -1,6 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import fixture from '../../../tests/fixtures/thaiwater/normalized-subset.json';
 import {validatedGaugeFeed} from '../lib/contracts';
+import {rainResponse} from '../lib/rain-gauges';
 import {gaugeResponse,gaugeInArea,gaugeQueryFreshness,gaugeValue} from '../lib/gauges';
 import {parseGaugeHistory,wallOrdinal} from '../lib/gauge-history-data';
 import {areaById} from '../lib/geography';
@@ -21,7 +22,7 @@ describe('National HII stations preserve measurement meaning',()=>{
   });
   it('distinguishes an empty area, unavailable product and measured zero',()=>{
     expect(gaugeResponse(snapshot,areaById.get('TH-P-37')!)).toMatchObject({status:'EMPTY_RESULT',selected_count:0,freshness:'UNKNOWN'});
-    expect(gaugeResponse(snapshot,areaById.get('TH')!,'rain')).toMatchObject({status:'UNAVAILABLE',records:[]});
+    expect(rainResponse({...snapshot,feed:null,records:[]},areaById.get('TH')!)).toMatchObject({status:'UNAVAILABLE',records:[]});
     expect(gaugeValue(null)).toBe('ไม่ระบุ');expect(gaugeValue(0)).toBe('0.00');
   });
   it('fresh collection never assigns observation UTC or a current station age',()=>{

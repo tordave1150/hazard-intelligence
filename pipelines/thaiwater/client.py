@@ -9,11 +9,12 @@ class ProviderRequestError(RuntimeError):
     def __init__(self,reason,status=None):self.reason=reason;self.status=status;super().__init__(reason)
 
 
-def fetch(session=None,sleep=time.sleep):
+def fetch(session=None,sleep=time.sleep,source=SOURCE):
+    if source not in {SOURCE,'https://api-v3.thaiwater.net/api/v1/thaiwater30/public/rain_24h'}:raise ValueError('Unsupported public station endpoint')
     get=session.get if session is not None else requests.get
     for attempt in range(3):
         try:
-            with get(SOURCE,timeout=(10,35),allow_redirects=False,stream=True,headers={'Accept':'application/json'}) as response:
+            with get(source,timeout=(10,35),allow_redirects=False,stream=True,headers={'Accept':'application/json'}) as response:
                 if response.status_code==429 or response.status_code>=500:
                     if attempt==2:raise ProviderRequestError('upstream_unavailable',response.status_code)
                     delay=response.headers.get('Retry-After','')

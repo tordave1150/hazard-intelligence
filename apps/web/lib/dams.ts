@@ -1,11 +1,14 @@
 import metadata from '../data/rid-dams.json';
+import basinMembership from '../data/dam-basin-membership.json';
 import type {Area,DamMeta,DamObservation,Freshness} from './types';
 export const damMetadata=metadata.dams as DamMeta[];
 export const damSourceUrl='https://app.rid.go.th/reservoir/api/dam/public';
 export const damMetadataUrl=metadata.source_page;
 export const damLicenseUrl=metadata.license_url;
 export const damById=new Map(damMetadata.map(d=>[d.dam_id,d]));
+export const damBasinId=(id:string)=>(basinMembership as Record<string,string|null>)[id]??null;
 export function damInArea(dam:DamMeta,area:Area){
+  if(area.level==='basin')return (basinMembership as Record<string,string|null>)[dam.dam_id]===area.id;
   return area.level==='national'||area.id===dam.region_id||area.id===dam.province_id||area.id===dam.district_id;
 }
 export function damFreshness(records:DamObservation[],now=Date.now()):Freshness{

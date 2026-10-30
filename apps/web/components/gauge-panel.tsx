@@ -72,7 +72,7 @@ export default function GaugePanel({area,snapshot,queryFreshness,selectedId,load
           <dt>เวลาตรวจวัด UTC</dt><dd>ยังไม่ยืนยัน</dd><dt>ดึงชุดข้อมูล</dt><dd>{bangkokTime(snapshot.feed.fetched_at)}</dd>
           <dt>ระดับน้ำหน่วยเมตร</dt><dd>{selected.water_level_m===null?'ไม่ระบุ':`${gaugeValue(selected.water_level_m)} m ตามต้นทาง`}</dd>
           <dt>จังหวัด / อำเภอ</dt><dd>{areaById.get(selected.province_id)?.name_th} / {selected.district_id?areaById.get(selected.district_id)?.name_th:'ยังจับคู่ไม่ได้'}</dd>
-          <dt>พิกัดสถานี</dt><dd>{selected.point?`${selected.point.lat.toFixed(5)}, ${selected.point.lon.toFixed(5)}`:'ไม่มีพิกัดที่ใช้บนแผนที่ได้'}</dd>
+          <dt>ลุ่มน้ำ</dt><dd>{selected.basin_id?areaById.get(selected.basin_id)?.name_th:'ยังไม่ยืนยันจากขอบเขต'}</dd><dt>พิกัดสถานี</dt><dd>{selected.point?`${selected.point.lat.toFixed(5)}, ${selected.point.lon.toFixed(5)}`:'ไม่มีพิกัดที่ใช้บนแผนที่ได้'}</dd>
           <dt>คุณภาพรายการ</dt><dd>{selected.quality_flags.length?selected.quality_flags.join(', '):'ผ่านรูปแบบข้อมูล · ยังไม่ตรวจรับรองการวัด'}</dd></dl>
         <p className="dam-note">ม.รทก. เป็นระดับอ้างอิงทะเลปานกลาง ไม่ใช่ความลึกน้ำท่วม และไม่ควรเทียบค่าระหว่างสถานีเป็นอันดับความเสี่ยง</p>
         <StationHistory key={selected.gauge_id} id={selected.gauge_id}/>

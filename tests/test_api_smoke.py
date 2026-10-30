@@ -48,15 +48,16 @@ def test_bad_queries_rejected(route):
     assert response.status_code==400 and response.headers['Cache-Control']=='no-store'
 
 
-@pytest.mark.parametrize('route',['/api/gauges?kind=rain'])
-def test_planned_sources_are_never_normal(route):
-    value=requests.get(BASE+route,timeout=15).json()
-    assert value['status']=='UNAVAILABLE' and value['records']==[]
+def test_rain_source_preserves_unknown_observation_age():
+    value=requests.get(BASE+'/api/gauges?kind=rain&view=summary',timeout=30).json()
+    assert value['records']==[] and not value['detail_loaded']
+    assert value['freshness'] in ['UNKNOWN','UNAVAILABLE']
+    if value['feed']:assert value['selected_count']==value['total_count']
 
 
 def test_source_health_separates_planned_source_and_supplies_schedule_evidence():
     value=requests.get(BASE+'/api/sources/status',timeout=25).json()
-    assert value['checked_at'] and len(value['sources'])==6
+    assert value['checked_at'] and len(value['sources'])==7
     for source in value['sources']:
         monitor=source['monitoring']
         assert monitor['cadence_hours'] and monitor['actions_url'].startswith('https://github.com/tordave1150/hazard-intelligence/actions/workflows/')
@@ -175,6 +176,26 @@ def test_hii_national_scope_filters_and_history_guards():
     for query in ['gauge_id=https://example.com','gauge_id=THW-737&url=x','gauge_id=THW-737&gauge_id=THW-737']:
         result=requests.get(BASE+'/api/gauges/history?'+query,timeout=25)
         assert result.status_code==400 and result.headers['Cache-Control']=='no-store'
+
+
+def test_province_overview_is_complete_small_and_has_no_station_or_polygon_payload():
+    response=requests.get(BASE+'/api/provinces/overview',timeout=30)
+    assert response.status_code==200 and len(response.content)<128*1024
+    value=response.json();assert len(value['rows'])==77 and len({r['area_id'] for r in value['rows']})==77
+    assert all('geometry' not in row and 'records' not in row for row in value['rows'])
+    assert requests.get(BASE+'/api/provinces/overview?date=2026-10-30',timeout=15).status_code==400
+
+
+def test_basin_context_filters_stations_and_dams_without_inventing_province_products():
+    basins=requests.get(BASE+'/api/areas?level=basin',timeout=20).json()['areas']
+    assert len(basins)==22 and all(b['level']=='basin' for b in basins)
+    identity='TH-B-06'
+    value=requests.get(BASE+'/api/gauges',params={'area_id':identity},timeout=25).json()
+    assert all(r['basin_id']==identity and r['basin_assignment']=='CONFIRMED_INTERIOR_POINT' for r in value['records'])
+    response=requests.get(BASE+'/api/area/'+identity+'/summary',timeout=30);assert response.status_code==200
+    summary=response.json()
+    assert summary['warnings']['status']=='UNSUPPORTED_GEOGRAPHY' and summary['warnings']['current_count'] is None
+    assert summary['satellite']['status']=='UNSUPPORTED_GEOGRAPHY'
 
 
 def test_corrected_wiang_kao_identity_and_forecast_read_compatibility():

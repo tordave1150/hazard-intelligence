@@ -1,7 +1,7 @@
 import Ajv from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import schema from '../../../packages/contracts/schema.json';
-import type {DamObservation,Forecast,WarningFeed,FloodFeed,FloodChunk,HourlyForecast,GaugeFeed} from './types';
+import type {DamObservation,Forecast,WarningFeed,FloodFeed,FloodChunk,HourlyForecast,GaugeFeed,RainFeed} from './types';
 import {allowedWarningDocument} from './warnings';
 import {areaById} from './geography';
 import {damById,damLicenseUrl,damMetadataUrl,damSourceUrl} from './dams';
@@ -18,6 +18,23 @@ const validateThreeDayFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/G
 const validateThreeDayChunk=ajv.compile<FloodChunk>({$ref:`${schema.$id}#/$defs/GistdaThreeDayChunk`});
 const validateHourly=ajv.compile<HourlyForecast>({$ref:`${schema.$id}#/$defs/HourlyForecast`});
 const validateGauge=ajv.compile<GaugeFeed>({$ref:`${schema.$id}#/$defs/ThaiWaterFeed`});
+const validateRain=ajv.compile<RainFeed>({$ref:`${schema.$id}#/$defs/ThaiWaterRainFeed`});
+export function validatedRainFeed(value:unknown):RainFeed{
+  if(!validateRain(value))throw Error('Invalid rain feed contract');
+  const feed=value as RainFeed,ids=[...feed.records,...feed.excluded_stations].map(r=>r.source_station_id);
+  if(feed.record_count!==feed.records.length||ids.length!==feed.provider_automatic_count||new Set(ids).size!==ids.length||Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at)||feed.time_unknown_count!==feed.record_count||feed.quality_issue_count!==feed.records.filter(r=>r.quality_flags.length).length)throw Error('Incomplete rain response');
+  const counts=new Map<string,number>();
+  for(const r of feed.records){
+    const province=areaById.get(r.province_id),district=r.district_id?areaById.get(r.district_id):null;
+    if(province?.level!=='province'||province.region_id!==r.region_id||r.gauge_id!=='THR-'+r.source_station_id||r.district_id&&district?.province_id!==r.province_id||(r.district_id===null)!==(r.district_mapping==='UNCONFIRMED'))throw Error('Invalid rain geography');
+    let valid=false;try{if(r.source_observed_at){wallOrdinal(r.source_observed_at);valid=true;}}catch{}
+    if((!valid)!==r.quality_flags.includes('INVALID_PROVIDER_TIME')||(r.point===null)!==r.quality_flags.includes('INVALID_POINT')||(r.rain_24h_mm===null)!==r.quality_flags.includes('NO_24H_RAIN'))throw Error('Unflagged rain quality');
+    counts.set(r.province_id,(counts.get(r.province_id)??0)+1);
+  }
+  const expected=[...counts].sort(([a],[b])=>a.localeCompare(b)).map(([area_id,record_count])=>({area_id,record_count}));
+  if(JSON.stringify(expected)!==JSON.stringify(feed.coverage_by_province)||new TextEncoder().encode(JSON.stringify(feed)).length>4*1024*1024)throw Error('Invalid rain coverage');
+  return feed;
+}
 export function validatedGaugeFeed(value:unknown):GaugeFeed{
   if(!validateGauge(value))throw Error('Invalid station feed contract');
   const feed=value as GaugeFeed,ids=[...feed.records.map(r=>r.source_station_id),...feed.excluded_stations.map(r=>r.source_station_id)];

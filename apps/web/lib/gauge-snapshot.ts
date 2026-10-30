@@ -4,6 +4,7 @@ import path from 'node:path';
 import {mongoDatabase,mongoUri} from './mongo';
 import {validatedGaugeFeed} from './contracts';
 import {gaugeQueryFreshness} from './gauges';
+import {withBasin} from './basin-membership';
 import type {GaugeFeed,GaugeSnapshot} from './types';
 let cache:{until:number;value:GaugeSnapshot}|null=null;
 const key='thaiwater:national_waterlevel';
@@ -33,6 +34,7 @@ export async function readGaugeSnapshot():Promise<GaugeSnapshot>{
       result={...result,feed:metadata(feed),records:feed.records,health:value.status??null,storage:'local'};
     }
   }catch{result={...result,feed:null,records:[],health:null,error:'Station snapshot is temporarily unavailable'};}
+  result.records=result.records.map(withBasin);
   result.freshness=result.feed?'UNKNOWN':'UNAVAILABLE';
   result.query_freshness=gaugeQueryFreshness(result.feed,Date.now(),result.health?.status==='FAILED');
   cache={until:Date.now()+(result.error?10000:60000),value:result};return result;

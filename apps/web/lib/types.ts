@@ -11,7 +11,7 @@ export type Forecast = {schema_version: '2.0'; source_id: 'open_meteo'; product_
 export type Freshness = 'FRESH' | 'DELAYED' | 'STALE' | 'UNAVAILABLE' | 'UNKNOWN';
 export type GaugeStation={gauge_id:string;source_station_id:string;station_code:string|null;name_th:string|null;name_en:string|null;
   agency_name:string|null;agency_id:string|null;province_id:string;district_id:string|null;region_id:string;
-  point:{lat:number;lon:number}|null;source_observed_at:string|null;observed_at:null;observation_time_status:'TIMEZONE_NOT_SUPPLIED';
+  point:{lat:number;lon:number}|null;basin_id?:string|null;basin_assignment?:'CONFIRMED_INTERIOR_POINT'|'UNCONFIRMED';source_observed_at:string|null;observed_at:null;observation_time_status:'TIMEZONE_NOT_SUPPLIED';
   water_level_msl:number|null;water_level_m:number|null;quality_flags:('INVALID_POINT'|'INVALID_PROVIDER_TIME'|'INVALID_LEVEL'|'NO_LEVEL'|'UNRECOGNIZED_DISTRICT')[]};
 export type GaugeFeed={schema_version:'2.0';source_id:'thaiwater';product_id:'national_waterlevel';data_state:'observed';snapshot_id:'latest';
   source_url:string;fetched_at:string;ingested_at:string;record_count:number;provider_automatic_count:number;provider_manual_count:number;
@@ -22,6 +22,11 @@ export type GaugeSnapshot={feed:Omit<GaugeFeed,'records'>|null;records:GaugeStat
   freshness:Freshness;query_freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null};
 export type GaugeHistory={gauge_id:string;source_id:'thaiwater';unit:'m above mean sea level';observation_time_status:'TIMEZONE_NOT_SUPPLIED';
   fetched_at:string;start_date:string;end_date:string;source_url:string;points:{source_observed_at:string;value:number|null}[];invalid_value_count:number};
+export type RainStation=Omit<GaugeStation,'water_level_msl'|'water_level_m'|'quality_flags'>&{rain_24h_mm:number|null;rain_1h_mm:number|null;
+  district_mapping:'EXACT_NAME_WITHIN_PROVIDER_PROVINCE'|'UNCONFIRMED';quality_flags:('INVALID_POINT'|'INVALID_PROVIDER_TIME'|'INVALID_RAIN'|'NO_24H_RAIN')[]};
+export type RainFeed=Omit<GaugeFeed,'records'|'product_id'|'units'|'provider_manual_count'>&{product_id:'national_rain_24h';records:RainStation[];
+  units:{rain_24h_mm:'mm / 24h as reported';rain_1h_mm:'mm / 1h as reported'};window_start:null;window_end:null};
+export type RainSnapshot=Omit<GaugeSnapshot,'records'|'feed'>&{records:RainStation[];feed:Omit<RainFeed,'records'>|null;detail_loaded?:boolean};
 export type Source = {id: string; name: string; organization: string; state: string; status: string;
   url: string; terms_url: string; cadence: string; description: string; attribution: string;
   endpoint: string | null; authentication: string; license: string; commercial_permission: string;

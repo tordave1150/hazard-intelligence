@@ -1,4 +1,4 @@
-name: Latest HII Thailand river level stations
+name: Latest HII Thailand station observations
 on:
   push:
     branches: [main]
@@ -27,7 +27,9 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install -r pipelines/requirements.txt
+        id: dependencies
       - name: Validate fixed national request
+        id: request
         if: github.event_name == 'push'
         run: |
           python - <<'PY'
@@ -36,9 +38,10 @@ jobs:
           value=json.loads(Path('.github/thaiwater-publication-request.json').read_text())
           assert set(value)=={'request_id','source_id','operation'}
           assert re.fullmatch(r'[a-zA-Z0-9_-]{1,80}',value['request_id'])
-          assert value['source_id']=='thaiwater' and value['operation']=='publish_national_waterlevel'
+          assert value['source_id']=='thaiwater' and value['operation']=='publish_national_station_products'
           PY
       - name: Check existing database configuration
+        id: configuration
         run: |
           if [ -z "$MONGODB_URI" ] || [ -z "$MONGODB_DB_NAME" ]; then
             echo "::error::Existing MongoDB repository secrets are required."
@@ -46,5 +49,12 @@ jobs:
           fi
       - name: Publish the unfiltered national station response
         run: python -m pipelines.thaiwater.run --publish
+      - name: Publish the independent unfiltered national rainfall response
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' && steps.configuration.outcome == 'success' && (github.event_name != 'push' || steps.request.outcome == 'success') }}
+        run: python -m pipelines.thaiwater.rain --publish
       - name: Verify active generations, indexes and bounded retention
-        run: python -m scripts.mongo_admin verify
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' && steps.configuration.outcome == 'success' && (github.event_name != 'push' || steps.request.outcome == 'success') }}
+        run: |
+          python -m scripts.mongo_admin verify
+          python -m scripts.refresh_guard --source tmd
+          python -m scripts.refresh_guard --source hourly

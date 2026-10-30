@@ -4,19 +4,20 @@ import maplibregl,{type Map as MapType} from 'maplibre-gl';
 import {MapboxOverlay} from '@deck.gl/mapbox';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import type {Feature,FeatureCollection,Geometry} from 'geojson';
-import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningDisplay,HourlyForecast,GaugeStation} from '@/lib/types';
+import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningDisplay,HourlyForecast,GaugeStation,RainStation} from '@/lib/types';
 import {hourlyValue} from '@/lib/hourly';
 import {gaugeName,gaugeValue,gaugeWallTime} from '@/lib/gauges';
+import {damBasinId} from '@/lib/dams';
 import {warningColor} from '@/lib/warnings';
 import {floodColor,floodWindowLabel} from '@/lib/floods';
 import {applyTimeTheme,type TimeTheme} from '@/lib/map-theme';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 
-type Props={area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;theme:TimeTheme;
+type Props={geographyMode:'administrative'|'basin';area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;theme:TimeTheme;
   hourly:{records:HourlyForecast[];validEnd:string}|null;validTimeLabel:string;
   rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void;
-  gauges:GaugeStation[];showGauges:boolean;selectedGauge:string|null;onSelectGauge:(id:string)=>void;
+  gauges:(GaugeStation|RainStation)[];showGauges:boolean;selectedGauge:string|null;onSelectGauge:(id:string)=>void;
   dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void;
   warnings:WarningDisplay[];onSelectWarning:(id:string)=>void;
   floods:FloodFeature[];floodFreshness:Freshness;selectedFlood:string|null;onSelectFlood:(id:string)=>void};
@@ -46,7 +47,7 @@ export default function MapView(props:Props){
         attributionControl:false,bounds:[[97.1,5.4],[105.8,20.7]],fitBoundsOptions:{padding:35}});
       map.current=instance;
       instance.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:
-        '<a href="https://github.com/chingchai/OpenGISData-Thailand">Boundaries: OpenGISData-Thailand</a> · CC BY 4.0 (simplified)'}),'bottom-right');
+        '<a href="https://github.com/chingchai/OpenGISData-Thailand">Boundaries: OpenGISData-Thailand</a> · CC BY 4.0 (simplified) | <a href="https://gis-portal.disaster.go.th/arcgis/rest/services/MapDX/DPM_TH_Hydrology/MapServer/6">Basins: DDPM GIS</a>'}),'bottom-right');
       const fallback=setTimeout(()=>{
         if(!instance.isStyleLoaded()){
           setBaseError(true);instance.setStyle({version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#e3ecea'}}]});
@@ -84,7 +85,7 @@ export default function MapView(props:Props){
       instance.addLayer({id:'gauge-cluster-count',type:'symbol',source:'thaiwater-gauges',filter:['has','point_count'],
         layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Regular'],'text-size':11},paint:{'text-color':'#fff'}});
       instance.addLayer({id:'gauge-point',type:'circle',source:'thaiwater-gauges',filter:['!', ['has','point_count']],
-        paint:{'circle-color':'#758997','circle-radius':6,'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
+        paint:{'circle-color':['case',['==',['get','kind'],'rain'],'#508faf','#758997'],'circle-radius':6,'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
           'circle-stroke-width':['case',['get','selected'],3,1.5]}});
         const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false});
         hoverPopup.current=popup;
@@ -95,7 +96,7 @@ export default function MapView(props:Props){
               instance.getCanvas().style.cursor='pointer';
               const row=latest.current.gauges.find(g=>g.gauge_id===feature.properties?.gauge_id);
               if(row?.point){const content=document.createElement('div');content.style.whiteSpace='pre-line';content.style.color='#183d43';
-                content.textContent=`${gaugeName(row)}\n${gaugeValue(row.water_level_msl)} ม.รทก.\n${gaugeWallTime(row.source_observed_at)}\nHII / ThaiWater · จุดสีเป็นกลาง`;
+                content.textContent=`${gaugeName(row)}\n${'rain_24h_mm' in row?`${gaugeValue(row.rain_24h_mm)} mm / 24h`:`${gaugeValue(row.water_level_msl)} ม.รทก.`}\n${gaugeWallTime(row.source_observed_at)}\nHII / ThaiWater · จุดสีเป็นกลาง`;
                 popup.setLngLat([row.point.lon,row.point.lat]).setDOMContent(content).addTo(instance);
               }else popup.remove();
               return;
@@ -111,7 +112,7 @@ export default function MapView(props:Props){
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           instance.getCanvas().style.cursor=feature?'pointer':'';
           if(feature?.properties){const p=feature.properties;
-            popup.setLngLat(event.lngLat).setText(`${p.name} · Open-Meteo forecast · ${latest.current.validTimeLabel} · ${p.value==null?'No current value':`${p.value} ${metricUnit(latest.current.metric,latest.current.hourly?'hourly':'daily')}`} · Representative point, not area average`).addTo(instance);
+            popup.setLngLat(event.lngLat).setText(latest.current.geographyMode==='basin'?`${p.name_th??p.name} · DDPM · ขอบเขตลุ่มน้ำเพื่อบริบท`:`${p.name} · Open-Meteo forecast · ${latest.current.validTimeLabel} · ${p.value==null?'No current value':`${p.value} ${metricUnit(latest.current.metric,latest.current.hourly?'hourly':'daily')}`} · Representative point, not area average`).addTo(instance);
           } else popup.remove();
         });
         instance.on('mouseout',()=>popup.remove());
@@ -133,7 +134,7 @@ export default function MapView(props:Props){
           const flood=instance.queryRenderedFeatures(event.point,{layers:['gistda-flood-fill']})[0];
           if(flood?.properties){latest.current.onSelectFlood(flood.properties.feature_id);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
-          if(feature?.properties)latest.current.onSelect(latest.current.area.level==='national'?feature.properties.region_id:feature.properties.id);
+          if(feature?.properties)latest.current.onSelect(latest.current.geographyMode==='administrative'&&latest.current.area.level==='national'?feature.properties.region_id:feature.properties.id);
         });
         setReady(true);
       });
@@ -153,13 +154,13 @@ export default function MapView(props:Props){
   useEffect(()=>{
     const controller=new AbortController();
     setGeometry({type:'FeatureCollection',features:[]});
-    const url=props.area.level==='province'||props.area.level==='district' ? `/data/districts/${props.area.province_id}.geojson`:'/data/provinces.geojson';
+    const url=props.geographyMode==='basin'?'/data/basins.geojson':props.area.level==='province'||props.area.level==='district' ? `/data/districts/${props.area.province_id}.geojson`:'/data/provinces.geojson';
     fetch(url,{signal:controller.signal}).then(r=>{if(!r.ok)throw Error();return r.json();}).then(data=>{
-      const features=(data as FeatureCollection).features.filter(f=>props.area.level!=='region'||f.properties?.region_id===props.area.id);
+      const features=(data as FeatureCollection).features.filter(f=>props.geographyMode==='basin'?(props.area.level==='national'||f.properties?.id===props.area.id):props.area.level!=='region'||f.properties?.region_id===props.area.id);
       setGeometry({type:'FeatureCollection',features});
     }).catch(e=>{if(e.name!=='AbortError'){setGeometry({type:'FeatureCollection',features:[]});setError('Boundary data is unavailable.');}});
     return ()=>controller.abort();
-  },[props.area.id,props.area.level,props.area.province_id]);
+  },[props.area.id,props.area.level,props.area.province_id,props.geographyMode]);
   useEffect(()=>{hoverPopup.current?.remove();},[props.area.id,props.is3d,props.metric,props.date]);
   useEffect(()=>{
     if(!ready||!map.current||!props.showDams)return;
@@ -182,7 +183,7 @@ export default function MapView(props:Props){
       markers.forEach(marker=>marker.remove());
       if(props.area.level==='national'&&instance.getZoom()<6){
         const groups=new Map<string,DamObservation[]>();
-        for(const dam of props.dams)groups.set(dam.region_id,[...(groups.get(dam.region_id)??[]),dam]);
+        for(const dam of props.dams){const group=props.geographyMode==='basin'?damBasinId(dam.dam_id):dam.region_id;if(group)groups.set(group,[...(groups.get(group)??[]),dam]);}
         markers=[...groups].map(([region,rows])=>{
           if(rows.length===1)return makeDamMarker(rows[0]);
           const name=props.areas.find(a=>a.id===region)?.name??region;
@@ -198,7 +199,7 @@ export default function MapView(props:Props){
     };
     draw();instance.on('zoomend',draw);
     return()=>{instance.off('zoomend',draw);hoverPopup.current?.remove();markers.forEach(marker=>marker.remove());};
-  },[ready,props.dams,props.showDams,props.damFreshness,props.area.level,props.areas]);
+  },[ready,props.dams,props.showDams,props.damFreshness,props.area.level,props.areas,props.geographyMode]);
   useEffect(()=>{
     container.current?.querySelectorAll<HTMLButtonElement>('[data-dam-id]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.damId===props.selectedDam)));
   },[props.selectedDam,props.dams,props.showDams,ready]);
@@ -210,7 +211,7 @@ export default function MapView(props:Props){
   useEffect(()=>{
     const instance=map.current;if(!ready||!instance?.getSource('thaiwater-gauges'))return;
     const features=props.showGauges?props.gauges.filter(row=>row.point).map(row=>({type:'Feature' as const,
-      geometry:{type:'Point' as const,coordinates:[row.point!.lon,row.point!.lat]},properties:{gauge_id:row.gauge_id,selected:row.gauge_id===props.selectedGauge}})):[];
+      geometry:{type:'Point' as const,coordinates:[row.point!.lon,row.point!.lat]},properties:{gauge_id:row.gauge_id,kind:'rain_24h_mm' in row?'rain':'river',selected:row.gauge_id===props.selectedGauge}})):[];
     (instance.getSource('thaiwater-gauges') as maplibregl.GeoJSONSource).setData({type:'FeatureCollection',features});
     for(const layer of ['gauge-clusters','gauge-cluster-count','gauge-point'])instance.setLayoutProperty(layer,'visibility',props.showGauges?'visible':'none');
 
@@ -248,17 +249,17 @@ export default function MapView(props:Props){
       return {...f,properties:{...f.properties,color:`rgb(${color.slice(0,3).join(',')})`,height:extrusion&&f.properties.value!=null?f.properties.value*(props.metric==='rainfall_mm'?150:50):0}};
     })});
     for(const id of ['weather-native-fill','weather-native-line','weather-native-extrusion']){
-      map.current?.setLayoutProperty(id,'visibility',props.is3d&&(id!=='weather-native-fill'||props.rainfall)&&(id!=='weather-native-extrusion'||extrusion)?'visible':'none');
+      map.current?.setLayoutProperty(id,'visibility',props.is3d&&(id!=='weather-native-fill'||props.rainfall||props.geographyMode==='basin')&&(id!=='weather-native-extrusion'||extrusion)?'visible':'none');
     }
-    map.current?.setPaintProperty('weather-native-fill','fill-opacity',props.opacity/100*.75);
+    map.current?.setPaintProperty('weather-native-fill','fill-opacity',props.geographyMode==='basin'?.08:props.opacity/100*.75);
     map.current?.setPaintProperty('weather-native-extrusion','fill-extrusion-opacity',props.opacity/100);
     // MapLibre drapes its own fill/extrusion geometry on DEM terrain. The deck
     // layer handles 2D, where a flat z=0 mesh cannot be buried below terrain.
     const warningRgb=(f:Feature):[number,number,number,number]=>{const hex=String(f.properties?.color??'#7a8088');return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255];};
     const gaugeHit=(x:number,y:number)=>latest.current.showGauges&&!!map.current?.getLayer('gauge-point')&&!!map.current.queryRenderedFeatures([x,y],{layers:['gauge-point','gauge-clusters']}).length;
     overlay.current.setProps({layers:props.is3d?[]:[new GeoJsonLayer({id:'weather-geography',data:{type:'FeatureCollection',features} as FeatureCollection,
-      pickable:true,filled:props.rainfall,stroked:true,extruded:extrusion,
-      getFillColor:(f:Feature)=>props.rainfall?metricColor(f.properties?.value??null,props.metric,props.hourly?'hourly':'daily'):[228,236,232,190],
+      pickable:true,filled:props.rainfall||props.geographyMode==='basin',stroked:true,extruded:extrusion,
+      getFillColor:(f:Feature)=>props.geographyMode==='basin'?[110,152,157,24]:props.rainfall?metricColor(f.properties?.value??null,props.metric,props.hourly?'hourly':'daily'):[228,236,232,190],
       getLineColor:(f:Feature)=>f.properties?.id===props.area.id?[9,100,109,255]:[94,121,121,170],
       getLineWidth:(f:Feature)=>f.properties?.id===props.area.id?2.5:0.8,lineWidthUnits:'pixels',lineWidthMinPixels:.6,
       getElevation:(f:Feature)=>extrusion&&f.properties?.value!=null?f.properties.value*(props.metric==='rainfall_mm'?150:50):0,
@@ -268,7 +269,7 @@ export default function MapView(props:Props){
         if(gaugeHit(x,y))return true;
         if(!object)return;
         const id=object.properties.id;
-        latest.current.onSelect(latest.current.area.level==='national'?object.properties.region_id:id);
+        latest.current.onSelect(latest.current.geographyMode==='administrative'&&latest.current.area.level==='national'?object.properties.region_id:id);
       }
     }),new GeoJsonLayer({id:'gistda-flood-polygons',data:floodGeometry,pickable:true,filled:true,stroked:true,
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=40;return color;},getLineColor:warningRgb,
@@ -278,13 +279,13 @@ export default function MapView(props:Props){
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
       getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
       onClick:({object,x,y})=>{if(gaugeHit(x,y))return true;if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
-    })],getTooltip:({object,x,y})=>gaugeHit(x,y)?null:object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n${floodWindowLabel}\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric,props.hourly?'hourly':'daily')} · forecast`}\nOpen-Meteo · ${props.validTimeLabel}\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
-  },[ready,geometry,warningGeometry,floodGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,props.hourly,props.validTimeLabel,stale]);
+    })],getTooltip:({object,x,y})=>gaugeHit(x,y)?null:object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n${floodWindowLabel}\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:String(object.properties.id??'').startsWith('TH-B-')?`${object.properties.name_th} · DDPM 22 river basins\nConservative station/dam context; border matches stay unconfirmed`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric,props.hourly?'hourly':'daily')} · forecast`}\nOpen-Meteo · ${props.validTimeLabel}\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
+  },[ready,geometry,warningGeometry,floodGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,props.hourly,props.validTimeLabel,props.geographyMode,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>
-    <div className="map-context"><span className="map-context-icon"><MapIcon size={15}/></span><div><strong>{props.area.level==='national'?'Thailand · national view':props.area.name}</strong><span>{props.area.level==='national'?'Select a region to explore':'Select an area for local intelligence'}</span></div></div>
+    <div className="map-context"><span className="map-context-icon"><MapIcon size={15}/></span><div><strong>{props.area.level==='national'?(props.geographyMode==='basin'?'Thailand · 22 river basins':'Thailand · national view'):props.area.name}</strong><span>{props.area.level==='national'?(props.geographyMode==='basin'?'Select a basin to explore':'Select a region to explore'):'Select an area for local intelligence'}</span></div></div>
     <div className="map-actions"><button title="Zoom in" aria-label="Zoom in" onClick={()=>map.current?.zoomIn()}><Plus size={18}/></button><button title="Zoom out" aria-label="Zoom out" onClick={()=>map.current?.zoomOut()}><Minus size={18}/></button><button title="Fit selected area" aria-label="Fit selected area" onClick={()=>map.current?.fitBounds(props.area.bbox,{padding:40})}><LocateFixed size={18}/></button></div>
     {(error||baseError)&&<div className="map-error" role="status">{error||'Basemap connection unavailable · local boundary view'}</div>}
-    <div className="map-caption">{!props.rainfall?'Administrative geography':props.freshness==='UNAVAILABLE'?'Weather snapshot unavailable':props.freshness==='UNKNOWN'?'Snapshot timing unknown · thematic colors paused':stale?'Stale snapshot · thematic colors paused':'Open-Meteo · model forecast'}<span>{props.is3d?'3D view':'2D view'}</span></div>
+    <div className="map-caption">{!props.rainfall?(props.geographyMode==='basin'?'River basin context':'Administrative geography'):props.freshness==='UNAVAILABLE'?'Weather snapshot unavailable':props.freshness==='UNKNOWN'?'Snapshot timing unknown · thematic colors paused':stale?'Stale snapshot · thematic colors paused':'Open-Meteo · model forecast'}<span>{props.is3d?'3D view':'2D view'}</span></div>
   </div>;
 }

@@ -1,0 +1,176 @@
+{
+  "result": "OK",
+  "data": [
+    {
+      "id": 316874417,
+      "rain_24h": 136.5,
+      "rain_1h": 0,
+      "rainfall_datetime": "2026-10-30 22:00",
+      "station_type": "rainfall_24h",
+      "agency": {
+        "agency_name": {
+          "th": "กรมทรัพยากรน้ำ",
+          "en": "Department of Water Resources",
+          "jp": ""
+        },
+        "agency_shortname": {
+          "th": "ทน.",
+          "en": "DWR",
+          "jp": ""
+        }
+      },
+      "geocode": {
+        "warning_zone": "07",
+        "area_code": "2",
+        "area_name": {
+          "th": "ภาคกลาง",
+          "en": "Central"
+        },
+        "amphoe_name": {
+          "th": "บางสะพาน",
+          "en": "Bang Saphan District"
+        },
+        "tumbon_name": {
+          "th": "พงศ์ประศาสน์",
+          "en": "Phong Prasat"
+        },
+        "province_code": "77",
+        "province_name": {
+          "th": "ประจวบคีรีขันธ์",
+          "en": "Prachuap Khiri Khan"
+        }
+      },
+      "station": {
+        "id": 6855974,
+        "tele_station_name": {
+          "th": "สะพานบ้านทุ่งมะพร้าว"
+        },
+        "tele_station_lat": 11.235511,
+        "tele_station_long": 99.471052,
+        "tele_station_oldcode": "G09006-TC180803",
+        "tele_station_type": "rainfall_24h",
+        "sub_basin_id": "1808"
+      },
+      "basin": {
+        "id": 20,
+        "basin_code": 18,
+        "basin_name": {
+          "th": "ลุ่มน้ำเพชรบุรี-ประจวบคีรีขันธ์",
+          "en": "Phetchaburi - Prachuap Khiri Khan Basin"
+        }
+      }
+    },
+    {
+      "id": 316873465,
+      "rain_24h": 0,
+      "rain_1h": 0,
+      "rainfall_datetime": "2026-10-30 21:00",
+      "station_type": "rainfall_24h",
+      "agency": {
+        "agency_name": {
+          "th": "กรมทรัพยากรน้ำ",
+          "en": "Department of Water Resources",
+          "jp": ""
+        },
+        "agency_shortname": {
+          "th": "ทน.",
+          "en": "DWR",
+          "jp": ""
+        }
+      },
+      "geocode": {
+        "warning_zone": "03",
+        "area_code": "3",
+        "area_name": {
+          "th": "ภาคเหนือ",
+          "en": "North"
+        },
+        "amphoe_name": {
+          "th": "แม่แจ่ม",
+          "en": "Mae Chaem District"
+        },
+        "tumbon_name": {
+          "th": "แม่นาจร",
+          "en": "Mae Na Chon"
+        },
+        "province_code": "50",
+        "province_name": {
+          "th": "เชียงใหม่",
+          "en": "Chiang Mai"
+        }
+      },
+      "station": {
+        "id": 501466,
+        "tele_station_name": {
+          "th": "บ้านแม่ซา"
+        },
+        "tele_station_lat": 18.81566,
+        "tele_station_long": 98.332543,
+        "tele_station_oldcode": "STN1437",
+        "tele_station_type": "rainfall_24h",
+        "sub_basin_id": "0616"
+      },
+      "basin": {
+        "id": 0,
+        "basin_name": {}
+      }
+    },
+    {
+      "id": 316870322,
+      "rain_24h": 0,
+      "rain_1h": 0,
+      "rainfall_datetime": "2026-10-30 22:00",
+      "station_type": "rainfall_24h",
+      "agency": {
+        "agency_name": {
+          "th": "มูลนิธิอาสาเพื่อนพึ่ง (ภาฯ) ยามยาก สภากาชาดไทย",
+          "en": "Friend in Need (of “Pa”) Volunteers Foundation",
+          "jp": ""
+        },
+        "agency_shortname": {
+          "th": "พพภ",
+          "en": "FOP",
+          "jp": ""
+        }
+      },
+      "geocode": {
+        "warning_zone": "10499",
+        "area_code": "104",
+        "area_name": {
+          "th": "สาธารณรัฐแห่งสหภาพพม่า",
+          "en": "Republic of the Union of Myanmar"
+        },
+        "amphoe_name": {
+          "th": "",
+          "en": ""
+        },
+        "tumbon_name": {
+          "th": "",
+          "en": ""
+        },
+        "province_code": "10499",
+        "province_name": {
+          "th": "สาธารณรัฐแห่งสหภาพเมียนมา",
+          "en": "Republic of the Union of Myanmar"
+        }
+      },
+      "station": {
+        "id": 1225528,
+        "tele_station_name": {
+          "en": "Kyotada (Village)",
+          "th": "บ้านโจตาดา"
+        },
+        "tele_station_lat": 20.3913,
+        "tele_station_long": 99.68576,
+        "tele_station_oldcode": "MYA001",
+        "tele_station_type": "rainfall_24h",
+        "sub_basin_id": "8888",
+        "sponsor_by": "มูลนิธิอาสาเพื่อนพึ่ง (ภาฯ) ยามยาก สภากาชาดไทย"
+      },
+      "basin": {
+        "id": 0,
+        "basin_name": {}
+      }
+    }
+  ]
+}

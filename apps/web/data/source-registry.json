@@ -148,5 +148,30 @@
     "latency": "4-hour query cadence; fresh snapshot through 6 hours, delayed through 10; previous-day data never becomes Today through refetching",
     "fallback": "Independent last-complete A/B hourly generation, at most 2,010 records; no daily-contract replacement",
     "last_terms_reviewed": "2026-10-28"
+  },
+  {
+    "id": "thaiwater_rain",
+    "name": "Observed rain stations",
+    "organization": "HII / ThaiWater",
+    "state": "observed",
+    "status": "Connected product · unfiltered national rain station response",
+    "url": "https://www.thaiwater.net/weather/rainfall",
+    "terms_url": "https://www.thaiwater.net/",
+    "cadence": "Every 2 hours with the HII station workflow; scheduler can be delayed",
+    "description": "Source-reported rain_24h and rain_1h at automatic stations from the unfiltered ThaiWater public portal response. Province/district/basin filtering follows explicit provenance. Original observation wall times omit timezone; observation UTC and accumulation-window instants remain null. Zero and missing values remain distinct. Station values are not area-average rainfall.",
+    "attribution": "HII / ThaiWater and original measuring agencies",
+    "endpoint": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/rain_24h",
+    "authentication": "Credential-free official public portal endpoint; no embedded website keys used",
+    "license": "Public portal access verified; no live-product reuse licence documented in the reviewed endpoint",
+    "commercial_permission": "Personal/non-commercial project scope; no commercial reuse entitlement asserted",
+    "redistribution_permission": "Retain HII / ThaiWater and measuring-agency attribution; no unrestricted live-data licence or agency endorsement claimed",
+    "request_quota": "No documented numeric integration quota. One bounded rain response GET every two hours, independent of the water-level response.",
+    "spatial_coverage": "All canonical Thai province rows in each unfiltered public rain response. Counts can change; no permanent station allowlist.",
+    "spatial_resolution": "Station points. District mapping uses exact unique Thai district name within the supplied province. Basin matching uses conservative interior points in DDPM 22-basin boundaries; near-border points stay unassigned.",
+    "temporal_resolution": "rain_24h and rain_1h fields with minute wall timestamps lacking timezone; exact UTC accumulation bounds unknown",
+    "units_crs": "mm / 24h and mm / 1h as reported, separate from forecast rain. Provider timestamps omit timezone; exact UTC window start/end are not inferred.",
+    "latency": "Query freshness is tracked separately. Source observation timestamps omit timezone; observation UTC and actual age remain unknown.",
+    "fallback": "Independent last complete validated A/B rain generation. Missing values remain null; no model or discharge substitution.",
+    "last_terms_reviewed": "2026-10-30 (access checked; live-product terms unresolved)"
   }
 ]

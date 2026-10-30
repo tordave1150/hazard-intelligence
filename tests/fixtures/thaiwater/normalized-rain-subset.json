@@ -1,0 +1,88 @@
+{
+  "schema_version": "2.0",
+  "source_id": "thaiwater",
+  "product_id": "national_rain_24h",
+  "data_state": "observed",
+  "snapshot_id": "latest",
+  "source_url": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/rain_24h",
+  "fetched_at": "2026-10-30T16:00:00Z",
+  "ingested_at": "2026-10-30T16:01:00Z",
+  "record_count": 2,
+  "provider_automatic_count": 3,
+  "provider_response_accounted_for": true,
+  "excluded_stations": [
+    {
+      "source_station_id": "1225528",
+      "provider_province_code": "10499",
+      "provider_area_name": "Republic of the Union of Myanmar",
+      "reason": "NOT_CANONICAL_THAI_PROVINCE"
+    }
+  ],
+  "coverage_by_province": [
+    {
+      "area_id": "TH-P-50",
+      "record_count": 1
+    },
+    {
+      "area_id": "TH-P-77",
+      "record_count": 1
+    }
+  ],
+  "quality_issue_count": 0,
+  "time_unknown_count": 2,
+  "records": [
+    {
+      "gauge_id": "THR-6855974",
+      "source_station_id": "6855974",
+      "station_code": "G09006-TC180803",
+      "name_th": "สะพานบ้านทุ่งมะพร้าว",
+      "name_en": null,
+      "agency_name": "กรมทรัพยากรน้ำ",
+      "agency_id": null,
+      "province_id": "TH-P-77",
+      "district_id": "TH-D-7704",
+      "district_mapping": "EXACT_NAME_WITHIN_PROVIDER_PROVINCE",
+      "region_id": "TH-R-WEST",
+      "point": {
+        "lat": 11.235511,
+        "lon": 99.471052
+      },
+      "source_observed_at": "2026-10-30 22:00",
+      "observed_at": null,
+      "observation_time_status": "TIMEZONE_NOT_SUPPLIED",
+      "rain_24h_mm": 136.5,
+      "rain_1h_mm": 0.0,
+      "quality_flags": []
+    },
+    {
+      "gauge_id": "THR-501466",
+      "source_station_id": "501466",
+      "station_code": "STN1437",
+      "name_th": "บ้านแม่ซา",
+      "name_en": null,
+      "agency_name": "กรมทรัพยากรน้ำ",
+      "agency_id": null,
+      "province_id": "TH-P-50",
+      "district_id": "TH-D-5003",
+      "district_mapping": "EXACT_NAME_WITHIN_PROVIDER_PROVINCE",
+      "region_id": "TH-R-NORTH",
+      "point": {
+        "lat": 18.81566,
+        "lon": 98.332543
+      },
+      "source_observed_at": "2026-10-30 21:00",
+      "observed_at": null,
+      "observation_time_status": "TIMEZONE_NOT_SUPPLIED",
+      "rain_24h_mm": 0.0,
+      "rain_1h_mm": 0.0,
+      "quality_flags": []
+    }
+  ],
+  "coverage": "All canonical Thai rain station rows in the unfiltered response; station inventory and area-wide rainfall are not certified.",
+  "units": {
+    "rain_24h_mm": "mm / 24h as reported",
+    "rain_1h_mm": "mm / 1h as reported"
+  },
+  "window_start": null,
+  "window_end": null
+}

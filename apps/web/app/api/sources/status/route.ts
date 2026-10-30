@@ -5,18 +5,24 @@ import {readWarningSnapshot} from '@/lib/warning-snapshot';
 import {readFloodSnapshot} from '@/lib/flood-snapshot';
 import {readHourlySnapshot} from '@/lib/hourly-snapshot';
 import {readGaugeSnapshot} from '@/lib/gauge-snapshot';
+import {readRainSnapshot} from '@/lib/rain-snapshot';
 import {json} from '@/lib/http';
 import {monitorSource} from '@/lib/source-health';
+import type {Freshness} from '@/lib/types';
 export const dynamic='force-dynamic';
-export async function GET() {
-  const [snapshot,dams,warnings,floods,hourly,gauges]=await Promise.all([readSnapshot(),readDamSnapshot(),readWarningSnapshot(),readFloodSnapshot(),readHourlySnapshot(),readGaugeSnapshot()]);
+export async function GET(){
+  const [weather,dams,warnings,floods,hourly,gauges,rain]=await Promise.all([readSnapshot(),readDamSnapshot(),readWarningSnapshot(),readFloodSnapshot(),readHourlySnapshot(),readGaugeSnapshot(),readRainSnapshot()]);
+  const states:Record<string,{freshness:Freshness;health:Record<string,unknown>|null;storage:string;query_freshness?:Freshness;available?:boolean;scope_area_id?:string|null}>={
+    open_meteo:{freshness:weather.freshness,health:weather.status,storage:weather.storage},
+    rid:{freshness:dams.freshness,health:dams.health,storage:dams.storage},tmd:{freshness:warnings.freshness,health:warnings.health,storage:warnings.storage},
+    gistda:{freshness:floods.freshness,health:floods.health,storage:floods.storage,query_freshness:floods.query_freshness,available:!!floods.feed,scope_area_id:floods.feed?.area_id??null},
+    open_meteo_hourly:{freshness:hourly.freshness,health:hourly.health,storage:hourly.storage},
+    thaiwater:{freshness:gauges.freshness,health:gauges.health,storage:gauges.storage,query_freshness:gauges.query_freshness,available:!!gauges.feed,scope_area_id:'TH'},
+    thaiwater_rain:{freshness:rain.freshness,health:rain.health,storage:rain.storage,query_freshness:rain.query_freshness,available:!!rain.feed,scope_area_id:'TH'},
+  };
   const now=Date.now();
   return json({checked_at:new Date(now).toISOString(),sources:registry.map(source=>{
-    const state={...source,freshness:source.id==='open_meteo'?snapshot.freshness:source.id==='open_meteo_hourly'?hourly.freshness:source.id==='rid'?dams.freshness:source.id==='tmd'?warnings.freshness:source.id==='gistda'?floods.freshness:source.id==='thaiwater'?gauges.freshness:'UNAVAILABLE',
-    health:source.id==='open_meteo'?snapshot.status:source.id==='open_meteo_hourly'?hourly.health:source.id==='rid'?dams.health:source.id==='tmd'?warnings.health:source.id==='gistda'?floods.health:source.id==='thaiwater'?gauges.health:null,
-    storage:source.id==='open_meteo'?snapshot.storage:source.id==='open_meteo_hourly'?hourly.storage:source.id==='rid'?dams.storage:source.id==='tmd'?warnings.storage:source.id==='gistda'?floods.storage:source.id==='thaiwater'?gauges.storage:null,
-    ...(source.id==='gistda'?{available:floods.feed!==null,query_freshness:floods.query_freshness,scope_area_id:floods.feed?.area_id??null}:source.id==='thaiwater'?{available:gauges.feed!==null,query_freshness:gauges.query_freshness,scope_area_id:'TH'}:{})};
-    const monitoredFreshness=source.id==='gistda'?floods.query_freshness:source.id==='thaiwater'?gauges.query_freshness:state.freshness as typeof snapshot.freshness;
-    return {...state,monitoring:monitorSource(source.id,monitoredFreshness,state.health,now)};
+    const state=states[source.id]??{freshness:'UNAVAILABLE' as const,health:null,storage:'unconfigured'};
+    return {...source,...state,monitoring:monitorSource(source.id,state.query_freshness??state.freshness,state.health,now)};
   })});
 }

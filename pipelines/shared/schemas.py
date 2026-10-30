@@ -13,6 +13,9 @@ def validate_record(kind, record):
     if kind=='ThaiWaterFeed':
         from pipelines.thaiwater.data import check_feed
         check_feed(record)
+    if kind=='ThaiWaterRainFeed':
+        from pipelines.thaiwater.rain_data import check_feed
+        check_feed(record)
     if kind == 'HourlyForecast':
         from pipelines.open_meteo.hourly import check_record
         check_record(record)
