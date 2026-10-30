@@ -1,10 +1,10 @@
 import type {Freshness,Source} from './types';
 
-const policies:Record<string,{hours:number;grace:number;workflow:string;utcHours:number[];minute:number}>={
+const policies:Record<string,{hours:number;grace:number;workflow:string;utcHours:number[];minute:number;pollMinutes?:number[];dueHours?:number}>={
   open_meteo:{hours:24,grace:6,workflow:'etl.yml',utcHours:[1],minute:0},rid:{hours:24,grace:6,workflow:'rid.yml',utcHours:[1],minute:15},
-  tmd:{hours:1,grace:1,workflow:'tmd.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:37},
+  tmd:{hours:1,grace:1,workflow:'tmd.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:11,pollMinutes:[11,41],dueHours:1},
   gistda:{hours:24,grace:6,workflow:'gistda.yml',utcHours:[2],minute:27},
-  open_meteo_hourly:{hours:4,grace:2,workflow:'hourly.yml',utcHours:[1,5,9,13,17,21],minute:17},
+  open_meteo_hourly:{hours:4,grace:2,workflow:'hourly.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:23,dueHours:4},
   thaiwater:{hours:2,grace:1,workflow:'thaiwater.yml',utcHours:Array.from({length:12},(_,i)=>i*2),minute:43},
 };
 const repository='https://github.com/tordave1150/hazard-intelligence';
@@ -23,8 +23,14 @@ export function monitorSource(id:string,freshness:Freshness,health:Record<string
   if(policy&&attempt!==null){
     const last=now-attempt*3600000,date=new Date(last);
     const midnight=Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate());
-    const slots=[0,1].flatMap(day=>policy.utcHours.map(hour=>midnight+day*86400000+hour*3600000+policy.minute*60000));
-    expected=slots.filter(slot=>slot>last).sort((a,b)=>a-b)[0]+policy.grace*3600000;
+    let due=policy.dueHours&&success!==null?now-success*3600000+policy.dueHours*3600000:last;
+    if(id==='open_meteo_hourly'&&success!==null){
+      const bangkok=new Date(now-success*3600000+7*3600000);
+      const nextDay=Date.UTC(bangkok.getUTCFullYear(),bangkok.getUTCMonth(),bangkok.getUTCDate()+1)-7*3600000;
+      due=Math.min(due,nextDay);
+    }
+    const slots=[0,1,2].flatMap(day=>policy.utcHours.flatMap(hour=>(policy.pollMinutes??[policy.minute]).map(minute=>midnight+day*86400000+hour*3600000+minute*60000)));
+    expected=slots.filter(slot=>slot>last&&slot>=due).sort((a,b)=>a-b)[0]+policy.grace*3600000;
   }
   const overdue=expected!==null&&now>expected;
   const quality=Number.isInteger(health?.quality_issue_count)&&Number(health?.quality_issue_count)>0?Number(health?.quality_issue_count):0;

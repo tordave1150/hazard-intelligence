@@ -5,7 +5,7 @@ on:
     paths:
       - '.github/tmd-publication-request.json'
   schedule:
-    - cron: '37 * * * *' # Hourly snapshot, independent of daily weather/RID.
+    - cron: '11,41 * * * *' # Half-hour due checks; collect only after 1h or a failed attempt.
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   ingest:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -35,6 +36,13 @@ jobs:
           cache: pip
           cache-dependency-path: pipelines/requirements.txt
       - run: pip install -r pipelines/requirements.txt
+      - name: Check whether an ingestion is due
+        id: refresh
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+          REFRESH_FORCE: ${{ github.event_name != 'schedule' }}
+        run: python -m scripts.refresh_guard --source tmd
       - name: Validate reviewed publication request
         if: github.event_name == 'push'
         run: |
@@ -53,21 +61,25 @@ jobs:
           print(json.dumps({'reviewed_request_id':request['request_id'],'source_id':'tmd','scope':'accepted latest CAP snapshot'}))
           PY
       - name: Audit database before CAP publication
+        if: steps.refresh.outputs.due == 'true'
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin audit
       - name: Fetch and publish a complete public CAP feed
+        if: steps.refresh.outputs.due == 'true'
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m pipelines.tmd.run --publish
       - name: Verify coverage, unique indexes and bounded retention
+        if: steps.refresh.outputs.due == 'true'
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
       - name: Audit actual storage after CAP publication
+        if: steps.refresh.outputs.due == 'true'
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}

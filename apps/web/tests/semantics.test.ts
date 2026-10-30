@@ -9,6 +9,12 @@ import {monitorSource,healthError} from '../lib/source-health';
 
 describe('Source health separates collection, scheduling and source quality',()=>{
   const now=Date.parse('2026-10-29T12:00:00Z');
+  it('uses the first eligible guarded tick and separately handles a new Bangkok day',()=>{
+    const status={status:'SUCCESS',last_attempt:'2026-10-29T10:40:00Z',last_success:'2026-10-29T10:42:00Z'};
+    expect(monitorSource('tmd','FRESH',status,now).expected_by).toBe('2026-10-29T13:11:00.000Z');
+    const late={status:'SUCCESS',last_attempt:'2026-10-29T16:30:00Z',last_success:'2026-10-29T16:40:00Z'};
+    expect(monitorSource('open_meteo_hourly','FRESH',late,Date.parse('2026-10-29T16:50:00Z')).expected_by).toBe('2026-10-29T19:23:00.000Z');
+  });
   it('distinguishes overdue scheduling from an upstream failure and flags a stuck run',()=>{
     const health={last_attempt:'2026-10-29T04:00:00Z',last_success:'2026-10-29T04:10:00Z',status:'SUCCESS'};
     expect(monitorSource('open_meteo_hourly','DELAYED',health,now).state).toBe('OVERDUE');
