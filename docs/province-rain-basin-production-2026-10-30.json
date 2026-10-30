@@ -1,0 +1,106 @@
+{
+  "date_ict": "2026-10-30",
+  "site": "https://hazard-intelligence-lime.vercel.app/",
+  "feature_commit": "944f284480001151c35855492ffea0b5f52559e2",
+  "station_selection_fix_commit": "ac42a6dcd5e632e0bcc1e229bdcc3d1d667670a4",
+  "publication_run": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41090801006",
+  "recovery_runs": {
+    "tmd": 41085668604,
+    "hourly": 41085668454
+  },
+  "sources": {
+    "rain": {
+      "record_count": 4804,
+      "provider_count": 4807,
+      "excluded": 3,
+      "provinces": 77,
+      "fetched_at": "2026-10-30T16:32:54.163313Z",
+      "quality": 0,
+      "observation_unknown": 4804,
+      "basin_matched": 4766,
+      "query_freshness": "FRESH",
+      "freshness": "UNKNOWN",
+      "response_bytes": 3249585,
+      "seconds": 5.66
+    },
+    "river": {
+      "record_count": 805,
+      "provider_count": 808,
+      "excluded": 3,
+      "provinces": 76,
+      "fetched_at": "2026-10-30T16:32:46.141013Z",
+      "quality": 0,
+      "observation_unknown": 805,
+      "basin_matched": 798,
+      "query_freshness": "FRESH",
+      "freshness": "UNKNOWN",
+      "response_bytes": 509036,
+      "seconds": 2.72
+    }
+  },
+  "province_rows": 77,
+  "province_response_bytes": 41957,
+  "basin_count": 22,
+  "matched_connected_rid_dams": 35,
+  "database_active_products_verified": 7,
+  "production_http_checks_passed": 24,
+  "web_tests_passed": 66,
+  "python_unit_tests_passed": 265,
+  "health_checked_at": "2026-10-30T16:44:42.032Z",
+  "runtime_states": {
+    "open_meteo": {
+      "state": "OK",
+      "freshness": "FRESH",
+      "quality_issue_count": 0
+    },
+    "rid": {
+      "state": "OK",
+      "freshness": "FRESH",
+      "quality_issue_count": 0
+    },
+    "tmd": {
+      "state": "ATTENTION",
+      "freshness": "FRESH",
+      "quality_issue_count": 1
+    },
+    "thaiwater": {
+      "state": "OK",
+      "freshness": "FRESH",
+      "quality_issue_count": 0
+    },
+    "gistda": {
+      "state": "OK",
+      "freshness": "FRESH",
+      "quality_issue_count": 0
+    },
+    "open_meteo_hourly": {
+      "state": "OK",
+      "freshness": "FRESH",
+      "quality_issue_count": 0
+    },
+    "thaiwater_rain": {
+      "state": "OK",
+      "freshness": "FRESH",
+      "quality_issue_count": 0
+    }
+  },
+  "live_guard_results": {
+    "tmd": "recent_success_skip",
+    "hourly": "recent_success_skip"
+  },
+  "browser_console_errors": 0,
+  "mobile_viewport_width": 390,
+  "mobile_document_width": 375,
+  "production_current_warning_province_rows": 5,
+  "production_basin_sample": {
+    "area_id": "TH-B-06",
+    "water_stations": 76,
+    "rid_dams": 3
+  },
+  "proof_files": [
+    "artifacts/province-comparison-production-2026-10-30.png",
+    "artifacts/observed-rain-production-2026-10-30.png",
+    "artifacts/basin-context-production-2026-10-30.png",
+    "artifacts/province-mobile-production-2026-10-30.png"
+  ]
+}
