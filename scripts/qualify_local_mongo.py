@@ -145,7 +145,8 @@ def main():
         assert read('/api/warnings')['records']==feed['records']
         assert read('/api/flood-products')['records']==flood['records']
         report=verify_database(db,include_retired=True)
-        assert all(r['status']=='VERIFIED' for r in report if r['product_id']!='flood_1day_ongkharak')
+        tested={(rows[0]['source_id'],rows[0]['product_id']) for _,rows,_ in specs}
+        assert all(r['status']=='VERIFIED' for r in report if (r['source_id'],r['product_id']) in tested)
         assert next(r for r in report if r['product_id']=='flood_1day_ongkharak')['status']=='UNAVAILABLE'
         record('database_restart_recovers_previous_data_and_indexes',verification=report)
         outcome={'status':'PASS','time':datetime.now(timezone.utc).isoformat(),'database':database,'events':events,

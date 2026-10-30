@@ -42,9 +42,9 @@ def test_publisher_without_optional_flags_uses_current_country_product(monkeypat
 
 def test_routine_workflow_audit_excludes_retired_products():
     report=verify_database(mongomock.MongoClient().test)
-    assert len(report)==5
+    assert len(report)==6
     assert [row['product_id'] for row in report if row['source_id']=='gistda']==[limits.PRODUCT]
-    assert len(verify_database(mongomock.MongoClient().test,include_retired=True))==7
+    assert len(verify_database(mongomock.MongoClient().test,include_retired=True))==8
 
 
 def test_actions_form_and_versioned_request_are_national():

@@ -1,0 +1,85 @@
+{
+  "schema_version": "2.0",
+  "source_id": "thaiwater",
+  "product_id": "national_waterlevel",
+  "data_state": "observed",
+  "snapshot_id": "latest",
+  "source_url": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load",
+  "fetched_at": "2026-10-29T16:38:43Z",
+  "ingested_at": "2026-10-29T16:39:00Z",
+  "record_count": 2,
+  "provider_automatic_count": 3,
+  "provider_manual_count": 1,
+  "provider_response_accounted_for": true,
+  "excluded_stations": [
+    {
+      "source_station_id": "1225528",
+      "provider_province_code": "10499",
+      "provider_area_name": "Republic of the Union of Myanmar",
+      "reason": "NOT_CANONICAL_THAI_PROVINCE"
+    }
+  ],
+  "coverage_by_province": [
+    {
+      "area_id": "TH-P-71",
+      "record_count": 1
+    },
+    {
+      "area_id": "TH-P-72",
+      "record_count": 1
+    }
+  ],
+  "quality_issue_count": 0,
+  "time_unknown_count": 2,
+  "records": [
+    {
+      "gauge_id": "THW-737",
+      "source_station_id": "737",
+      "station_code": "THA006",
+      "name_th": "วัดท่าเจดีย์ (TTC06)",
+      "name_en": "Tha Chedi Temple (TTC06)",
+      "agency_name": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน)",
+      "agency_id": "9",
+      "province_id": "TH-P-72",
+      "district_id": "TH-D-7207",
+      "region_id": "TH-R-CENTRAL",
+      "point": {
+        "lat": 14.15657,
+        "lon": 100.12744
+      },
+      "source_observed_at": "2026-10-29 23:20",
+      "observed_at": null,
+      "observation_time_status": "TIMEZONE_NOT_SUPPLIED",
+      "water_level_msl": 3.18,
+      "water_level_m": null,
+      "quality_flags": []
+    },
+    {
+      "gauge_id": "THW-700552",
+      "source_station_id": "700552",
+      "station_code": "MKSND02",
+      "name_th": "บ้านหนองบัว (K.35A)",
+      "name_en": null,
+      "agency_name": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+      "agency_id": "8",
+      "province_id": "TH-P-71",
+      "district_id": "TH-D-7101",
+      "region_id": "TH-R-WEST",
+      "point": {
+        "lat": 14.06024,
+        "lon": 99.44414
+      },
+      "source_observed_at": "2026-10-29 23:00",
+      "observed_at": null,
+      "observation_time_status": "TIMEZONE_NOT_SUPPLIED",
+      "water_level_msl": 27.93,
+      "water_level_m": null,
+      "quality_flags": []
+    }
+  ],
+  "coverage": "All canonical Thai station rows returned by this unfiltered response; complete station inventory and area-wide water conditions are not certified.",
+  "units": {
+    "water_level_msl": "m above mean sea level",
+    "water_level_m": "m as reported"
+  }
+}

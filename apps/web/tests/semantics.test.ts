@@ -17,7 +17,7 @@ describe('Source health separates collection, scheduling and source quality',()=
     expect(monitorSource('tmd','FRESH',{...health,status:'RUNNING',last_attempt:'2026-10-29T11:59:00Z'},now).state).toBe('RUNNING');
   });
   it('keeps planned access separate and source quality visible after a successful run',()=>{
-    expect(monitorSource('thaiwater','UNAVAILABLE',null,now)).toMatchObject({state:'PLANNED',needs_attention:false});
+    expect(monitorSource('future_source','UNAVAILABLE',null,now)).toMatchObject({state:'PLANNED',needs_attention:false});
     expect(monitorSource('tmd','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T11:50:00Z',last_success:'2026-10-29T11:51:00Z',quality_issue_count:1},now)).toMatchObject({state:'ATTENTION',quality_issue_count:1});
     expect(monitorSource('gistda','FRESH',{status:'SUCCESS',last_attempt:'2026-10-29T11:00:00Z',last_success:'2026-10-29T11:10:00Z'},now).state).toBe('OK');
   });

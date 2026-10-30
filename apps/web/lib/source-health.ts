@@ -5,6 +5,7 @@ const policies:Record<string,{hours:number;grace:number;workflow:string;utcHours
   tmd:{hours:1,grace:1,workflow:'tmd.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:37},
   gistda:{hours:24,grace:6,workflow:'gistda.yml',utcHours:[2],minute:27},
   open_meteo_hourly:{hours:4,grace:2,workflow:'hourly.yml',utcHours:[1,5,9,13,17,21],minute:17},
+  thaiwater:{hours:2,grace:1,workflow:'thaiwater.yml',utcHours:Array.from({length:12},(_,i)=>i*2),minute:43},
 };
 const repository='https://github.com/tordave1150/hazard-intelligence';
 export type RuntimeSource=Source & {freshness:Freshness;query_freshness?:Freshness;available?:boolean;
@@ -36,7 +37,7 @@ export function monitorSource(id:string,freshness:Freshness,health:Record<string
     state==='STALLED'?'เริ่มรันแล้วแต่ยังไม่มีผลจบเกิน 20 นาที ตรวจประวัติรัน':state==='RUNNING'?'กำลังดึงและตรวจข้อมูล ชุดก่อนหน้ายังใช้งานอยู่':
     state==='OVERDUE'?'ยังไม่พบรอบใหม่ภายในช่วงเป้าหมายและเวลาผ่อนผัน':quality?`ข้อมูลต้นทางมีปัญหาคุณภาพ ${quality} รายการ รายการอื่นยังใช้งานได้`:
     state==='ATTENTION'?'มีข้อมูลล่าช้า เก่า หรือยังไม่มีชุดที่อ่านได้':state==='UNKNOWN'?'หลักฐานเวลาอัปเดตยังไม่ครบ':
-    id==='gistda'?'การดึงข้อมูลเป็นปัจจุบัน แต่ไม่ทราบเวลาถ่ายภาพดาวเทียม':'รอบล่าสุดสำเร็จและอยู่ในช่วงความสดที่กำหนด';
+    id==='gistda'?'การดึงข้อมูลเป็นปัจจุบัน แต่ไม่ทราบเวลาถ่ายภาพดาวเทียม':id==='thaiwater'?'การดึงข้อมูลเป็นปัจจุบัน เวลาตรวจวัดยังไม่ระบุเขตเวลา':'รอบล่าสุดสำเร็จและอยู่ในช่วงความสดที่กำหนด';
   return {state,needs_attention:['ATTENTION','FAILED','OVERDUE','STALLED','UNKNOWN'].includes(state),cadence_hours:policy?.hours??null,
     overdue,quality_issue_count:quality,attempt_age_hours:attempt,success_age_hours:success,
     expected_by:expected!==null?new Date(expected).toISOString():null,

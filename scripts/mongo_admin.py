@@ -16,6 +16,7 @@ from pipelines.shared.geography_migrations import canonical_stored_forecast
 from pipelines.open_meteo.hourly import HourlyPublisher, check_hourly_batch
 from pipelines.gistda.chunks import ThreeDayPublisher, check_chunks
 from pipelines.gistda import limits as flood_limits
+from pipelines.thaiwater.publication import GaugePublisher,check_envelope as check_gauge_envelope
 
 
 def verify_database(db, include_retired=False):
@@ -25,6 +26,7 @@ def verify_database(db, include_retired=False):
            ('rid',PRODUCT,'dam_latest','dam_id','DamObservation',[a['dam_id'] for a in DAMS.values()],check_dams),
            ('tmd','cap_warnings','agency_warning_latest','snapshot_id','WarningFeed',['latest'],check_envelope),
            ('gistda',flood_limits.PRODUCT,flood_limits.COLLECTION,'chunk_id','GistdaThreeDayChunk',None,check_chunks),
+           ('thaiwater','national_waterlevel','gauge_latest','snapshot_id','ThaiWaterFeed',['latest'],check_gauge_envelope),
            ('open_meteo','today_hourly','weather_hourly_latest','location_id','HourlyForecast',[a['id'] for a in weather_locations('all')],check_hourly_batch)]
     if include_retired:
         specs += [('gistda','flood_1day_ongkharak','satellite_flood_latest','snapshot_id','GistdaFloodFeed',['latest'],check_flood_envelope),
@@ -74,7 +76,7 @@ def verify_database(db, include_retired=False):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('command',choices=['audit','verify','rollback','unlock'])
-    parser.add_argument('--source',choices=['open_meteo','hourly','rid','tmd','gistda','gistda_1day','gistda_pilot'],default='open_meteo')
+    parser.add_argument('--source',choices=['open_meteo','hourly','rid','tmd','gistda','thaiwater','gistda_1day','gistda_pilot'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
     args=parser.parse_args()
@@ -92,11 +94,11 @@ def main():
         elif args.command=='verify':
             print(json.dumps(verify_database(db,include_retired=args.include_retired),default=str,indent=2))
         elif args.command=='rollback':
-            {'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
+            {'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'thaiwater':GaugePublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')
         else:
             if not args.stopped_run_token:parser.error('Recovery requires exact --stopped-run-token after the worker is confirmed stopped')
-            key={'rid':f'rid:{PRODUCT}','tmd':'tmd:cap_warnings','open_meteo':'open_meteo:daily_forecast','hourly':'open_meteo:today_hourly','gistda':'gistda:'+flood_limits.PRODUCT,'gistda_1day':'gistda:flood_1day_thailand','gistda_pilot':'gistda:flood_1day_ongkharak'}[args.source]
+            key={'rid':f'rid:{PRODUCT}','tmd':'tmd:cap_warnings','open_meteo':'open_meteo:daily_forecast','hourly':'open_meteo:today_hourly','gistda':'gistda:'+flood_limits.PRODUCT,'thaiwater':'thaiwater:national_waterlevel','gistda_1day':'gistda:flood_1day_thailand','gistda_pilot':'gistda:flood_1day_ongkharak'}[args.source]
             result=db.etl_locks.delete_one({'_id':key,'token':args.stopped_run_token})
             print(json.dumps({'recovered_locks':result.deleted_count}))
 

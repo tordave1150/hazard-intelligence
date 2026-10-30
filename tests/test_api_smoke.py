@@ -48,7 +48,7 @@ def test_bad_queries_rejected(route):
     assert response.status_code==400 and response.headers['Cache-Control']=='no-store'
 
 
-@pytest.mark.parametrize('route',['/api/gauges'])
+@pytest.mark.parametrize('route',['/api/gauges?kind=rain'])
 def test_planned_sources_are_never_normal(route):
     value=requests.get(BASE+route,timeout=15).json()
     assert value['status']=='UNAVAILABLE' and value['records']==[]
@@ -59,8 +59,7 @@ def test_source_health_separates_planned_source_and_supplies_schedule_evidence()
     assert value['checked_at'] and len(value['sources'])==6
     for source in value['sources']:
         monitor=source['monitoring']
-        if source['id']=='thaiwater':assert monitor['state']=='PLANNED' and not monitor['needs_attention']
-        else:assert monitor['cadence_hours'] and monitor['actions_url'].startswith('https://github.com/tordave1150/hazard-intelligence/actions/workflows/')
+        assert monitor['cadence_hours'] and monitor['actions_url'].startswith('https://github.com/tordave1150/hazard-intelligence/actions/workflows/')
 
 
 def test_gistda_scoped_summary_and_detail_agree_without_national_geometry():
@@ -158,6 +157,24 @@ def test_dams_filter_by_point_scope_without_changing_report_date():
 
 def test_no_write_or_ingestion_route():
     assert requests.post(BASE+'/api/overview',timeout=15).status_code==405
+
+
+def test_hii_national_scope_filters_and_history_guards():
+    response=requests.get(BASE+'/api/gauges',timeout=25)
+    assert response.status_code==200
+    value=response.json()
+    assert value['scope_area_id']=='TH'
+    if value['feed']:
+        assert value['total_count']==len(value['records']) and value['freshness']=='UNKNOWN'
+        assert all(r['observed_at'] is None for r in value['records'])
+        assert value['feed']['provider_automatic_count']==value['total_count']+len(value['feed']['excluded_stations'])
+        if value['records']:
+            province=value['records'][0]['province_id']
+            subset=requests.get(BASE+'/api/gauges',params={'area_id':province},timeout=25).json()
+            assert subset['records'] and all(r['province_id']==province for r in subset['records'])
+    for query in ['gauge_id=https://example.com','gauge_id=THW-737&url=x','gauge_id=THW-737&gauge_id=THW-737']:
+        result=requests.get(BASE+'/api/gauges/history?'+query,timeout=25)
+        assert result.status_code==400 and result.headers['Cache-Control']=='no-store'
 
 
 def test_corrected_wiang_kao_identity_and_forecast_read_compatibility():

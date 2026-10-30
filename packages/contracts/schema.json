@@ -2342,6 +2342,483 @@
         "valid_hours"
       ],
       "additionalProperties": false
+    },
+    "ThaiWaterStation": {
+      "type": "object",
+      "properties": {
+        "gauge_id": {
+          "type": "string",
+          "pattern": "^THW-[0-9]{1,12}$"
+        },
+        "source_station_id": {
+          "type": "string",
+          "pattern": "^[0-9]{1,12}$"
+        },
+        "station_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "name_th": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "name_en": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "agency_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "agency_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "province_id": {
+          "type": "string",
+          "pattern": "^TH-P-[0-9]{2}$"
+        },
+        "district_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^TH-D-[0-9]{4}$"
+        },
+        "region_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "point": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "minimum": 5,
+                  "maximum": 22
+                },
+                "lon": {
+                  "type": "number",
+                  "minimum": 96,
+                  "maximum": 107
+                }
+              },
+              "required": [
+                "lat",
+                "lon"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_observed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 40
+        },
+        "observed_at": {
+          "type": "null"
+        },
+        "observation_time_status": {
+          "const": "TIMEZONE_NOT_SUPPLIED"
+        },
+        "water_level_msl": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -10000,
+          "maximum": 10000
+        },
+        "water_level_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -10000,
+          "maximum": 10000
+        },
+        "quality_flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 5,
+          "items": {
+            "enum": [
+              "INVALID_POINT",
+              "INVALID_PROVIDER_TIME",
+              "INVALID_LEVEL",
+              "NO_LEVEL",
+              "UNRECOGNIZED_DISTRICT"
+            ]
+          }
+        }
+      },
+      "required": [
+        "gauge_id",
+        "source_station_id",
+        "station_code",
+        "name_th",
+        "name_en",
+        "agency_name",
+        "agency_id",
+        "province_id",
+        "district_id",
+        "region_id",
+        "point",
+        "source_observed_at",
+        "observed_at",
+        "observation_time_status",
+        "water_level_msl",
+        "water_level_m",
+        "quality_flags"
+      ],
+      "additionalProperties": false
+    },
+    "ThaiWaterFeed": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "source_id": {
+          "const": "thaiwater"
+        },
+        "product_id": {
+          "const": "national_waterlevel"
+        },
+        "data_state": {
+          "const": "observed"
+        },
+        "snapshot_id": {
+          "const": "latest"
+        },
+        "source_url": {
+          "const": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(Z|\\+00:00)$"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "provider_automatic_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "provider_manual_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "provider_response_accounted_for": {
+          "const": true
+        },
+        "excluded_stations": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_station_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "provider_province_code": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "provider_area_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "reason": {
+                "const": "NOT_CANONICAL_THAI_PROVINCE"
+              }
+            },
+            "required": [
+              "source_station_id",
+              "provider_province_code",
+              "provider_area_name",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "coverage_by_province": {
+          "type": "array",
+          "maxItems": 77,
+          "items": {
+            "type": "object",
+            "properties": {
+              "area_id": {
+                "type": "string",
+                "pattern": "^TH-P-[0-9]{2}$"
+              },
+              "record_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              }
+            },
+            "required": [
+              "area_id",
+              "record_count"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "quality_issue_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "time_unknown_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "records": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "gauge_id": {
+                "type": "string",
+                "pattern": "^THW-[0-9]{1,12}$"
+              },
+              "source_station_id": {
+                "type": "string",
+                "pattern": "^[0-9]{1,12}$"
+              },
+              "station_code": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "name_th": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "name_en": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "agency_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "agency_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "province_id": {
+                "type": "string",
+                "pattern": "^TH-P-[0-9]{2}$"
+              },
+              "district_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^TH-D-[0-9]{4}$"
+              },
+              "region_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "point": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": 5,
+                        "maximum": 22
+                      },
+                      "lon": {
+                        "type": "number",
+                        "minimum": 96,
+                        "maximum": 107
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lon"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "source_observed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 40
+              },
+              "observed_at": {
+                "type": "null"
+              },
+              "observation_time_status": {
+                "const": "TIMEZONE_NOT_SUPPLIED"
+              },
+              "water_level_msl": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": -10000,
+                "maximum": 10000
+              },
+              "water_level_m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": -10000,
+                "maximum": 10000
+              },
+              "quality_flags": {
+                "type": "array",
+                "uniqueItems": true,
+                "maxItems": 5,
+                "items": {
+                  "enum": [
+                    "INVALID_POINT",
+                    "INVALID_PROVIDER_TIME",
+                    "INVALID_LEVEL",
+                    "NO_LEVEL",
+                    "UNRECOGNIZED_DISTRICT"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "gauge_id",
+              "source_station_id",
+              "station_code",
+              "name_th",
+              "name_en",
+              "agency_name",
+              "agency_id",
+              "province_id",
+              "district_id",
+              "region_id",
+              "point",
+              "source_observed_at",
+              "observed_at",
+              "observation_time_status",
+              "water_level_msl",
+              "water_level_m",
+              "quality_flags"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "coverage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "units": {
+          "type": "object",
+          "properties": {
+            "water_level_msl": {
+              "const": "m above mean sea level"
+            },
+            "water_level_m": {
+              "const": "m as reported"
+            }
+          },
+          "required": [
+            "water_level_msl",
+            "water_level_m"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "product_id",
+        "data_state",
+        "snapshot_id",
+        "source_url",
+        "fetched_at",
+        "ingested_at",
+        "record_count",
+        "provider_automatic_count",
+        "provider_manual_count",
+        "provider_response_accounted_for",
+        "excluded_stations",
+        "coverage_by_province",
+        "quality_issue_count",
+        "time_unknown_count",
+        "records",
+        "coverage",
+        "units"
+      ],
+      "additionalProperties": false
     }
   }
 }

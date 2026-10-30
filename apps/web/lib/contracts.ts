@@ -1,11 +1,12 @@
 import Ajv from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import schema from '../../../packages/contracts/schema.json';
-import type {DamObservation,Forecast,WarningFeed,FloodFeed,FloodChunk,HourlyForecast} from './types';
+import type {DamObservation,Forecast,WarningFeed,FloodFeed,FloodChunk,HourlyForecast,GaugeFeed} from './types';
 import {allowedWarningDocument} from './warnings';
 import {areaById} from './geography';
 import {damById,damLicenseUrl,damMetadataUrl,damSourceUrl} from './dams';
 import {bangkokDate} from './semantics';
+import {wallOrdinal} from './gauge-history-data';
 const ajv = new Ajv({strict: false, allErrors: false});
 addFormats(ajv);
 ajv.addSchema(schema);
@@ -16,6 +17,29 @@ const validateNationalFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/G
 const validateThreeDayFlood=ajv.compile<FloodFeed>({$ref:`${schema.$id}#/$defs/GistdaThreeDayFeed`});
 const validateThreeDayChunk=ajv.compile<FloodChunk>({$ref:`${schema.$id}#/$defs/GistdaThreeDayChunk`});
 const validateHourly=ajv.compile<HourlyForecast>({$ref:`${schema.$id}#/$defs/HourlyForecast`});
+const validateGauge=ajv.compile<GaugeFeed>({$ref:`${schema.$id}#/$defs/ThaiWaterFeed`});
+export function validatedGaugeFeed(value:unknown):GaugeFeed{
+  if(!validateGauge(value))throw Error('Invalid station feed contract');
+  const feed=value as GaugeFeed,ids=[...feed.records.map(r=>r.source_station_id),...feed.excluded_stations.map(r=>r.source_station_id)];
+  if(feed.record_count!==feed.records.length||ids.length!==feed.provider_automatic_count||new Set(ids).size!==ids.length||
+    Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at)||feed.time_unknown_count!==feed.record_count||
+    feed.quality_issue_count!==feed.records.filter(r=>r.quality_flags.length).length)throw Error('Incomplete station response');
+  const counts=new Map<string,number>();
+  for(const row of feed.records){
+    const province=areaById.get(row.province_id),district=row.district_id?areaById.get(row.district_id):null;
+    if(!province||province.level!=='province'||row.region_id!==province.region_id||row.gauge_id!=='THW-'+row.source_station_id||
+      row.district_id&&district?.province_id!==row.province_id)throw Error('Invalid station administrative identity');
+    if((row.point===null)!==row.quality_flags.includes('INVALID_POINT')||
+      [row.water_level_m,row.water_level_msl].some(v=>v!==null&&!Number.isFinite(v)))throw Error('Invalid station value');
+    let validTime=false;try{if(row.source_observed_at){wallOrdinal(row.source_observed_at);validTime=true;}}catch{}
+    if((!validTime)!==row.quality_flags.includes('INVALID_PROVIDER_TIME')||
+      (row.water_level_m===null&&row.water_level_msl===null)!==row.quality_flags.includes('NO_LEVEL'))throw Error('Unflagged station quality issue');
+    counts.set(row.province_id,(counts.get(row.province_id)??0)+1);
+  }
+  const expected=[...counts].sort(([a],[b])=>a.localeCompare(b)).map(([area_id,record_count])=>({area_id,record_count}));
+  if(JSON.stringify(expected)!==JSON.stringify(feed.coverage_by_province)||new TextEncoder().encode(JSON.stringify(feed)).length>4*1024*1024)throw Error('Invalid station coverage');
+  return feed;
+}
 export function validatedHourly(value:unknown):HourlyForecast{
   if(!validateHourly(value))throw new Error('Invalid hourly forecast contract');
   const record=value as HourlyForecast,start=Date.parse(record.forecast_date+'T00:00:00+07:00'),area=areaById.get(record.location_id);

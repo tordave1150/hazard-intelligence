@@ -10,6 +10,9 @@ SCHEMA = json.loads((ROOT / 'packages/contracts/schema.json').read_text(encoding
 def validate_record(kind, record):
     validator = Draft202012Validator({**SCHEMA, '$ref': f'#/$defs/{kind}'}, format_checker=FormatChecker())
     validator.validate(record)
+    if kind=='ThaiWaterFeed':
+        from pipelines.thaiwater.data import check_feed
+        check_feed(record)
     if kind == 'HourlyForecast':
         from pipelines.open_meteo.hourly import check_record
         check_record(record)

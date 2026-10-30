@@ -217,5 +217,7 @@ defs['HourlyForecast'] = {'type': 'object',
               'valid_hours'],
  'additionalProperties': False}
 
+from pipelines.thaiwater.contracts import definitions as thaiwater_definitions
+defs.update(thaiwater_definitions())
 destination = Path(__file__).resolve().parents[1] / 'packages/contracts/schema.json'
 destination.write_text(json.dumps({'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'https://hazard.local/contracts/2.0','$defs':defs},indent=2,ensure_ascii=False)+'\n',encoding='utf-8')

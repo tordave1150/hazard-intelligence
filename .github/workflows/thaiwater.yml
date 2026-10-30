@@ -1,0 +1,50 @@
+name: Latest HII Thailand river level stations
+on:
+  push:
+    branches: [main]
+    paths: ['.github/thaiwater-publication-request.json']
+  schedule:
+    - cron: '43 */2 * * *' # Every two hours; target 07:43/09:43/... ICT.
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: thaiwater-national-publication
+  cancel-in-progress: false
+jobs:
+  ingest:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - run: pip install -r pipelines/requirements.txt
+      - name: Validate fixed national request
+        if: github.event_name == 'push'
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          value=json.loads(Path('.github/thaiwater-publication-request.json').read_text())
+          assert set(value)=={'request_id','source_id','operation'}
+          assert re.fullmatch(r'[a-zA-Z0-9_-]{1,80}',value['request_id'])
+          assert value['source_id']=='thaiwater' and value['operation']=='publish_national_waterlevel'
+          PY
+      - name: Check existing database configuration
+        run: |
+          if [ -z "$MONGODB_URI" ] || [ -z "$MONGODB_DB_NAME" ]; then
+            echo "::error::Existing MongoDB repository secrets are required."
+            exit 1
+          fi
+      - name: Publish the unfiltered national station response
+        run: python -m pipelines.thaiwater.run --publish
+      - name: Verify active generations, indexes and bounded retention
+        run: python -m scripts.mongo_admin verify

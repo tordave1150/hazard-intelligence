@@ -4,8 +4,9 @@ import maplibregl,{type Map as MapType} from 'maplibre-gl';
 import {MapboxOverlay} from '@deck.gl/mapbox';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import type {Feature,FeatureCollection,Geometry} from 'geojson';
-import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningDisplay,HourlyForecast} from '@/lib/types';
+import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningDisplay,HourlyForecast,GaugeStation} from '@/lib/types';
 import {hourlyValue} from '@/lib/hourly';
+import {gaugeName,gaugeValue,gaugeWallTime} from '@/lib/gauges';
 import {warningColor} from '@/lib/warnings';
 import {floodColor,floodWindowLabel} from '@/lib/floods';
 import {applyTimeTheme,type TimeTheme} from '@/lib/map-theme';
@@ -15,6 +16,7 @@ import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 type Props={area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;theme:TimeTheme;
   hourly:{records:HourlyForecast[];validEnd:string}|null;validTimeLabel:string;
   rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void;
+  gauges:GaugeStation[];showGauges:boolean;selectedGauge:string|null;onSelectGauge:(id:string)=>void;
   dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void;
   warnings:WarningDisplay[];onSelectWarning:(id:string)=>void;
   floods:FloodFeature[];floodFreshness:Freshness;selectedFlood:string|null;onSelectFlood:(id:string)=>void};
@@ -76,9 +78,29 @@ export default function MapView(props:Props){
           paint:{'fill-color':['get','color'],'fill-opacity':['case',['get','archived'],.05,.16]}});
         instance.addLayer({id:'warning-cap-line',type:'line',source:'warning-cap',layout:{visibility:'none'},
           paint:{'line-color':['get','color'],'line-width':2}});
+      instance.addSource('thaiwater-gauges',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterMaxZoom:10,clusterRadius:45});
+      instance.addLayer({id:'gauge-clusters',type:'circle',source:'thaiwater-gauges',filter:['has','point_count'],
+        paint:{'circle-color':'#6c8493','circle-radius':['step',['get','point_count'],15,20,19,100,24],'circle-stroke-color':'#eef4f5','circle-stroke-width':2}});
+      instance.addLayer({id:'gauge-cluster-count',type:'symbol',source:'thaiwater-gauges',filter:['has','point_count'],
+        layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Regular'],'text-size':11},paint:{'text-color':'#fff'}});
+      instance.addLayer({id:'gauge-point',type:'circle',source:'thaiwater-gauges',filter:['!', ['has','point_count']],
+        paint:{'circle-color':'#758997','circle-radius':6,'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
+          'circle-stroke-width':['case',['get','selected'],3,1.5]}});
         const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false});
         hoverPopup.current=popup;
         instance.on('mousemove',event=>{
+          if(latest.current.showGauges&&instance.getLayer('gauge-point')){
+            const feature=instance.queryRenderedFeatures(event.point,{layers:['gauge-point','gauge-clusters']})[0];
+            if(feature){
+              instance.getCanvas().style.cursor='pointer';
+              const row=latest.current.gauges.find(g=>g.gauge_id===feature.properties?.gauge_id);
+              if(row?.point){const content=document.createElement('div');content.style.whiteSpace='pre-line';content.style.color='#183d43';
+                content.textContent=`${gaugeName(row)}\n${gaugeValue(row.water_level_msl)} ม.รทก.\n${gaugeWallTime(row.source_observed_at)}\nHII / ThaiWater · จุดสีเป็นกลาง`;
+                popup.setLngLat([row.point.lon,row.point.lat]).setDOMContent(content).addTo(instance);
+              }else popup.remove();
+              return;
+            }
+          }
           if(!latest.current.is3d){popup.remove();return;}
           const warning=instance.queryRenderedFeatures(event.point,{layers:['warning-cap-fill']})[0];
           if(warning?.properties){const p=warning.properties;instance.getCanvas().style.cursor='pointer';
@@ -92,7 +114,19 @@ export default function MapView(props:Props){
             popup.setLngLat(event.lngLat).setText(`${p.name} · Open-Meteo forecast · ${latest.current.validTimeLabel} · ${p.value==null?'No current value':`${p.value} ${metricUnit(latest.current.metric,latest.current.hourly?'hourly':'daily')}`} · Representative point, not area average`).addTo(instance);
           } else popup.remove();
         });
+        instance.on('mouseout',()=>popup.remove());
         instance.on('click',event=>{
+          if(latest.current.showGauges&&instance.getLayer('gauge-point')){
+            const gauge=instance.queryRenderedFeatures(event.point,{layers:['gauge-point','gauge-clusters']})[0];
+            if(gauge?.properties&&gauge.geometry.type==='Point'){
+              if(gauge.properties.cluster_id!==undefined){
+                const center=gauge.geometry.coordinates as [number,number];
+                void (instance.getSource('thaiwater-gauges') as maplibregl.GeoJSONSource).getClusterExpansionZoom(Number(gauge.properties.cluster_id))
+                  .then(zoom=>{if(map.current===instance)instance.easeTo({center,zoom,duration:500});}).catch(()=>{});
+              }else latest.current.onSelectGauge(String(gauge.properties.gauge_id));
+              return;
+            }
+          }
           if(!latest.current.is3d)return;
           const warning=instance.queryRenderedFeatures(event.point,{layers:['warning-cap-fill']})[0];
           if(warning?.properties){latest.current.onSelectWarning(warning.properties.warning_id);return;}
@@ -174,6 +208,18 @@ export default function MapView(props:Props){
       pitch:props.is3d?52:0,bearing:props.is3d?-12:0});
   },[props.area.id,props.is3d,ready]);
   useEffect(()=>{
+    const instance=map.current;if(!ready||!instance?.getSource('thaiwater-gauges'))return;
+    const features=props.showGauges?props.gauges.filter(row=>row.point).map(row=>({type:'Feature' as const,
+      geometry:{type:'Point' as const,coordinates:[row.point!.lon,row.point!.lat]},properties:{gauge_id:row.gauge_id,selected:row.gauge_id===props.selectedGauge}})):[];
+    (instance.getSource('thaiwater-gauges') as maplibregl.GeoJSONSource).setData({type:'FeatureCollection',features});
+    for(const layer of ['gauge-clusters','gauge-cluster-count','gauge-point'])instance.setLayoutProperty(layer,'visibility',props.showGauges?'visible':'none');
+
+  },[ready,props.gauges,props.showGauges,props.selectedGauge]);
+  useEffect(()=>{
+    const row=props.gauges.find(g=>g.gauge_id===props.selectedGauge);
+    if(ready&&props.showGauges&&row?.point)map.current?.easeTo({center:[row.point.lon,row.point.lat],zoom:Math.max(map.current.getZoom(),10),duration:500});
+  },[ready,props.gauges,props.showGauges,props.selectedGauge]);
+  useEffect(()=>{
     if(!ready||!map.current?.getSource('terrain-dem'))return;
     map.current.setTerrain(props.is3d&&props.terrain?{source:'terrain-dem',exaggeration:1.2}:null);
   },[props.is3d,props.terrain,ready]);
@@ -217,7 +263,8 @@ export default function MapView(props:Props){
       getElevation:(f:Feature)=>extrusion&&f.properties?.value!=null?f.properties.value*(props.metric==='rainfall_mm'?150:50):0,
       opacity:props.opacity/100,autoHighlight:true,highlightColor:[38,156,156,65],
       onHover:({object})=>{if(map.current)map.current.getCanvas().style.cursor=object?'pointer':'';},
-      onClick:({object})=>{
+      onClick:({object,x,y})=>{
+        if(latest.current.showGauges&&map.current?.getLayer('gauge-point')&&map.current.queryRenderedFeatures([x,y],{layers:['gauge-point','gauge-clusters']}).length)return true;
         if(!object)return;
         const id=object.properties.id;
         latest.current.onSelect(latest.current.area.level==='national'?object.properties.region_id:id);
