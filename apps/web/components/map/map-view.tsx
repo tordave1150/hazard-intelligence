@@ -84,8 +84,8 @@ export default function MapView(props:Props){
         paint:{'circle-color':'#6c8493','circle-radius':['step',['get','point_count'],15,20,19,100,24],'circle-stroke-color':'#eef4f5','circle-stroke-width':2}});
       instance.addLayer({id:'gauge-cluster-count',type:'symbol',source:'thaiwater-gauges',filter:['has','point_count'],
         layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Regular'],'text-size':11},paint:{'text-color':'#fff'}});
-      instance.addLayer({id:'gauge-point',type:'circle',source:'thaiwater-gauges',filter:['!', ['has','point_count']],
-        paint:{'circle-color':['case',['==',['get','kind'],'rain'],'#508faf','#758997'],'circle-radius':6,'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
+      instance.addLayer({id:'gauge-point',type:'circle',source:'thaiwater-gauges',filter:['!', ['has','point_count']],layout:{'circle-sort-key':['case',['get','selected'],1,0]},
+        paint:{'circle-color':['case',['==',['get','kind'],'rain'],'#508faf','#758997'],'circle-radius':['case',['get','selected'],8,6],'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
           'circle-stroke-width':['case',['get','selected'],3,1.5]}});
         const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false});
         hoverPopup.current=popup;
@@ -218,7 +218,7 @@ export default function MapView(props:Props){
   },[ready,props.gauges,props.showGauges,props.selectedGauge]);
   useEffect(()=>{
     const row=props.gauges.find(g=>g.gauge_id===props.selectedGauge);
-    if(ready&&props.showGauges&&row?.point)map.current?.easeTo({center:[row.point.lon,row.point.lat],zoom:Math.max(map.current.getZoom(),10),duration:500});
+    if(ready&&props.showGauges&&row?.point)map.current?.easeTo({center:[row.point.lon,row.point.lat],zoom:Math.max(map.current.getZoom(),11),duration:500});
   },[ready,props.gauges,props.showGauges,props.selectedGauge]);
   useEffect(()=>{
     if(!ready||!map.current?.getSource('terrain-dem'))return;
