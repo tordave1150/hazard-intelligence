@@ -24,3 +24,17 @@ def test_unknown_success_time_does_not_hide_missing_data(stamp):
 def test_missing_status_and_unsupported_source():
     assert decision('tmd',None,NOW)==(True,'no_success')
     with pytest.raises(ValueError):decision('other',None,NOW)
+
+def test_scheduled_cli_reads_status_and_skips_without_changing_success(monkeypatch,tmp_path,capsys):
+    import mongomock,json
+    from scripts import refresh_guard
+    dbclient=mongomock.MongoClient();stamp=datetime.now(timezone.utc).isoformat()
+    row={'_id':'tmd:cap_warnings','status':'SUCCESS','last_success':stamp}
+    dbclient.test.source_status.insert_one(row)
+    monkeypatch.setattr(refresh_guard,'MongoClient',lambda *a,**k:dbclient)
+    monkeypatch.setenv('MONGODB_URI','mongodb://unused-test');monkeypatch.setenv('MONGODB_DB_NAME','test')
+    monkeypatch.delenv('REFRESH_FORCE',raising=False);monkeypatch.setenv('GITHUB_OUTPUT',str(tmp_path/'output'))
+    monkeypatch.setattr('sys.argv',['guard','--source','tmd']);refresh_guard.main()
+    assert json.loads(capsys.readouterr().out)['due'] is False
+    assert (tmp_path/'output').read_text()=='due=false\n'
+    assert dbclient.test.source_status.find_one()==row

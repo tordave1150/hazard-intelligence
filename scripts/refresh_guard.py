@@ -34,11 +34,15 @@ def main():
     args=parser.parse_args()
     if not os.getenv('MONGODB_URI') or not os.getenv('MONGODB_DB_NAME'):raise RuntimeError('Database configuration is required')
     try:
-        with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
-            status=client[os.environ['MONGODB_DB_NAME']].source_status.find_one({'_id':POLICIES[args.source][0]},
-                {'last_success':1,'status':1,'forecast_date':1},maxTimeMS=5000)
-        due,reason=decision(args.source,status,force=os.getenv('REFRESH_FORCE')=='true')
-    except Exception:raise RuntimeError('Refresh due check failed; no provider request was made') from None
+        force=os.getenv('REFRESH_FORCE')=='true';status=None
+        if not force:
+            with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
+                status=client[os.environ['MONGODB_DB_NAME']].source_status.find_one({'_id':POLICIES[args.source][0]},
+                    {'last_success':1,'status':1,'forecast_date':1},max_time_ms=5000)
+        due,reason=decision(args.source,status,force=force)
+    except Exception as error:
+        print(json.dumps({'source':args.source,'error_type':type(error).__name__}))
+        raise RuntimeError('Refresh due check failed; no provider request was made') from None
     print(json.dumps({'source':args.source,'due':due,'reason':reason}))
     if os.getenv('GITHUB_OUTPUT'):
         with Path(os.environ['GITHUB_OUTPUT']).open('a',encoding='utf-8') as output:output.write('due='+str(due).lower()+'\n')
