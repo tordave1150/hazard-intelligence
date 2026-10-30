@@ -1,0 +1,35 @@
+{
+  "checked_date_ict": "2026-10-30",
+  "site": "https://hazard-intelligence-lime.vercel.app/",
+  "publication_run": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41077296955",
+  "source_fetched_at": "2026-10-30T15:04:42.215028Z",
+  "request_filters": {},
+  "station_allowlist": null,
+  "thai_stations": 805,
+  "provider_automatic_rows": 808,
+  "excluded_rows": 3,
+  "manual_rows": 35,
+  "provinces": 76,
+  "quality_issue_count": 0,
+  "observation_time_unknown_count": 805,
+  "observation_freshness": "UNKNOWN",
+  "query_freshness": "FRESH",
+  "sample_history_station_id": "THW-737",
+  "sample_history_dates": [
+    "2026-10-28",
+    "2026-10-30"
+  ],
+  "sample_history_points": 421,
+  "sample_history_values": 415,
+  "production_http_checks_passed": 22,
+  "active_database_products_verified": 6,
+  "production_gauge_layer_enabled": true,
+  "sample_history_fetched_at": "2026-10-30T15:06:45.393Z",
+  "browser_console_errors_after_fix": 0,
+  "browser_proof_files": [
+    "artifacts/hii-national-production-2026-10-30.png",
+    "artifacts/hii-history-production-2026-10-30.png",
+    "artifacts/hii-health-production-2026-10-30.png",
+    "artifacts/hii-mobile-production-2026-10-30.png"
+  ]
+}
