@@ -2,6 +2,9 @@
 
 The operational route is `/`. Source registry and methodology are supporting routes, not separate operational dashboards.
 
+- The enabled observation layers have a flowing legend above the canvas, with expandable source dates/qualifications. Long notes wrap on mobile rather than stacking at fixed pixel offsets over the map. Forecast display scales remain separate.
+- HII cluster labels count water-level and rain product records separately (`น้ำ` / `ฝน`). Co-located products do not become a single unique-station count. Cluster colors identify product type, not danger; source observation age remains unknown. Selecting a cluster zooms; selecting a station preserves the existing point/history flow.
+
 - Administrative navigation: Thailand → six pinned upstream reg_royin regions → province → district; breadcrumbs and Back to Thailand preserve metric, layer opacity and 2D/3D selection. Search accepts English names, Thai names and canonical IDs.
 - National map uses simplified province geometry and point forecasts. Selecting a national polygon first chooses its region; within a region it chooses a province. Province/district views lazily load only the selected province's district file. Raw boundaries remain in `data/boundaries/raw`.
 - deck.gl GeoJsonLayer handles 2D fill, selection and tooltips. MapLibre native fill, line and fill-extrusion layers handle 3D so geometry participates in DEM terrain rendering instead of sinking below it. Camera changes combine area bounds and pitch in one operation to prevent competing transitions.

@@ -83,7 +83,7 @@
     "url": "https://www.thaiwater.net/",
     "terms_url": "https://data.hii.or.th/dataset/water-level",
     "cadence": "Every 2 hours · 01:43/03:43/.../23:43 ICT target; execution may be delayed",
-    "description": "Unfiltered public automatic river-level station response, mapped to canonical Thai provinces and districts. National default with ordinary area filters. Source wall times and m/MSL units remain separate; observation UTC and age are unknown. Neutral map markers do not represent risk. Manual rows without level values and non-Thai province codes are counted separately. Rain gauges are not connected.",
+    "description": "Unfiltered public automatic river-level station response, mapped to canonical Thai provinces and districts. National default with ordinary area filters. Source wall times and m/MSL units remain separate; observation UTC and age are unknown. Neutral map markers do not represent risk. Manual rows without level values and non-Thai province codes are counted separately. Rain stations use the independent thaiwater_rain product.",
     "attribution": "HII / ThaiWater and original measuring agencies",
     "endpoint": "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load",
     "authentication": "One credential-free GET to the public portal endpoint succeeded on 2026-10-29; no embedded website credentials used",

@@ -1,6 +1,6 @@
 # Current project scope
 
-Updated 30 October 2026, Asia/Bangkok. This document records the user's current scope and supersedes earlier local trial plans.
+Updated 1 November 2026, Asia/Bangkok. This document records the user's current scope and supersedes earlier local trial plans.
 
 - The product covers Thailand. There is no preferred province, district, pinned local station list or district-only source rollout.
 - Fetch a complete country response, then filter province/district views using validated administrative membership. Missing records are unavailable or empty source results, never an all-clear.
@@ -10,6 +10,7 @@ Updated 30 October 2026, Asia/Bangkok. This document records the user's current 
 - The province comparison covers all 77 provinces in one summary response. The separate 22-basin context uses DDPM boundaries and conservative point matching for HII stations and the 35 connected RID dams; it does not infer upstream/downstream networks or aggregate province products into basin warnings.
 - TMD checks twice an hour and collects after one hour; hourly weather checks hourly and collects after four hours or a new Bangkok day. Recent successful products skip provider requests. GitHub scheduling remains best-effort; deadlines and actual source freshness stay visible.
 - Daily and hourly weather cover 77 province plus 928 district points. RID and TMD retain their own accepted source coverage; country scope does not fabricate absent observations.
+- Enabled observation overlays have a shared legend and expandable source clocks above the canvas. HII cluster labels count water and rain product records separately; they are not unique-station totals or danger levels. See `map-legibility-release-2026-11-01.md` for the usability review.
 
 The latest verified running system is described in [the data health release](data-health-area-loading-release-2026-10-29.md) and [the three-day GISTDA release](gistda-three-day-release-2026-10-29.md). Historical evidence and retired instructions are under `archive/` and must not set defaults or define user preferences.
 

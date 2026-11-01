@@ -1,25 +1,22 @@
 # Source registry
 
-Machine-readable registry: `apps/web/data/source-registry.json`. It records endpoint/product reference, source category, authentication, licence, commercial and redistribution permission, quota, cadence/latency, coverage/resolution, units/CRS, fallback and terms-review date. `/sources` presents it; the map separately presents actual data age.
+Current scope: Thailand, updated 1 November 2026 (Asia/Bangkok). Machine-readable registry: `apps/web/data/source-registry.json`, presented at `/sources`. `/health` reports actual current source status. Dated production receipts are evidence of a reviewed generation, not a guarantee of current freshness.
 
-| Source | Evidence (dated per source; latest update 2026-10-28) | Release state |
-|---|---|---|
-| Open-Meteo daily forecast | Production run 40257438014 published and served 1,005/1,005 validated points, four daily periods, FRESH/SUCCESS on 2026-10-26; user confirmed non-commercial use | Connected on production; source attribution retained |
-| RID daily dam storage | Documented GET, 35 matched identities and official published coordinates, date-only precision, capacities/percent semantics and linked DGA catalog reuse reviewed | Connected on production: run 40287126263 published 35/35 reports; unique indexes and retention verified. Flows remain excluded |
-| TMD public CAP | Official public RSS/CAP and reuse reviewed; 27 October recovery preserves the unknown R-07 code and original polygons while mapping only known provinces | Run 40501283729 published 12/12 messages, including real Alert/Update/Cancel cases; read APIs, scope disclosure and retention verified. Registered radar/forecast remain separate |
-| HII / ThaiWater gauges | Official public monthly archives, CC BY-NC catalog, 1,396 metadata rows and one real September station sample inspected; October directory empty | Live layer planned/disabled; current API, datum/timezone/quality and product acceptance pending |
-| GISTDA Disaster Platform flood Features | Run 40548798337 published the complete unfiltered retrospective 1day Thailand query on 28 October at 00:15 ICT, zero features and unknown acquisition. Pilot is preserved separately; 30day/STAC samples do not replace 1day evidence | Connected bounded national query with administrative filtering and distinct empty/unavailable states; nationwide satellite coverage, exact observation date and area/depth/impact metrics are not established. See [national release](archive/gistda-national-query-release-2026-10-28.md) and [current acceptance scope](archive/gistda-integration-acceptance-2026-10-28.md). Resource-specific reuse remains qualified |
-| Administrative boundaries | Pinned attributed geometry plus official downloadable DOPA code/name comparison: 77 provinces/928 districts; one code and six Thai names corrected | Directory reference is 2023-09-01, reviewed 2026-10-26; later registry changes and legal boundary accuracy unverified |
-| OpenFreeMap basemap | Public Positron style loaded in the deployed browser; provider attribution preserved | Production browser verified; current public hosting terms apply |
-| Mapterhorn DEM | Public TileJSON and terrain loaded in the deployed browser; provider/source attribution linked | Production 3D verified; provider source licences and service availability apply |
-| Basins/rivers | Official ONWR 22-basin resource located; its specific license is not specified | Planned, disabled pending reuse terms and geometric acceptance |
+| Source | Connected product | Qualifications / evidence |
+| --- | --- | --- |
+| Open-Meteo daily | 1,005 representative points, four daily periods | Forecast, not measured area mean; model issue time unknown; API access terms separate from CC BY data attribution |
+| Open-Meteo hourly | Independent Today product at 1,005 representative points | Complete validated generation; preceding-hour rain/probability; instant temperature at interval end; previous-day data is stale, not Today coverage |
+| RID | 35 daily large-dam storage reports | Report date only; normal/maximum capacity distinct; percent of normal capacity may exceed 100%; flows not accepted. [Acceptance](rid-acceptance-2026-10-26.md) |
+| TMD | Public Actual CAP feed | Preserve original validity, severity, cancellation references and geometry; invalid time intervals stay qualified. No messages is not an all-clear. [Acceptance](tmd-cap-acceptance-2026-10-26.md) |
+| GISTDA | Complete bounded retrospective 3days Thailand query | Unknown acquisition time; administrative membership is not clipping or complete satellite coverage; no unverified area/depth/impact metrics. [Release](gistda-three-day-release-2026-10-29.md) |
+| HII / ThaiWater water level | Unfiltered national automatic station response, selected-station history | Original wall time, unknown observation UTC/age; meter and MSL values separate; no accepted danger thresholds or unrestricted live-data licence/quota/SLA. [Release](hii-national-release-2026-10-30.md) |
+| HII / ThaiWater rain | Independent national rain_24h product | Reported mm/24h and mm/1h; unknown UTC accumulation-window instants; zero differs from missing; station counts/values are not area averages. [Release](province-rain-basin-release-2026-10-30.md) |
+| DDPM 22 basins | Separate conservative HII/RID point context | Near-border points can remain unmatched; no inferred river network; no unsupported basin weather/CAP/GISTDA aggregation; unrestricted licence not established. [Geometry receipt](basin-context-source-2026-10-30.json) |
+| Administrative boundaries | Pinned attributed geometry and canonical directory | 77 provinces/928 districts; official directory reference 2023-09-01, reviewed 2026-10-26; later registry changes/legal geometry unverified |
+| OpenFreeMap / Mapterhorn | Attributed basemap and terrain | Preserve provider/source attribution; service availability and source terms apply |
 
-References checked: [Open-Meteo API](https://open-meteo.com/en/docs), [terms](https://open-meteo.com/en/terms), [OpenGISData-Thailand pinned source](https://github.com/chingchai/OpenGISData-Thailand/tree/fafcea179cda88b689f5697c3866a449e79cd298), [OpenFreeMap quick start](https://openfreemap.org/quick_start/), [Mapterhorn attribution](https://mapterhorn.com/attribution/).
+The seven connected data products are independent. Basin boundaries are context geometry, not an eighth observation product. Public station counts vary by provider response; national collection does not fabricate missing provinces, records or observations.
 
-No source is declared production-ready based solely on appearing in the roadmap. Unconnected water/satellite/agency products are not shown as observations, warnings or safe conditions.
+Radar, QPE, nowcasting and a separate river-network dataset remain candidates pending product-specific acceptance. Historical monthly HII archive samples and old 1day GISTDA trials do not set current defaults.
 
-See [source acceptance investigation](source-acceptance.md) for actual probe results, official references and remaining dependencies.
-
-The [RID acceptance record](rid-acceptance-2026-10-26.md) documents the narrower daily-storage scope, metadata capture and license interpretation. It does not grant acceptance to every RID product.
-
-Hourly addendum (28 October): the separate Open-Meteo `today_hourly` adapter passed one real-point 24-interval check. National publication is pending. Four-hour scheduling and the shared daily/hourly rolling request ledger are described in the [release candidate](current-execution-release-2026-10-28.md); `/sources` lists hourly independently. GISTDA publication diagnostics add no source requests and keep version unknown.
+See [current acceptance](source-acceptance.md), [current scope](current-scope.md) and [latest production receipt](province-rain-basin-production-2026-10-30.json). Preserve each agency's attribution and the limits stated in its dated acceptance record.

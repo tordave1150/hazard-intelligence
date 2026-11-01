@@ -12,6 +12,7 @@ import {warningColor} from '@/lib/warnings';
 import {floodColor,floodWindowLabel} from '@/lib/floods';
 import {applyTimeTheme,type TimeTheme} from '@/lib/map-theme';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
+import {stationColors,stationClusterProperties,stationClusterLabel,stationClusterColor,stationClusterSummary} from '@/lib/map-stations';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
 
 type Props={geographyMode:'administrative'|'basin';area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;theme:TimeTheme;
@@ -79,13 +80,13 @@ export default function MapView(props:Props){
           paint:{'fill-color':['get','color'],'fill-opacity':['case',['get','archived'],.05,.16]}});
         instance.addLayer({id:'warning-cap-line',type:'line',source:'warning-cap',layout:{visibility:'none'},
           paint:{'line-color':['get','color'],'line-width':2}});
-      instance.addSource('thaiwater-gauges',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterMaxZoom:10,clusterRadius:45});
+      instance.addSource('thaiwater-gauges',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterMaxZoom:10,clusterRadius:45,clusterProperties:stationClusterProperties});
       instance.addLayer({id:'gauge-clusters',type:'circle',source:'thaiwater-gauges',filter:['has','point_count'],
-        paint:{'circle-color':'#6c8493','circle-radius':['step',['get','point_count'],15,20,19,100,24],'circle-stroke-color':'#eef4f5','circle-stroke-width':2}});
+        paint:{'circle-color':stationClusterColor,'circle-radius':['case',['all',['>',['get','water_count'],0],['>',['get','rain_count'],0]],27,22],'circle-stroke-color':'#eef4f5','circle-stroke-width':1.5}});
       instance.addLayer({id:'gauge-cluster-count',type:'symbol',source:'thaiwater-gauges',filter:['has','point_count'],
-        layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Regular'],'text-size':11},paint:{'text-color':'#fff'}});
+        layout:{'text-field':stationClusterLabel,'text-font':['Noto Sans Regular'],'text-size':10,'text-line-height':1.3,'text-allow-overlap':true},paint:{'text-color':'#fff'}});
       instance.addLayer({id:'gauge-point',type:'circle',source:'thaiwater-gauges',filter:['!', ['has','point_count']],layout:{'circle-sort-key':['case',['get','selected'],1,0]},
-        paint:{'circle-color':['case',['==',['get','kind'],'rain'],'#508faf','#758997'],'circle-radius':['case',['get','selected'],8,6],'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
+        paint:{'circle-color':['case',['==',['get','kind'],'rain'],stationColors.rain,stationColors.water],'circle-radius':['case',['get','selected'],8,6],'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
           'circle-stroke-width':['case',['get','selected'],3,1.5]}});
         const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false});
         hoverPopup.current=popup;
@@ -98,6 +99,10 @@ export default function MapView(props:Props){
               if(row?.point){const content=document.createElement('div');content.style.whiteSpace='pre-line';content.style.color='#183d43';
                 content.textContent=`${gaugeName(row)}\n${'rain_24h_mm' in row?`${gaugeValue(row.rain_24h_mm)} mm / 24h`:`${gaugeValue(row.water_level_msl)} ม.รทก.`}\n${gaugeWallTime(row.source_observed_at)}\nHII / ThaiWater · จุดสีเป็นกลาง`;
                 popup.setLngLat([row.point.lon,row.point.lat]).setDOMContent(content).addTo(instance);
+              }else if(feature.geometry.type==='Point'&&feature.properties?.cluster_id!==undefined){
+                popup.setLngLat(feature.geometry.coordinates as [number,number]).setText(
+                  `${stationClusterSummary(Number(feature.properties.water_count),Number(feature.properties.rain_count))} · HII / ThaiWater · คลิกเพื่อซูม · นับรายการแยกประเภท ไม่ใช่จำนวนสถานีไม่ซ้ำ`
+                ).addTo(instance);
               }else popup.remove();
               return;
             }

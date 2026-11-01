@@ -1,4 +1,6 @@
 import {describe,it,expect} from 'vitest';
+import {createExpression,type ExpressionSpecification} from '@maplibre/maplibre-gl-style-spec';
+import {stationClusterProperties,stationClusterLabel,stationClusterColor,stationClusterSummary} from '../lib/map-stations';
 import fixture from '../../../tests/fixtures/thaiwater/normalized-subset.json';
 import {validatedGaugeFeed} from '../lib/contracts';
 import {rainResponse} from '../lib/rain-gauges';
@@ -7,6 +9,27 @@ import {parseGaugeHistory,wallOrdinal} from '../lib/gauge-history-data';
 import {areaById} from '../lib/geography';
 import {monitorSource} from '../lib/source-health';
 import type {GaugeSnapshot,GaugeHistory} from '../lib/types';
+
+describe('Map clusters preserve separate water and rain record counts',()=>{
+  function evaluate(expression:unknown,properties:Record<string,unknown>){
+    const compiled=createExpression(expression as ExpressionSpecification);
+    if(compiled.result!=='success')throw Error(JSON.stringify(compiled.value));
+    return compiled.value.evaluate({zoom:0},{type:1,properties});
+  }
+  it('counts co-located water and rain as separate product records without a unique-station total',()=>{
+    const products=[{kind:'river'},{kind:'rain'},{kind:'rain'}];
+    const counts=Object.fromEntries(Object.entries(stationClusterProperties).map(([key,[,expression]])=>
+      [key,products.reduce((sum,properties)=>sum+Number(evaluate(expression,properties)),0)]));
+    expect(counts).toEqual({water_count:1,rain_count:2});
+    expect(evaluate(stationClusterLabel,counts)).toBe('น้ำ 1\nฝน 2');
+    expect(stationClusterSummary(1,2)).toBe('ระดับน้ำ 1 รายการ · ฝน 2 รายการ');
+  });
+  it.each([{water_count:805,rain_count:0,label:'น้ำ\n805'},
+    {water_count:0,rain_count:4804,label:'ฝน\n4804'}])('labels a single product without implying the other is present',({label,...counts})=>{
+    expect(evaluate(stationClusterLabel,counts)).toBe(label);
+    expect(evaluate(stationClusterColor,counts)).toBeTruthy();
+  });
+});
 
 describe('National HII stations preserve measurement meaning',()=>{
   const feed=validatedGaugeFeed(fixture),snapshot:GaugeSnapshot={feed,records:feed.records,health:null,freshness:'UNKNOWN',query_freshness:'FRESH',storage:'local',error:null};
