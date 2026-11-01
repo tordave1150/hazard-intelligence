@@ -1,0 +1,137 @@
+{
+  "reviewed_at": "2026-11-01T09:12:28.306875+00:00",
+  "review_timezone": "Asia/Bangkok",
+  "feature_commit": "0e5eace74972eabd20e8e7deef6fc1e73ba5ed78",
+  "repository": "tordave1150/hazard-intelligence",
+  "branch": "main",
+  "deployment": {
+    "id": "dpl_FGsnre45mrHGKYgdRzTNhHsJSEX1",
+    "project_id": "prj_I6Q0vhmvGtCvmuPjjjwWlm8zl0Ou",
+    "url": "https://hazard-intelligence-lime.vercel.app/",
+    "target": "production",
+    "state": "READY",
+    "build_duration_seconds": 38.074
+  },
+  "ci": {
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41291761203",
+    "conclusion": "success"
+  },
+  "checks": {
+    "python_unit_passed": 265,
+    "web_passed": 69,
+    "local_http_passed": 24,
+    "production_http_passed": 24,
+    "typecheck": "passed",
+    "production_build": "passed"
+  },
+  "browser": {
+    "all_five_overlay_legend_items": true,
+    "cluster_click_zoom": true,
+    "console_errors": 0,
+    "console_warnings": 0,
+    "mobile_viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "document_client_width": 375,
+    "document_scroll_width": 375,
+    "source_note_client_widths": [
+      329,
+      329,
+      329,
+      329,
+      329
+    ],
+    "source_note_scroll_widths": [
+      329,
+      329,
+      329,
+      329,
+      329
+    ],
+    "keyboard_disclosure": "passed",
+    "temporary_viewport_restored": true
+  },
+  "observability": {
+    "runtime_log_scan": "unavailable: Vercel connector returned 403 with the verified owning team; no installed Vercel CLI fallback",
+    "configured_drains": 0,
+    "scope": "Browser console and HTTP checks do not establish absence of server-side log errors."
+  },
+  "source_snapshots": [
+    {
+      "path": "/api/sources/status",
+      "checked_at": "2026-11-01T09:08:56.320Z",
+      "sources": [
+        {
+          "id": "open_meteo",
+          "freshness": "FRESH",
+          "query_freshness": null
+        },
+        {
+          "id": "rid",
+          "freshness": "FRESH",
+          "query_freshness": null
+        },
+        {
+          "id": "tmd",
+          "freshness": "DELAYED",
+          "query_freshness": null
+        },
+        {
+          "id": "thaiwater",
+          "freshness": "UNKNOWN",
+          "query_freshness": "FRESH"
+        },
+        {
+          "id": "gistda",
+          "freshness": "UNKNOWN",
+          "query_freshness": "FRESH"
+        },
+        {
+          "id": "open_meteo_hourly",
+          "freshness": "DELAYED",
+          "query_freshness": null
+        },
+        {
+          "id": "thaiwater_rain",
+          "freshness": "UNKNOWN",
+          "query_freshness": "FRESH"
+        }
+      ]
+    },
+    {
+      "path": "/api/gauges",
+      "http": 200,
+      "freshness": "UNKNOWN",
+      "query_freshness": "FRESH",
+      "count": 803,
+      "fetched_at": "2026-11-01T06:51:33.474236Z"
+    },
+    {
+      "path": "/api/gauges?kind=rain&view=summary",
+      "http": 200,
+      "freshness": "UNKNOWN",
+      "query_freshness": "FRESH",
+      "count": 4795,
+      "fetched_at": "2026-11-01T06:51:43.901402Z"
+    },
+    {
+      "path": "/api/flood-products?view=summary",
+      "http": 200,
+      "freshness": "UNKNOWN",
+      "query_freshness": "FRESH",
+      "count": 597,
+      "fetched_at": "2026-10-31T08:34:39.572561+00:00"
+    },
+    {
+      "path": "/api/hourly",
+      "http": 200,
+      "freshness": "DELAYED",
+      "query_freshness": null,
+      "count": 1005,
+      "fetched_at": "2026-11-01T02:21:53.781025Z",
+      "forecast_date": "2026-11-01",
+      "available_hours": 24
+    }
+  ]
+}

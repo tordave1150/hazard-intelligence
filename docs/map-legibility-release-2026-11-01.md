@@ -23,6 +23,14 @@ The browser reviewed real public production snapshots in ignored local-preview f
 
 Local screenshots are under ignored `artifacts/map-legibility-*-2026-11-01.png`. Production deployment and production data availability must be checked independently after this change is released.
 
+## Production verification
+
+Feature commit `0e5eace` passed GitHub application checks and reached Vercel READY on the existing production alias. All 24 production HTTP checks passed. The production browser confirmed all five legend entries, separate mixed-cluster counts, click-to-zoom and wrapping source notes at 390 x 844 without horizontal overflow. Browser console errors/warnings were zero. Screenshots are under `artifacts/map-legibility-production-*-2026-11-01.png`.
+
+The [production receipt](map-legibility-production-2026-11-01.json) separately records the current data response: 803 water-level records, 4,795 rain records and 597 GISTDA features. These vary from the earlier local preview naturally. Hourly had 1,005 records for 1 November and 24 available intervals, with DELAYED freshness; TMD was also DELAYED. HII/GISTDA retrieval was FRESH while observation age remained UNKNOWN. This UI release does not claim that all products are fresh or change their clocks.
+
+Vercel runtime-log inspection was unavailable: the connector returned 403 for the verified owning team and no Vercel CLI was installed. No drains were configured. The API/browser evidence does not certify the absence of server-side log errors.
+
 ## Follow-up scope
 
 Basemap contrast, river styling and a dam-icon prototype are a later usability increment. Radar/QPE/nowcasting require source-specific acceptance before ingestion or display. This release adds no unverified source or hydrological metric.
