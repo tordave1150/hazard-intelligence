@@ -34,14 +34,15 @@ def main():
     result = json.loads(json.dumps(result), parse_float=lambda value: round(float(value),6))
     assert all(shape(feature['geometry']).is_valid for feature in result['features'])
     target = ROOT / 'apps/web/public/data/thailand-context.geojson'
-    target.write_text(json.dumps(result,separators=(',',':'))+'\n',encoding='utf-8')
+    target.write_text(json.dumps(result,separators=(',',':'))+'\n',encoding='utf-8',newline='\n')
     receipt = {'source':str(source.relative_to(ROOT)).replace('\\','/'),
-        'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
+        'hash_encoding':'UTF-8 with LF line endings',
+        'source_sha256':hashlib.sha256(source.read_bytes().replace(b'\r\n',b'\n')).hexdigest(),
         'output_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
         'source_provinces':77,'simplification_degrees':0.008,'relative_area_change':relative_change,
         'output_bytes':target.stat().st_size,'role':'Display-only basemap focus; not legal geometry or a membership boundary',
         'attribution':'OpenGISData-Thailand / upstream DOPA; CC BY 4.0; existing boundary notices apply'}
-    (ROOT / 'docs/map-context-geometry-2026-11-01.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
+    (ROOT / 'docs/map-context-geometry-2026-11-01.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8',newline='\n')
     print(json.dumps(receipt))
 
 

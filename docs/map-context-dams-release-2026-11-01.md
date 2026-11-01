@@ -4,7 +4,7 @@ Implemented 1 November 2026 (Asia/Bangkok): the next accepted usability incremen
 
 ## Thailand focus and rivers
 
-The display-only Thailand outline/outside mask is derived reproducibly by `python -m scripts.build_map_context` from the existing 77-province display geometry. The source bytes match the committed canonical input. Topology-preserving 0.008-degree simplification changes planar display area by approximately 0.03%; the bounded output is 143,213 bytes. It is a basemap context asset, never a legal boundary, selectable administrative area, source-membership boundary or scientific area metric. The [geometry receipt](map-context-geometry-2026-11-01.json) records hashes and attribution. Canonical areas, province/district files and basin memberships are unchanged.
+The display-only Thailand outline/outside mask is derived reproducibly by `python -m scripts.build_map_context` from the existing 77-province display geometry. The source bytes match the committed canonical input. Topology-preserving 0.008-degree simplification changes planar display area by approximately 0.03%; the bounded output is 143,212 bytes with LF line endings. It is a basemap context asset, never a legal boundary, selectable administrative area, source-membership boundary or scientific area metric. The [geometry receipt](map-context-geometry-2026-11-01.json) records UTF-8/LF hashes and attribution. Canonical areas, province/district files and basin memberships are unchanged.
 
 An outside shade and country outline use owned context layers below data products. Only captured basemap IDs receive background paint changes. Low-zoom foreign place labels/icons fade using their position relative to the derived country polygon, rather than an assumed country-code field. Road prominence is reduced at low zoom and returns when zooming in. Theme changes do not recolor weather metrics, CAP, GISTDA or station products. Map-control hover colors also follow all four themes.
 
@@ -26,4 +26,12 @@ The SVG dam pictogram has a ring showing `storage_pct`, the fraction of **normal
 
 Four-theme QA used a temporary local clock control without changing source timestamps. Early review clocks correctly qualified later retrievals as UNKNOWN; dusk/night qualified the same-date RID capture as FRESH. These are local visual-review states, not production source-age claims. The ordinary route was separately checked with the real clock after the harness was removed. Proof images and the review harness are in ignored `artifacts/context-dams-*` files.
 
-Production deployment, API availability and real-clock browser checks are verified separately after publication. Runtime-log access was previously unavailable through the connected Vercel account (403); HTTP/console evidence does not certify an absence of server-side log errors.
+## Production verification
+
+Feature commit `8c924c1` passed GitHub CI and reached Vercel READY on the existing production alias. All 24 production HTTP checks passed. The delivered context asset is 143,212 bytes and its SHA-256 matches the corrected UTF-8/LF geometry receipt. The initial Windows working file had CRLF while Git/production had LF; parsed coordinates were identical. The generator now explicitly writes LF and tests normalize that convention. The temporary `/qa-map` review route returns 404 on production.
+
+The real-clock production browser confirmed 35 individual markers, zero dam clusters, the original 101.76% and 109.62% reports with `+`, and selected-dam focus in 3D. The five enabled observation legends and original HII clusters remain usable together. At 390x844, document client/scroll widths were both 375px; browser console warnings/errors and map error banners were zero. Screenshots are under `artifacts/context-dams-production-*`.
+
+The [production receipt](map-context-dams-production-2026-11-01.json) records these checks separately from source state. At that capture, RID/daily/hourly were FRESH, TMD DELAYED, and HII/GISTDA retrieval FRESH with unknown observation age. The latest complete GISTDA three-day response had zero returned features, which does not establish no flooding or an all-clear. This release did not modify ingestion or those source clocks.
+
+Runtime-log access was previously unavailable through the connected Vercel account (403); HTTP/console evidence does not certify an absence of server-side log errors.

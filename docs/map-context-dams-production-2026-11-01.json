@@ -1,0 +1,231 @@
+{
+  "reviewed_at": "2026-11-01T09:57:17.988227+00:00",
+  "review_timezone": "Asia/Bangkok",
+  "feature_commit": "8c924c1cd284df33181125ae7e1f357040aabea7",
+  "repository": "tordave1150/hazard-intelligence",
+  "deployment": {
+    "id": "dpl_9jaAy23iTEtk5vddMfkBfYH27dUJ",
+    "project_id": "prj_I6Q0vhmvGtCvmuPjjjwWlm8zl0Ou",
+    "url": "https://hazard-intelligence-lime.vercel.app/",
+    "target": "production",
+    "state": "READY",
+    "build_duration_seconds": 35.658
+  },
+  "ci": {
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41294541556",
+    "conclusion": "success"
+  },
+  "checks": {
+    "python_passed": 267,
+    "web_passed": 76,
+    "local_http_passed": 24,
+    "production_http_passed": 24,
+    "typecheck": "passed",
+    "production_build": "passed",
+    "qa_route_http_status": 404,
+    "context_asset_hash_matches": true
+  },
+  "local_theme_review": {
+    "national": [
+      {
+        "clusters": 0,
+        "markers": 35,
+        "styles": {
+          "UNKNOWN": 35
+        },
+        "theme": "dawn"
+      },
+      {
+        "clusters": 0,
+        "markers": 35,
+        "styles": {
+          "UNKNOWN": 35
+        },
+        "theme": "day"
+      },
+      {
+        "clusters": 0,
+        "markers": 35,
+        "styles": {
+          "FRESH": 35
+        },
+        "theme": "dusk"
+      },
+      {
+        "clusters": 0,
+        "markers": 35,
+        "styles": {
+          "FRESH": 35
+        },
+        "theme": "night"
+      }
+    ],
+    "province": [
+      {
+        "clusters": 0,
+        "markers": 2,
+        "theme": "dawn"
+      },
+      {
+        "clusters": 0,
+        "markers": 2,
+        "theme": "day"
+      },
+      {
+        "clusters": 0,
+        "markers": 2,
+        "theme": "dusk"
+      },
+      {
+        "clusters": 0,
+        "markers": 2,
+        "theme": "night"
+      }
+    ],
+    "mobile": [
+      {
+        "markers": 35,
+        "scrollWidth": 375,
+        "theme": "dawn",
+        "width": 375
+      },
+      {
+        "markers": 35,
+        "scrollWidth": 375,
+        "theme": "day",
+        "width": 375
+      },
+      {
+        "markers": 35,
+        "scrollWidth": 375,
+        "theme": "dusk",
+        "width": 375
+      },
+      {
+        "markers": 35,
+        "scrollWidth": 375,
+        "theme": "night",
+        "width": 375
+      }
+    ]
+  },
+  "production_browser": {
+    "real_clock": true,
+    "national_dam_markers": 35,
+    "dam_clusters": 0,
+    "over_normal_percentages": [
+      101.76,
+      109.62
+    ],
+    "selected_3d_dam_percent": 109.62,
+    "selected_3d_normal_capacity_mcm": 163.75,
+    "selected_3d_maximum_capacity_mcm": 205.85,
+    "mobile_viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "document_client_width": 375,
+    "document_scroll_width": 375,
+    "all_five_legend_items": true,
+    "map_error_banners": 0,
+    "console_errors": 0,
+    "console_warnings": 0,
+    "temporary_viewport_restored": true
+  },
+  "data_and_asset_receipt": {
+    "asset_http": 200,
+    "asset_bytes": 143212,
+    "asset_hash": "64cc939c1ec40555c8163ced2b0f246fa1b309d1b34e71bfa32e9d092077cf24",
+    "asset_hash_matches": true,
+    "source_responses": [
+      {
+        "path": "/api/dams",
+        "http": 200,
+        "freshness": "FRESH",
+        "query_freshness": null,
+        "count": 35,
+        "report_dates": [
+          "2026-11-01"
+        ],
+        "over_normal": [
+          {
+            "dam_id": "RID-DAM-100302",
+            "storage_pct": 101.76,
+            "normal_capacity_mcm": 160,
+            "maximum_capacity_mcm": 190,
+            "storage_volume_mcm": 162.81
+          },
+          {
+            "dam_id": "RID-DAM-100504",
+            "storage_pct": 109.62,
+            "normal_capacity_mcm": 163.75,
+            "maximum_capacity_mcm": 205.85,
+            "storage_volume_mcm": 179.51
+          }
+        ]
+      },
+      {
+        "path": "/api/sources/status",
+        "checked_at": "2026-11-01T09:53:13.429Z",
+        "sources": [
+          {
+            "id": "open_meteo",
+            "freshness": "FRESH",
+            "query_freshness": null
+          },
+          {
+            "id": "rid",
+            "freshness": "FRESH",
+            "query_freshness": null
+          },
+          {
+            "id": "tmd",
+            "freshness": "DELAYED",
+            "query_freshness": null
+          },
+          {
+            "id": "thaiwater",
+            "freshness": "UNKNOWN",
+            "query_freshness": "FRESH"
+          },
+          {
+            "id": "gistda",
+            "freshness": "UNKNOWN",
+            "query_freshness": "FRESH"
+          },
+          {
+            "id": "open_meteo_hourly",
+            "freshness": "FRESH",
+            "query_freshness": null
+          },
+          {
+            "id": "thaiwater_rain",
+            "freshness": "UNKNOWN",
+            "query_freshness": "FRESH"
+          }
+        ]
+      },
+      {
+        "path": "/api/flood-products?view=summary",
+        "http": 200,
+        "freshness": "UNKNOWN",
+        "query_freshness": "FRESH",
+        "count": 0,
+        "fetched_at": "2026-11-01T09:25:32.360848+00:00"
+      },
+      {
+        "path": "/api/gauges?kind=rain&view=summary",
+        "http": 200,
+        "freshness": "UNKNOWN",
+        "query_freshness": "FRESH",
+        "count": 4795,
+        "fetched_at": "2026-11-01T06:51:43.901402Z"
+      }
+    ]
+  },
+  "limitations": [
+    "Existing basemap rivers are generalized by zoom; no complete national named-river inventory is claimed.",
+    "Nearby original dam points can overlap; the complete list and selection zoom remain available.",
+    "Vercel runtime-log inspection was previously forbidden (403); browser/HTTP checks do not certify no server-side log errors."
+  ]
+}

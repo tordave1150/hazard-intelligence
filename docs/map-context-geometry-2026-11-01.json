@@ -1,11 +1,12 @@
 {
   "source": "apps/web/public/data/provinces.geojson",
+  "hash_encoding": "UTF-8 with LF line endings",
   "source_sha256": "a505a4d4b4b30c8c04d17aafb1ca736063cf9568a1eeced3ac9d07ba29382c59",
-  "output_sha256": "e811868ad9b3a9b97a29aa4e19b6af3abe9ca963068574f5ea8a7b33c1984168",
+  "output_sha256": "64cc939c1ec40555c8163ced2b0f246fa1b309d1b34e71bfa32e9d092077cf24",
   "source_provinces": 77,
   "simplification_degrees": 0.008,
   "relative_area_change": 0.0003025598084939189,
-  "output_bytes": 143213,
+  "output_bytes": 143212,
   "role": "Display-only basemap focus; not legal geometry or a membership boundary",
   "attribution": "OpenGISData-Thailand / upstream DOPA; CC BY 4.0; existing boundary notices apply"
 }
