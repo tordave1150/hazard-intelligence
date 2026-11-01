@@ -96,3 +96,5 @@ body,.dashboard{background:var(--paper)}
 .map-actions button{color:var(--ink);border-color:var(--line)}
 .map-actions button:hover{background:var(--accent-soft);color:var(--ink)}
 .map-actions button:focus-visible{outline:2px solid var(--teal);outline-offset:-3px}
+
+.background-controls{margin:0 0 10px}.background-controls>label,.source-overlays>legend{font-size:10px;font-weight:600}.background-controls select{display:block;width:100%;min-width:0;margin:7px 0;padding:7px 5px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font-size:10px}.background-controls p{font-size:9px;line-height:1.5;color:var(--muted)}.source-overlays{border:0;margin:0;padding:8px 0 0;min-width:0}.source-overlays>legend{padding:0}select:disabled,input:disabled{opacity:.55}

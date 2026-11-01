@@ -20,3 +20,5 @@ The seven connected data products are independent. Basin boundaries are context 
 Radar, QPE, nowcasting and a separate river-network dataset remain candidates pending product-specific acceptance. Historical monthly HII archive samples and old 1day GISTDA trials do not set current defaults.
 
 See [current acceptance](source-acceptance.md), [current scope](current-scope.md) and [latest production receipt](province-rain-basin-production-2026-10-30.json). Preserve each agency's attribution and the limits stated in its dated acceptance record.
+
+The [1 November radar/QPE/nowcasting review](radar-source-review-2026-11-01.md) records reachable replacement composite links and unresolved product semantics, time/coverage and reuse terms. It accepts no new production product.

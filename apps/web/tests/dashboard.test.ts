@@ -1,3 +1,5 @@
+import {effectiveBackground,backgroundAvailable} from '../lib/map-layer-state';
+import {orderMapLayers,mapLayerAnchors} from '../lib/map-layer-order';
 import {describe,it,expect,vi} from 'vitest';
 import {dashboardDates,dashboardMode} from '../lib/dashboard-mode';
 import {timeTheme,applyTimeTheme,placeLabelOpacity,riverLineWidth,type TimeTheme,type CountryFocus} from '../lib/map-theme';
@@ -178,5 +180,41 @@ describe('Today hourly intervals',()=>{
     expect(hourlyFreshness([record],Date.parse('2026-10-28T02:00:00Z'))).toBe('FRESH');
     expect(hourlyFreshness([record],Date.parse('2026-10-28T02:00:00Z'),true)).toBe('DELAYED');
     expect(hourlyFreshness([record],Date.parse('2026-10-29T00:00:00+07:00'))).toBe('STALE');
+  });
+});
+
+
+describe('Forecast background availability',()=>{
+  it('resolves exactly one fill and respects Off, Situation and basin scope',()=>{
+    for(const mode of ['situation','daily','hourly'] as const){
+      expect(effectiveBackground(mode,false,'administrative')).toBe('off');
+      expect(effectiveBackground(mode,true,'basin')).toBe('off');
+    }
+    expect(effectiveBackground('situation',true,'administrative')).toBe('off');
+    expect(effectiveBackground('daily',true,'administrative')).toBe('daily');
+    expect(effectiveBackground('hourly',true,'administrative')).toBe('hourly');
+  });
+  it('allows future daily forecasts but never future hourly or basin forecast fills',()=>{
+    expect(backgroundAvailable('daily','2026-11-02','2026-11-01','administrative')).toBe(true);
+    expect(backgroundAvailable('hourly','2026-11-02','2026-11-01','administrative')).toBe(false);
+    expect(backgroundAvailable('hourly','2026-11-01','2026-11-01','administrative')).toBe(true);
+    for(const background of ['daily','hourly'] as const)expect(backgroundAvailable(background,'2026-11-01','2026-11-01','basin')).toBe(false);
+    expect(backgroundAvailable('off','2026-11-02','2026-11-01','basin')).toBe(true);
+  });
+});
+
+describe('Shared native/deck layer order',()=>{
+  it.each([true,false])('keeps forecast below river/place context and observation overlays (basemap=%s)',(withContext)=>{
+    const base=withContext?[{id:'land',type:'fill'},{id:'river',type:'line','source-layer':'waterway'},{id:'place',type:'symbol'}]:[{id:'land',type:'background'}];
+    const ids=[...base.map(l=>l.id),'weather-native-fill','weather-native-line','weather-native-extrusion',mapLayerAnchors.forecast,'gistda-flood-fill','gistda-flood-line','warning-cap-fill','warning-cap-line','gauge-clusters','gauge-cluster-count','gauge-point'];
+    const styleLayers=[...base,...ids.slice(base.length).map(id=>({id,type:'fill'}))];
+    const moveLayer=vi.fn((id:string,before?:string)=>{ids.splice(ids.indexOf(id),1);ids.splice(before?ids.indexOf(before):ids.length,0,id);});
+    orderMapLayers({getStyle:()=>({layers:styleLayers}),moveLayer} as unknown as Parameters<typeof orderMapLayers>[0],new Set(base.map(l=>l.id)));
+    const below=(a:string,b:string)=>expect(ids.indexOf(a)).toBeLessThan(ids.indexOf(b));
+    below('weather-native-extrusion',mapLayerAnchors.forecast);
+    below(mapLayerAnchors.forecast,'gistda-flood-fill');
+    if(withContext){below(mapLayerAnchors.forecast,'river');below('river','place');below('place','gistda-flood-fill');}
+    below('gistda-flood-line',mapLayerAnchors.flood);below('warning-cap-line',mapLayerAnchors.cap);below(mapLayerAnchors.cap,'gauge-point');
+    expect(moveLayer.mock.calls.some(([id])=>id==='land'||id.startsWith('gauge')||id.startsWith('warning')||id.startsWith('gistda'))).toBe(false);
   });
 });

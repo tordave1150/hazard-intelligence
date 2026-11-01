@@ -8,6 +8,7 @@ import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningD
 import {hourlyValue} from '@/lib/hourly';
 import {gaugeName,gaugeValue,gaugeWallTime} from '@/lib/gauges';
 import {damMarkerSvg,damStorageSymbol} from '@/lib/map-dams';
+import {mapLayerAnchors,orderMapLayers} from '@/lib/map-layer-order';
 import {warningColor} from '@/lib/warnings';
 import {floodColor,floodWindowLabel} from '@/lib/floods';
 import {applyTimeTheme,mapPalettes,contextShadeOpacity,type CountryFocus,type TimeTheme} from '@/lib/map-theme';
@@ -77,6 +78,7 @@ export default function MapView(props:Props){
           paint:{'line-color':'#597e7b','line-width':1}},label);
         instance.addLayer({id:'weather-native-extrusion',type:'fill-extrusion',source:'weather-native',layout:{visibility:'none'},
           paint:{'fill-extrusion-color':['get','color'],'fill-extrusion-height':['get','height'],'fill-extrusion-base':0,'fill-extrusion-opacity':.65}});
+        instance.addLayer({id:mapLayerAnchors.forecast,type:'fill',source:'weather-native',filter:['==',['get','id'],'__anchor__'],paint:{'fill-opacity':0}});
         instance.addSource('gistda-flood',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         instance.addLayer({id:'gistda-flood-fill',type:'fill',source:'gistda-flood',layout:{visibility:'none'},
           paint:{'fill-color':['get','color'],'fill-opacity':.17}});
@@ -95,6 +97,7 @@ export default function MapView(props:Props){
       instance.addLayer({id:'gauge-point',type:'circle',source:'thaiwater-gauges',filter:['!', ['has','point_count']],layout:{'circle-sort-key':['case',['get','selected'],1,0]},
         paint:{'circle-color':['case',['==',['get','kind'],'rain'],stationColors.rain,stationColors.water],'circle-radius':['case',['get','selected'],8,6],'circle-stroke-color':['case',['get','selected'],'#55c9bc','#f3f7f8'],
           'circle-stroke-width':['case',['get','selected'],3,1.5]}});
+        orderMapLayers(instance,baseLayerIds.current);
         const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false});
         hoverPopup.current=popup;
         instance.on('mousemove',event=>{
@@ -278,7 +281,7 @@ export default function MapView(props:Props){
     // layer handles 2D, where a flat z=0 mesh cannot be buried below terrain.
     const warningRgb=(f:Feature):[number,number,number,number]=>{const hex=String(f.properties?.color??'#7a8088');return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255];};
     const gaugeHit=(x:number,y:number)=>latest.current.showGauges&&!!map.current?.getLayer('gauge-point')&&!!map.current.queryRenderedFeatures([x,y],{layers:['gauge-point','gauge-clusters']}).length;
-    overlay.current.setProps({layers:props.is3d?[]:[new GeoJsonLayer({id:'weather-geography',data:{type:'FeatureCollection',features} as FeatureCollection,
+    overlay.current.setProps({layers:props.is3d?[]:[new GeoJsonLayer({id:'weather-geography',beforeId:mapLayerAnchors.forecast,data:{type:'FeatureCollection',features} as FeatureCollection,
       pickable:true,filled:props.rainfall||props.geographyMode==='basin',stroked:true,extruded:extrusion,
       getFillColor:(f:Feature)=>props.geographyMode==='basin'?[110,152,157,24]:props.rainfall?metricColor(f.properties?.value??null,props.metric,props.hourly?'hourly':'daily'):[228,236,232,190],
       getLineColor:(f:Feature)=>f.properties?.id===props.area.id?[9,100,109,255]:[94,121,121,170],
@@ -292,11 +295,11 @@ export default function MapView(props:Props){
         const id=object.properties.id;
         latest.current.onSelect(latest.current.geographyMode==='administrative'&&latest.current.area.level==='national'?object.properties.region_id:id);
       }
-    }),new GeoJsonLayer({id:'gistda-flood-polygons',data:floodGeometry,pickable:true,filled:true,stroked:true,
+    }),new GeoJsonLayer({id:'gistda-flood-polygons',beforeId:mapLayerAnchors.flood,data:floodGeometry,pickable:true,filled:true,stroked:true,
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=40;return color;},getLineColor:warningRgb,
       getLineWidth:(f:Feature)=>f.properties?.selected?3:1.8,lineWidthUnits:'pixels',lineWidthMinPixels:1.8,
       onClick:({object,x,y})=>{if(gaugeHit(x,y))return true;if(object)latest.current.onSelectFlood(object.properties.feature_id);return true;}
-    }),new GeoJsonLayer({id:'tmd-cap-polygons',data:warningGeometry,pickable:true,filled:true,stroked:true,
+    }),new GeoJsonLayer({id:'tmd-cap-polygons',beforeId:mapLayerAnchors.cap,data:warningGeometry,pickable:true,filled:true,stroked:true,
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
       getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
       onClick:({object,x,y})=>{if(gaugeHit(x,y))return true;if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}

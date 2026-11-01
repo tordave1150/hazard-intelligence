@@ -16,3 +16,5 @@ Updated 1 November 2026, Asia/Bangkok. This document records the user's current 
 The latest verified running system is described in [the data health release](data-health-area-loading-release-2026-10-29.md) and [the three-day GISTDA release](gistda-three-day-release-2026-10-29.md). Historical evidence and retired instructions are under `archive/` and must not set defaults or define user preferences.
 
 The current province/rain/basin implementation and scheduler recovery are recorded in `province-rain-basin-release-2026-10-30.md`. Routine database verification now covers seven active products.
+
+Forecast background selection and source overlays are independent. Off/daily/today-hourly share an explicit 2D/3D order; basin context has no forecast fill. See [the layer release](map-layers-release-2026-11-01.md). [Radar/QPE/nowcasting candidate review](radar-source-review-2026-11-01.md) is complete for C0 discovery, with no new product accepted or connected.

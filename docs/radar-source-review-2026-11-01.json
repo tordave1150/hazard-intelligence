@@ -1,0 +1,299 @@
+{
+  "review_date": "2026-11-01",
+  "timezone": "Asia/Bangkok",
+  "production_accepted": false,
+  "probe": {
+    "checked_at": "2026-11-01T10:39:23.687812+00:00",
+    "results": [
+      {
+        "url": "https://weather.tmd.go.th/composite/images_composite.list",
+        "status": 200,
+        "content_type": null,
+        "content_length": "1399",
+        "captured_bytes": 1399,
+        "prefix_only": false,
+        "sha256_of_capture": "fa631126f5f19e0271e640740551b9f8f1659ae7ec0000e0fd15b8684e1b5d2a",
+        "artifact": "tmd-c0-probe-0.txt"
+      },
+      {
+        "url": "https://weather.tmd.go.th/composite/data/composite.ascii",
+        "status": 200,
+        "content_type": null,
+        "content_length": "21380415",
+        "captured_bytes": 65536,
+        "prefix_only": true,
+        "sha256_of_capture": "ae571714bda32946800c29bce190837dcf9362e36d34c27e7154568bf87d6b9c",
+        "artifact": "tmd-c0-probe-1.txt"
+      },
+      {
+        "url": "https://weather.tmd.go.th/composite/data/composite.nc",
+        "status": 200,
+        "content_type": "application/x-netcdf",
+        "content_length": "9658896",
+        "captured_bytes": 65536,
+        "prefix_only": true,
+        "sha256_of_capture": "eaca32822fa814165caef4335253aa8ba9561d94255055531814800b8716ad73",
+        "artifact": "tmd-c0-probe-2.txt"
+      },
+      {
+        "url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/south_nowcast.php",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "content_length": null,
+        "captured_bytes": 65536,
+        "prefix_only": true,
+        "sha256_of_capture": "26541df1bd98259e9409b54dfddbb4fecbb2c79ea81cfcc8b4f9436fbfb159dd",
+        "artifact": "tmd-c0-probe-3.html"
+      },
+      {
+        "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/bkk/bangkok.php",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "content_length": null,
+        "captured_bytes": 93886,
+        "prefix_only": false,
+        "sha256_of_capture": "66de1fb0bf6606aea7c84049d9197c2e96000d41e5c83867f390d850267eaeda",
+        "artifact": "tmd-c0-probe-4.html"
+      },
+      {
+        "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/kkn/khon_kaen.php",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "content_length": null,
+        "captured_bytes": 22826,
+        "prefix_only": false,
+        "sha256_of_capture": "3d95473ee55249fa01179df3090c9dcf890abe67b49b0e05ad9e48f06b2d296a",
+        "artifact": "tmd-c0-probe-5.html"
+      }
+    ]
+  },
+  "extra": {
+    "checked_at": "2026-11-01T10:40:48.287714+00:00",
+    "results": [
+      {
+        "url": "https://weather.tmd.go.th/composite/images/zr/24.png",
+        "status": 200,
+        "bytes": 115245,
+        "complete": true,
+        "content_type": "image/png",
+        "sha256": "4b58ae79fbb486fc3db3295ed99a72e1e5b7d37cbd68893c5a7a0de61b0eb963",
+        "png": {
+          "width": 1800,
+          "height": 2644,
+          "bit_depth": 8,
+          "color_type": 6
+        }
+      },
+      {
+        "url": "https://weather.tmd.go.th/composite/radar.sharing.latest",
+        "status": 200,
+        "bytes": 16,
+        "complete": true,
+        "content_type": null,
+        "sha256": "94d93558f3c40c85f6ec7b1274866859f677e015847319a211c2f663320d60df",
+        "text": "2026-11-01 10:15"
+      },
+      {
+        "url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/leaflet_layers/layers.json",
+        "status": 200,
+        "bytes": 6075,
+        "complete": true,
+        "content_type": "application/json",
+        "sha256": "11702a77b3be6cd19bd070b3613c8abf3776fa807f1c7ca6702178e3cdb013bf",
+        "manifest_summary": {
+          "generated_at": "2026-11-01T17:39:45",
+          "base_time": "2026-11-01T09:45:00",
+          "now_index": 4,
+          "total_frames": 18,
+          "obs_count": 5,
+          "fc_count": 13,
+          "first_frame": {
+            "name": "202611010845.png",
+            "dt": "2026-11-01T08:45:00",
+            "kind": "observ",
+            "is_now": false,
+            "bounds": [
+              [
+                4.276425443867133,
+                96.15530793124935
+              ],
+              [
+                22.108846334768337,
+                107.08729610836926
+              ]
+            ]
+          },
+          "last_frame": {
+            "name": "202611011300.png",
+            "dt": "2026-11-01T13:00:00",
+            "kind": "swirls",
+            "is_now": false,
+            "bounds": [
+              [
+                4.276425361633301,
+                96.15531158447266
+              ],
+              [
+                22.10884666442871,
+                107.08729553222656
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/bkk/bangkok_frames/manifest.json",
+        "status": 200,
+        "bytes": 3566,
+        "complete": true,
+        "content_type": "application/json",
+        "sha256": "eb6c37c231dda258ee907e402db27c570df339681479b300078d364214bab08b",
+        "manifest_summary": {
+          "generated_at": "2026-06-24T11:11:26Z",
+          "field": "precipitationIntensity",
+          "zoom": 8,
+          "obs_interval_min": 15,
+          "fcst_interval_min": 10,
+          "now_index": 4,
+          "obs_count": 5,
+          "fcst_count": 18,
+          "total_frames": 23,
+          "bounds": {
+            "north": 15.284185114076433,
+            "south": 11.178401873711781,
+            "west": 98.4375,
+            "east": 102.65625
+          },
+          "first_frame": {
+            "index": 0,
+            "ts": "2026-06-24T10:00:00Z",
+            "kind": "OBS",
+            "file": "bkk_20260624_1000_OBS.png"
+          },
+          "last_frame": {
+            "index": 22,
+            "ts": "2026-06-24T14:00:00Z",
+            "kind": "FCST",
+            "file": "bkk_20260624_1400_FCST.png"
+          }
+        }
+      }
+    ]
+  },
+  "netcdf_header": {
+    "numrecs": 1,
+    "dimensions": [
+      [
+        "latitude",
+        1851
+      ],
+      [
+        "longitude",
+        1301
+      ],
+      [
+        "time",
+        0
+      ]
+    ],
+    "attributes": {
+      "Conventions": "COARDS",
+      "History": "created by wgrib2",
+      "GRIB2_grid_template": [
+        0
+      ]
+    },
+    "variables": [
+      {
+        "name": "latitude",
+        "dimensions": [
+          0
+        ],
+        "attributes": {
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        "type": 6,
+        "size": 14808,
+        "offset": 1068
+      },
+      {
+        "name": "longitude",
+        "dimensions": [
+          1
+        ],
+        "attributes": {
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        "type": 6,
+        "size": 10408,
+        "offset": 15876
+      },
+      {
+        "name": "time",
+        "dimensions": [
+          2
+        ],
+        "attributes": {
+          "units": "seconds since 1970-01-01 00:00:00.0 0:00",
+          "long_name": "verification time generated by wgrib2 function verftime()",
+          "reference_time": [
+            1793528100.0
+          ],
+          "reference_time_type": [
+            1
+          ],
+          "reference_date": "2026.11.01 10:15:00 UTC",
+          "reference_time_description": "analyses, reference date is fixed",
+          "time_step_setting": "auto",
+          "time_step": [
+            0.0
+          ]
+        },
+        "type": 6,
+        "size": 8,
+        "offset": 26284
+      },
+      {
+        "name": "var0_1_203_surface",
+        "dimensions": [
+          2,
+          0,
+          1
+        ],
+        "attributes": {
+          "_FillValue": [
+            9.999000260554009e+20
+          ],
+          "short_name": "var0_1_203_surface",
+          "long_name": "desc",
+          "level": "surface",
+          "units": "unit"
+        },
+        "type": 5,
+        "size": 9632604,
+        "offset": 26292
+      }
+    ],
+    "header_bytes": 1068
+  },
+  "netcdf_sample_coordinate_ranges": {
+    "latitude": [
+      4,
+      22.5
+    ],
+    "longitude": [
+      95,
+      108
+    ]
+  },
+  "findings": [
+    "Grid variable units/name are placeholders; accumulation period unverified.",
+    "ASCII and NetCDF alignment requires verification.",
+    "Image alpha does not establish no-data/no-echo semantics.",
+    "Southern nowcast timestamps have no offsets and sampled lead reaches 195 minutes.",
+    "Bangkok NEXTGEN manifest dated 2026-06-24 is not current.",
+    "Resource-specific reuse/automation terms and quotas not established."
+  ]
+}

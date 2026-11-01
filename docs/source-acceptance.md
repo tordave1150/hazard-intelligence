@@ -18,3 +18,5 @@ Keep each agency's attribution and semantics. Country scope means collecting the
 Current GISTDA behavior is specified in [the three-day release](gistda-three-day-release-2026-10-29.md). Current HII evidence is in [the national water-level release](hii-national-release-2026-10-30.md) and [rain/province/basin release](province-rain-basin-release-2026-10-30.md). The earlier [access review](thaiwater-access-review-2026-10-29.md) records discovery, not current connection status. Prior discovery and local trial records are not operating instructions or persistent user preferences.
 
 The connected seven products remain independent. Data receipt, deployment success, provider observation age and retrieval freshness are separate facts. A complete previous-day hourly generation is not a current Today forecast. Radar, QPE and nowcasting remain unconnected pending source-specific acceptance.
+
+The [1 November radar/QPE/nowcasting review](radar-source-review-2026-11-01.md) records reachable replacement composite links and unresolved product semantics, time/coverage and reuse terms. It accepts no new production product.
