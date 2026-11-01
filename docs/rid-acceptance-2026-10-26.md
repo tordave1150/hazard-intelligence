@@ -32,7 +32,7 @@ All 35 known identities and one report date are required before atomic publicati
 
 Freshness considers report date and retrieval separately: a report for today's Bangkok date retrieved within 30 hours is FRESH; a report at most two calendar days old retrieved within 48 hours is DELAYED; older reports are STALE. Future/invalid time is UNKNOWN, no records UNAVAILABLE. Refetching an old report cannot make it FRESH.
 
-The layer starts off, clusters counts by project region in the national overview, and shows individual dam points when drilled into a region or zoomed in. Groups are navigation controls, not measurements at their displayed center. Filtering by administrative area means the dam point lies in that area; it does not mean its reservoir or downstream influence is confined there. Forecast-date changes leave the RID report date unchanged.
+The layer starts off. The [1 November map update](map-context-dams-release-2026-11-01.md) supersedes the original regional-count-circle navigation: all 35 dam points are individual markers at their published coordinates, with the full list retained for nearby/overlapping points. Storage rings describe percent of normal capacity; missing, zero and values above 100% remain distinct. Filtering by administrative area means the dam point lies in that area; it does not mean its reservoir or downstream influence is confined there. Forecast-date changes leave the RID report date unchanged.
 
 ## Verification
 

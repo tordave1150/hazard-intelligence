@@ -11,6 +11,7 @@ Updated 1 November 2026, Asia/Bangkok. This document records the user's current 
 - TMD checks twice an hour and collects after one hour; hourly weather checks hourly and collects after four hours or a new Bangkok day. Recent successful products skip provider requests. GitHub scheduling remains best-effort; deadlines and actual source freshness stay visible.
 - Daily and hourly weather cover 77 province plus 928 district points. RID and TMD retain their own accepted source coverage; country scope does not fabricate absent observations.
 - Enabled observation overlays have a shared legend and expandable source clocks above the canvas. HII cluster labels count water and rain product records separately; they are not unique-station totals or danger levels. See `map-legibility-release-2026-11-01.md` for the usability review.
+- Thailand focus geometry and existing basemap rivers are display-only context. All 35 RID dams have individual original-point markers and normal-storage-percentage rings; nearby points remain reachable through the list. See `map-context-dams-release-2026-11-01.md` and `improvement-status-2026-11-01.md`. No new hydrological metric or radar source is implied.
 
 The latest verified running system is described in [the data health release](data-health-area-loading-release-2026-10-29.md) and [the three-day GISTDA release](gistda-three-day-release-2026-10-29.md). Historical evidence and retired instructions are under `archive/` and must not set defaults or define user preferences.
 

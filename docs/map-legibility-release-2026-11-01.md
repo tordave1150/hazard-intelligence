@@ -33,4 +33,4 @@ Vercel runtime-log inspection was unavailable: the connector returned 403 for th
 
 ## Follow-up scope
 
-Basemap contrast, river styling and a dam-icon prototype are a later usability increment. Radar/QPE/nowcasting require source-specific acceptance before ingestion or display. This release adds no unverified source or hydrological metric.
+Basemap contrast, existing river styling and dam symbols are covered by the subsequent [context/dam increment](map-context-dams-release-2026-11-01.md). Radar/QPE/nowcasting still require source-specific acceptance before ingestion or display. See [implementation status](improvement-status-2026-11-01.md) for remaining work. This release adds no unverified source or hydrological metric.

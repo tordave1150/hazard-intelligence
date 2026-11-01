@@ -1,6 +1,8 @@
 import {describe,it,expect,vi} from 'vitest';
 import {dashboardDates,dashboardMode} from '../lib/dashboard-mode';
-import {timeTheme,applyTimeTheme} from '../lib/map-theme';
+import {timeTheme,applyTimeTheme,placeLabelOpacity,riverLineWidth,type TimeTheme,type CountryFocus} from '../lib/map-theme';
+import {createExpression} from '@maplibre/maplibre-gl-style-spec';
+import {damStorageSymbol,damMarkerSvg} from '../lib/map-dams';
 import {remainingHours,hourlyFreshness,hourlyValue} from '../lib/hourly';
 import {metricColor,metricUnit} from '../lib/semantics';
 import type {HourlyForecast} from '../lib/types';
@@ -123,6 +125,42 @@ describe('Bangkok calendar and mode',()=>{
     expect(paint.mock.calls.map(call=>call[0])).toEqual(['land','water']);
   });
 });
+describe('Basemap context preserves scientific layers',()=>{
+  const country:CountryFocus={type:'Feature',properties:{role:'country'},geometry:{type:'Polygon',coordinates:[[[97,5],[106,5],[106,21],[97,21],[97,5]]]}};
+  it.each(['dawn','day','dusk','night'] as TimeTheme[])('changes captured base layers only in %s',theme=>{
+    const paint=vi.fn(),base=new Set(['waterway','city','road']);
+    const style={layers:[{id:'waterway',type:'line','source-layer':'waterway'},
+      {id:'city',type:'symbol','source-layer':'place',layout:{'text-field':['get','name'],'icon-image':'point'}},
+      {id:'road',type:'line','source-layer':'transportation'},
+      {id:'weather-native-fill',type:'fill'},{id:'gistda-flood-fill',type:'fill'},
+      {id:'warning-cap-line',type:'line'},{id:'gauge-point',type:'circle'}]};
+    const map={getStyle:()=>style,setPaintProperty:paint} as unknown as Parameters<typeof applyTimeTheme>[0];
+    applyTimeTheme(map,base,theme,country);
+    expect(paint.mock.calls.every(([id])=>base.has(id))).toBe(true);
+    expect(paint).toHaveBeenCalledWith('waterway','line-width',riverLineWidth);
+    expect(paint).toHaveBeenCalledWith('city','text-opacity',placeLabelOpacity(country));
+    expect(createExpression(placeLabelOpacity(country)).result).toBe('success');
+  });
+  it('emphasizes source-class rivers without inventing stream order or small low-zoom waterways',()=>{
+    const compiled=createExpression(riverLineWidth);if(compiled.result!=='success')throw Error();
+    expect(compiled.value.evaluate({zoom:4},{type:2,properties:{class:'river'}})).toBeGreaterThan(1);
+    expect(compiled.value.evaluate({zoom:4},{type:2,properties:{class:'stream'}})).toBe(0);
+    expect(compiled.value.evaluate({zoom:10},{type:2,properties:{class:'stream'}})).toBeGreaterThan(0);
+  });
+});
+describe('Dam rings describe normal storage capacity',()=>{
+  it('distinguishes missing percent from a reported zero',()=>{
+    expect(damStorageSymbol(null)).toMatchObject({percent:null,fraction:null,overNormal:false});
+    expect(damStorageSymbol(0)).toMatchObject({percent:0,fraction:0,overNormal:false});
+    expect(damMarkerSvg(null)).toContain('>?</text>');expect(damMarkerSvg(0)).not.toContain('>?</text>');
+  });
+  it('bounds only the ring while preserving an above-normal reported percentage',()=>{
+    expect(damStorageSymbol(123.45)).toEqual({percent:123.45,fraction:1,overNormal:true,label:'123.45% of normal storage capacity'});
+    expect(damMarkerSvg(123.45)).toContain('>+</text>');
+    expect(damStorageSymbol(50).fraction).toBe(.5);
+  });
+});
+
 describe('Today hourly intervals',()=>{
   const start=Date.parse('2026-10-28T00:00:00+07:00');
   const record={forecast_date:'2026-10-28',fetched_at:'2026-10-28T01:00:00Z',valid_hours:Array.from({length:24},(_,i)=>({

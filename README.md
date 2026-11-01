@@ -1,5 +1,7 @@
 # Thailand Hazard Intelligence
 
+Map context/dam update (1 November 2026): [Thailand focus, existing river styling and individual storage-ring dam symbols](docs/map-context-dams-release-2026-11-01.md). See [proposal implementation status](docs/improvement-status-2026-11-01.md) for completed and pending parts.
+
 Map usability update (1 November 2026): [separate water/rain cluster counts, shared overlay legend and wrapping mobile source notes](docs/map-legibility-release-2026-11-01.md).
 
 Latest data release (30 October 2026): [national HII water and rain, 77-province comparison, 22-basin context and scheduler recovery](docs/province-rain-basin-release-2026-10-30.md). Seven independent products are connected; retrieval freshness and source observation time remain separate.

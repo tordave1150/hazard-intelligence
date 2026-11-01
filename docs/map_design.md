@@ -2,6 +2,8 @@
 
 The operational route is `/`. Source registry and methodology are supporting routes, not separate operational dashboards.
 
+- [Thailand context and dam symbols](map-context-dams-release-2026-11-01.md): owned non-selectable focus mask/outline below products; existing river classes styled by zoom; captured basemap place labels fade outside Thailand at low zoom. Canonical boundaries and data-layer colors are unchanged. RID uses individual original points with normal-storage rings and list/keyboard access for overlapping markers.
+
 - The enabled observation layers have a flowing legend above the canvas, with expandable source dates/qualifications. Long notes wrap on mobile rather than stacking at fixed pixel offsets over the map. Forecast display scales remain separate.
 - HII cluster labels count water-level and rain product records separately (`น้ำ` / `ฝน`). Co-located products do not become a single unique-station count. Cluster colors identify product type, not danger; source observation age remains unknown. Selecting a cluster zooms; selecting a station preserves the existing point/history flow.
 

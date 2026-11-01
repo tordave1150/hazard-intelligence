@@ -1,0 +1,144 @@
+{
+  "review_date": "2026-11-01",
+  "source": "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+  "style_url": "https://tiles.openfreemap.org/styles/positron",
+  "tilejson_url": "https://tiles.openfreemap.org/planet",
+  "reviewed_tileset": "https://tiles.openfreemap.org/planet/20261025_080012_pt/{z}/{x}/{y}.pbf",
+  "layers": [
+    "waterway",
+    "waterway_line_label"
+  ],
+  "names_min_zoom": 10,
+  "interpretation": "Existing generalized basemap river context, not a complete national river inventory or stream-order/flow model. No new river dataset or station-to-river linkage.",
+  "samples": [
+    {
+      "z": 4,
+      "x": 12,
+      "y": 7,
+      "bytes": 473196,
+      "waterway_count": 10,
+      "waterway_classes": {
+        "river": 10
+      },
+      "waterway_samples": [
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        }
+      ],
+      "water_polygon_count": 8
+    },
+    {
+      "z": 5,
+      "x": 24,
+      "y": 14,
+      "bytes": 311162,
+      "waterway_count": 5,
+      "waterway_classes": {
+        "river": 5
+      },
+      "waterway_samples": [
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        }
+      ],
+      "water_polygon_count": 4
+    },
+    {
+      "z": 5,
+      "x": 25,
+      "y": 14,
+      "bytes": 331656,
+      "waterway_count": 3,
+      "waterway_classes": {
+        "river": 3
+      },
+      "waterway_samples": [
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        }
+      ],
+      "water_polygon_count": 4
+    },
+    {
+      "z": 5,
+      "x": 24,
+      "y": 15,
+      "bytes": 208730,
+      "waterway_count": 0,
+      "waterway_classes": {},
+      "waterway_samples": [],
+      "water_polygon_count": 2
+    },
+    {
+      "z": 5,
+      "x": 25,
+      "y": 15,
+      "bytes": 238079,
+      "waterway_count": 3,
+      "waterway_classes": {
+        "river": 3
+      },
+      "waterway_samples": [
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        },
+        {
+          "class": "river"
+        }
+      ],
+      "water_polygon_count": 1
+    },
+    {
+      "z": 8,
+      "x": 199,
+      "y": 114,
+      "bytes": 112301,
+      "waterway_count": 3,
+      "waterway_classes": {
+        "river": 3
+      },
+      "waterway_samples": [
+        {
+          "name:nonlatin": "แม่น้ำยม",
+          "class": "river",
+          "name:latin": "Yom River",
+          "name": "แม่น้ำยม"
+        },
+        {
+          "name:nonlatin": "แม่น้ำน่าน",
+          "class": "river",
+          "name:latin": "Nan River",
+          "name": "แม่น้ำน่าน"
+        },
+        {
+          "name:nonlatin": "แม่น้ำอิง",
+          "name": "แม่น้ำอิง",
+          "class": "river",
+          "name:latin": "Ing River"
+        }
+      ],
+      "water_polygon_count": 8
+    }
+  ]
+}

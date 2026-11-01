@@ -7,10 +7,10 @@ import type {Feature,FeatureCollection,Geometry} from 'geojson';
 import type {Area,DamObservation,FloodFeature,Forecast,Freshness,Metric,WarningDisplay,HourlyForecast,GaugeStation,RainStation} from '@/lib/types';
 import {hourlyValue} from '@/lib/hourly';
 import {gaugeName,gaugeValue,gaugeWallTime} from '@/lib/gauges';
-import {damBasinId} from '@/lib/dams';
+import {damMarkerSvg,damStorageSymbol} from '@/lib/map-dams';
 import {warningColor} from '@/lib/warnings';
 import {floodColor,floodWindowLabel} from '@/lib/floods';
-import {applyTimeTheme,type TimeTheme} from '@/lib/map-theme';
+import {applyTimeTheme,mapPalettes,contextShadeOpacity,type CountryFocus,type TimeTheme} from '@/lib/map-theme';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {stationColors,stationClusterProperties,stationClusterLabel,stationClusterColor,stationClusterSummary} from '@/lib/map-stations';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
@@ -30,6 +30,7 @@ export default function MapView(props:Props){
   const latest=useRef(props);latest.current=props;
   const [ready,setReady]=useState(false),[error,setError]=useState(''),[baseError,setBaseError]=useState(false);
   const [geometry,setGeometry]=useState<FeatureCollection>({type:'FeatureCollection',features:[]});
+  const [countryContext,setCountryContext]=useState<FeatureCollection|null>(null),[contextError,setContextError]=useState(false);
   const warningGeometry=useMemo<FeatureCollection>(()=>({type:'FeatureCollection',features:props.warnings.map(row=>({
     type:'Feature',geometry:row.geometry!,properties:{source_id:'tmd',warning_id:row.warning_id,headline:row.headline,
       state:row.display_state,archived:row.archived,color:warningColor(row),severity:row.agency_severity,issued_at:row.issued_at,expires_at:row.expires_at}
@@ -57,6 +58,12 @@ export default function MapView(props:Props){
       instance.once('load',()=>{
         clearTimeout(fallback);
         baseLayerIds.current=new Set(instance.getStyle().layers.map(layer=>layer.id));
+        const contextBefore=instance.getStyle().layers.find(layer=>layer.type==='symbol')?.id;
+        instance.addSource('thailand-context',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        instance.addLayer({id:'thailand-context-shade',type:'fill',source:'thailand-context',filter:['==',['get','role'],'outside'],
+          paint:{'fill-color':'#8b9e9e','fill-opacity':.28}},contextBefore);
+        instance.addLayer({id:'thailand-context-outline',type:'line',source:'thailand-context',filter:['==',['get','role'],'country'],
+          paint:{'line-color':'#527e74','line-width':['interpolate',['linear'],['zoom'],3,1,7,1.6,12,2],'line-opacity':.85}},contextBefore);
         const deck=new MapboxOverlay({interleaved:true,layers:[]});
         overlay.current=deck;
         instance.addControl(deck);
@@ -153,9 +160,22 @@ export default function MapView(props:Props){
     } catch {setError('WebGL is unavailable on this device. Area search, navigation and forecasts remain available.');}
   },[]);
   useEffect(()=>{
+    const controller=new AbortController();
+    fetch('/data/thailand-context.geojson',{signal:controller.signal}).then(r=>{if(!r.ok)throw Error();return r.json();})
+      .then(data=>{setCountryContext(data);setContextError(false);}).catch(error=>{if(error.name!=='AbortError')setContextError(true);});
+    return()=>controller.abort();
+  },[]);
+  useEffect(()=>{
     const instance=map.current;if(!ready||!instance)return;
-    applyTimeTheme(instance,baseLayerIds.current,props.theme);
-  },[ready,props.theme]);
+    const country=countryContext?.features.find(feature=>feature.properties?.role==='country') as CountryFocus|undefined;
+    applyTimeTheme(instance,baseLayerIds.current,props.theme,country);
+    instance.setPaintProperty('thailand-context-shade','fill-color',mapPalettes[props.theme].outside);
+    instance.setPaintProperty('thailand-context-shade','fill-opacity',contextShadeOpacity[props.theme]);
+    instance.setPaintProperty('thailand-context-outline','line-color',mapPalettes[props.theme].focus);
+  },[ready,props.theme,countryContext]);
+  useEffect(()=>{
+    if(ready&&countryContext)(map.current?.getSource('thailand-context') as maplibregl.GeoJSONSource|undefined)?.setData(countryContext);
+  },[ready,countryContext]);
   useEffect(()=>{
     const controller=new AbortController();
     setGeometry({type:'FeatureCollection',features:[]});
@@ -173,9 +193,11 @@ export default function MapView(props:Props){
     let markers:maplibregl.Marker[]=[];
     const makeDamMarker=(dam:DamObservation)=>{
       const button=document.createElement('button');
-      button.type='button';button.className='dam-marker';button.textContent='◆';
-      button.dataset.stale=String(!['FRESH','DELAYED'].includes(props.damFreshness));
-      button.setAttribute('aria-label',`${dam.name_th}, RID report ${dam.report_date}, ${dam.storage_pct===null?'percentage unavailable':dam.storage_pct.toFixed(2)+'% of normal capacity'}`);
+      const symbol=damStorageSymbol(dam.storage_pct);
+      button.type='button';button.className='dam-marker';button.innerHTML=damMarkerSvg(dam.storage_pct);
+      button.dataset.freshness=props.damFreshness;button.dataset.percentUnknown=String(symbol.percent===null);
+      button.setAttribute('aria-label',`${dam.name_th}, RID report ${dam.report_date}, ${symbol.label}, ${props.damFreshness}`);
+      button.title=`${dam.name_th} · ${symbol.label} · ${props.damFreshness}`;
       button.dataset.damId=dam.dam_id;
       button.setAttribute('aria-pressed',String(latest.current.selectedDam===dam.dam_id));
       const show=()=>{hoverPopup.current?.setLngLat([dam.point.lon,dam.point.lat]).setText(`${dam.name_th} · RID daily report ${dam.report_date} · ${dam.storage_pct===null?'No percentage':dam.storage_pct.toFixed(2)+'% of normal capacity'}`).addTo(map.current!);};
@@ -184,32 +206,26 @@ export default function MapView(props:Props){
       button.addEventListener('click',event=>{event.stopPropagation();hoverPopup.current?.remove();latest.current.onSelectDam(dam.dam_id);});
       return new maplibregl.Marker({element:button,anchor:'center'}).setLngLat([dam.point.lon,dam.point.lat]).addTo(instance);
     };
-    const draw=()=>{
-      markers.forEach(marker=>marker.remove());
-      if(props.area.level==='national'&&instance.getZoom()<6){
-        const groups=new Map<string,DamObservation[]>();
-        for(const dam of props.dams){const group=props.geographyMode==='basin'?damBasinId(dam.dam_id):dam.region_id;if(group)groups.set(group,[...(groups.get(group)??[]),dam]);}
-        markers=[...groups].map(([region,rows])=>{
-          if(rows.length===1)return makeDamMarker(rows[0]);
-          const name=props.areas.find(a=>a.id===region)?.name??region;
-          const center:[number,number]=[rows.reduce((sum,d)=>sum+d.point.lon,0)/rows.length,rows.reduce((sum,d)=>sum+d.point.lat,0)/rows.length];
-          const button=document.createElement('button');button.type='button';button.className='dam-marker dam-cluster';button.textContent=String(rows.length);
-          button.dataset.stale=String(!['FRESH','DELAYED'].includes(props.damFreshness));
-          button.setAttribute('aria-label',`Explore ${rows.length} RID reservoirs in ${name}`);
-          button.title=`${rows.length} RID reservoir reports · ${name}`;
-          button.addEventListener('click',event=>{event.stopPropagation();hoverPopup.current?.remove();latest.current.onSelect(region);});
-          return new maplibregl.Marker({element:button,anchor:'center'}).setLngLat(center).addTo(instance);
-        });
-      }else markers=props.dams.map(makeDamMarker);
-    };
-    draw();instance.on('zoomend',draw);
-    return()=>{instance.off('zoomend',draw);hoverPopup.current?.remove();markers.forEach(marker=>marker.remove());};
-  },[ready,props.dams,props.showDams,props.damFreshness,props.area.level,props.areas,props.geographyMode]);
+    markers=props.dams.map(makeDamMarker);
+    const sizeMarkers=()=>{for(const marker of markers)marker.getElement().dataset.scale=instance.getZoom()<6?'national':'local';};
+    sizeMarkers();instance.on('zoomend',sizeMarkers);
+    return()=>{instance.off('zoomend',sizeMarkers);hoverPopup.current?.remove();markers.forEach(marker=>marker.remove());};
+  },[ready,props.dams,props.showDams,props.damFreshness]);
   useEffect(()=>{
     container.current?.querySelectorAll<HTMLButtonElement>('[data-dam-id]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.damId===props.selectedDam)));
   },[props.selectedDam,props.dams,props.showDams,ready]);
+  const selectedDamPoint=props.dams.find(dam=>dam.dam_id===props.selectedDam)?.point;
+  useEffect(()=>{
+    if(ready&&props.showDams&&selectedDamPoint)map.current?.easeTo({center:[selectedDamPoint.lon,selectedDamPoint.lat],zoom:Math.max(map.current.getZoom(),9),duration:650});
+  },[ready,props.showDams,props.selectedDam,selectedDamPoint?.lon,selectedDamPoint?.lat]);
   useEffect(()=>{
     if(!ready||!map.current)return;
+    const dam=latest.current.showDams?latest.current.dams.find(row=>row.dam_id===latest.current.selectedDam):undefined;
+    if(dam){
+      map.current.easeTo({center:[dam.point.lon,dam.point.lat],zoom:Math.max(map.current.getZoom(),9),duration:650,
+        pitch:props.is3d?52:0,bearing:props.is3d?-12:0});
+      return;
+    }
     map.current.fitBounds(props.area.bbox,{padding:props.area.level==='national'?35:55,maxZoom:props.area.level==='district'?11:9,duration:650,
       pitch:props.is3d?52:0,bearing:props.is3d?-12:0});
   },[props.area.id,props.is3d,ready]);
@@ -290,7 +306,7 @@ export default function MapView(props:Props){
     <div ref={container} className="map-canvas"/>
     <div className="map-context"><span className="map-context-icon"><MapIcon size={15}/></span><div><strong>{props.area.level==='national'?(props.geographyMode==='basin'?'Thailand · 22 river basins':'Thailand · national view'):props.area.name}</strong><span>{props.area.level==='national'?(props.geographyMode==='basin'?'Select a basin to explore':'Select a region to explore'):'Select an area for local intelligence'}</span></div></div>
     <div className="map-actions"><button title="Zoom in" aria-label="Zoom in" onClick={()=>map.current?.zoomIn()}><Plus size={18}/></button><button title="Zoom out" aria-label="Zoom out" onClick={()=>map.current?.zoomOut()}><Minus size={18}/></button><button title="Fit selected area" aria-label="Fit selected area" onClick={()=>map.current?.fitBounds(props.area.bbox,{padding:40})}><LocateFixed size={18}/></button></div>
-    {(error||baseError)&&<div className="map-error" role="status">{error||'Basemap connection unavailable · local boundary view'}</div>}
+    {(error||baseError||contextError)&&<div className="map-error" role="status">{error||(baseError?'Basemap connection unavailable · local boundary view':'Thailand focus boundary unavailable · source layers remain independent')}</div>}
     <div className="map-caption">{!props.rainfall?(props.geographyMode==='basin'?'River basin context':'Administrative geography'):props.freshness==='UNAVAILABLE'?'Weather snapshot unavailable':props.freshness==='UNKNOWN'?'Snapshot timing unknown · thematic colors paused':stale?'Stale snapshot · thematic colors paused':'Open-Meteo · model forecast'}<span>{props.is3d?'3D view':'2D view'}</span></div>
   </div>;
 }

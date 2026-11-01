@@ -83,7 +83,11 @@ def test_actual_polygon_geometry_and_ids():
     from shapely.geometry import shape,Point
     root=Path(__file__).resolve().parents[1]
     areas={a['id']:a for a in json.loads((root/'apps/web/data/areas.json').read_text(encoding='utf-8'))+json.loads((root/'apps/web/data/basins.json').read_text(encoding='utf-8'))}
-    files=list((root/'apps/web/public/data').rglob('*.geojson'))
+    # Selectable boundary products have canonical IDs. Display-only focus masks
+    # are independently validated in test_map_context and are never selectable.
+    folder=root/'apps/web/public/data'
+    files=[folder/'regions.geojson',folder/'provinces.geojson',folder/'basins.geojson',
+           *sorted((folder/'districts').glob('*.geojson'))]
     seen=[]
     for f in files:
         for feature in json.loads(f.read_text(encoding='utf-8'))['features']:
