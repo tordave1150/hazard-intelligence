@@ -1,0 +1,62 @@
+{
+  "review_date": "2026-11-01",
+  "timezone": "Asia/Bangkok",
+  "tested_commit": "d23c5ac5c349c9422afe1a4c86ee96873699a83d",
+  "production_url": "https://hazard-intelligence-lime.vercel.app/",
+  "deployment": {
+    "id": "dpl_EoQk7G8juqRwh5zEHhsMyN1jgnKw",
+    "state": "READY",
+    "target": "production",
+    "ready_at": 1793529911111
+  },
+  "ci": {
+    "id": 41298795666,
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41298795666"
+  },
+  "checks": {
+    "web_unit_tests": 80,
+    "python_tests": 267,
+    "local_http_tests": 24,
+    "production_http_tests": 24,
+    "typecheck": "passed",
+    "production_build": "passed",
+    "browser_warnings_errors": []
+  },
+  "browser": {
+    "hourly": "FRESH; 1005 forecast points; 2026-11-01 17:00–18:00 ICT shown; retrieved 16:28 ICT",
+    "off": {
+      "forecast_legend": false,
+      "metric_control_enabled": false,
+      "all_five_source_overlays_preserved": true,
+      "dam_marker_count": 35
+    },
+    "threeD": {
+      "daily_background": true,
+      "all_five_source_overlays_preserved": true,
+      "dam_marker_count": 35
+    },
+    "future_hourly_disabled": true,
+    "basin_forecast_disabled": true,
+    "mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "client_width": 375,
+      "scroll_width": 375,
+      "background_control_accessible": true
+    }
+  },
+  "limits": [
+    "Local hourly full generation unavailable; real hourly values verified in production.",
+    "GISTDA returned zero; no current TMD validity-window polygons. Layer-order unit tests cover native anchors; live zero-result feeds cannot visually exercise every overlap.",
+    "Browser console checked; Vercel server runtime logs not available through the current connector.",
+    "Radar/QPE/nowcasting remain unconnected; C0 acceptance gaps are documented."
+  ],
+  "screenshots": [
+    "artifacts/layers-production-20261101.png",
+    "artifacts/layers-mobile-20261101.png"
+  ]
+}
