@@ -210,6 +210,7 @@ def test_radar_metadata_keeps_images_out_of_the_response():
     response=requests.get(BASE+'/api/radar',timeout=20)
     assert response.status_code==200
     body=response.json()
+    assert body['ingestion_protocol']=='tmd-radar-v1'
     assert body['freshness'] in ['FRESH','DELAYED','STALE','UNKNOWN','UNAVAILABLE']
     if body['feed']:
         feed=body['feed']

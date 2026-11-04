@@ -8,7 +8,7 @@ export const dynamic='force-dynamic';
 export const maxDuration=240;
 export async function GET(request:Request){
   if(new URL(request.url).search)return invalid('Radar uses a national image sequence; no query parameters');
-  return json({...await readRadarSnapshot(),deployment_commit:process.env.VERCEL_GIT_COMMIT_SHA??null});
+  return json({...await readRadarSnapshot(),ingestion_protocol:'tmd-radar-v1',deployment_commit:process.env.VERCEL_GIT_COMMIT_SHA??null});
 }
 export async function POST(request:Request){
   if(process.env.VERCEL_ENV&&process.env.VERCEL_ENV!=='production')return invalid('Ingestion is production-only',403);

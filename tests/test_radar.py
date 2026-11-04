@@ -8,12 +8,30 @@ import mongomock
 import pytest
 from pipelines.radar.client import parse_list,validate_png,capture,BASE
 from pipelines.radar.publication import RadarPublisher
+from pipelines.radar.run import wait_for_receiver
 from scripts.mongo_admin import verify_database
 
 PNG=(Path(__file__).parent/'fixtures/radar/synthetic-transparent.png').read_bytes()
 NOW=datetime(2026,11,4,12,45,tzinfo=timezone.utc).timestamp()
 LIST='\n'.join(f'background_THA.png "2026-11-04 12:{minute:02}" overlay=zr/{i:02}.png' for i,minute in enumerate([0,15,30,45]))
 CONFIG=b"RADAR_COORDS: [[95,22.5],[108,22.5],[108,4],[95,4]], BASEMAP: ''; PCAPPI Z-R; mm/hr; new Date(date + 'T' + time + ':00Z')"
+
+
+def test_compatible_receiver_survives_newer_documentation_commit_and_retries():
+    class Ready:
+        status_code=200
+        def json(self):return {'deployment_commit':'a-newer-documentation-commit','ingestion_protocol':'tmd-radar-v1'}
+    seen=[]
+    wait_for_receiver(lambda *args,**kwargs:seen.append(args) or Ready(),lambda _:pytest.fail('Compatible receiver must not sleep'))
+    assert len(seen)==1
+
+
+def test_incompatible_receiver_wait_is_bounded():
+    class NotReady:
+        status_code=404
+    sleeps=[]
+    with pytest.raises(RuntimeError):wait_for_receiver(lambda *args,**kwargs:NotReady(),sleeps.append)
+    assert sleeps==[5]*29
 
 
 class Response:

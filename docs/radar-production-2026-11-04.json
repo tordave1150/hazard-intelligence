@@ -1,0 +1,87 @@
+{
+  "review_date": "2026-11-04",
+  "timezone": "Asia/Bangkok",
+  "implementation_commit": "c6c086c6c1c08aaa64f22dfc7aaf60aea6185707",
+  "production_url": "https://hazard-intelligence-lime.vercel.app/",
+  "deployment": {
+    "id": "dpl_8HYmWTv9Jv5crznwfzfTXRHHs83M",
+    "state": "READY",
+    "target": "production",
+    "ready_at": 1793799922745
+  },
+  "contract_ci": {
+    "id": 41840881331,
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41840881331"
+  },
+  "first_collection": {
+    "id": 41840881308,
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-11-04T13:44:38Z",
+    "run_started_at": "2026-11-04T13:44:38Z",
+    "completed_at": "2026-11-04T13:46:52Z",
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41840881308"
+  },
+  "blob": {
+    "id": "store_k3kJJWvSqH3gymwa",
+    "status": "available",
+    "size": 1784507,
+    "count": 13,
+    "connected": [
+      "prj_I6Q0vhmvGtCvmuPjjjwWlm8zl0Ou"
+    ],
+    "observed_at": "2026-11-04T13:54:19.796Z"
+  },
+  "checks": {
+    "python_tests": 287,
+    "web_tests": 100,
+    "local_http_tests": 29,
+    "production_http_tests": 29,
+    "typecheck": "passed",
+    "production_build": "passed",
+    "all_13_delivered_png_hashes": "matched",
+    "production_browser_console_errors_warnings": []
+  },
+  "browser": {
+    "playback_changed_frame_index": true,
+    "latest_frame_loaded": true,
+    "source_time_display": "2026-11-04 13:30 UTC / 20:30 ICT",
+    "retained_dam_marker_count": 35,
+    "three_d_preserved_loaded_frame": true,
+    "mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "client_width": 375,
+      "scroll_width": 375,
+      "opacity_control_verified": 20
+    },
+    "local_failure_checks": {
+      "corrupt_image": "hidden; load error shown; source file restored",
+      "clock_plus_two_hours": "STALE; image hidden; playback disabled",
+      "temporary_qa_route": "removed"
+    }
+  },
+  "limits": [
+    "Adopts provider image placement; control-point projection math is not independent radar geodetic calibration.",
+    "Pixel no-echo/no-data/coverage meanings remain ambiguous; no zero-rain inference or pixel values.",
+    "First verified collection was a relevant-code push; a precise recurring 15-minute schedule or long-term drift is not established.",
+    "Full live database audit was not independently run during this release; writer/reader pointer checks and the bounded publication unit tests passed.",
+    "Vercel runtime logs query failed before returning results; browser, HTTP, Actions logs and actual delivered image hashes were checked.",
+    "Full-cadence object uploads can exceed Hobby included operations; existing plan quotas apply.",
+    "Two initial empty unconnected setup stores remain unused."
+  ],
+  "artifacts": [
+    "artifacts/radar-object-verification-20261104.json",
+    "artifacts/radar-production-20261104.png",
+    "artifacts/radar-production-mobile-20261104.png"
+  ],
+  "follow_up_changes": [
+    "Receiver readiness uses a compatible ingestion protocol so queued jobs and old retries survive documentation-only deployments.",
+    "Two additional receiver readiness tests, a shorter mobile legend label and production-only Blob environment scopes."
+  ]
+}

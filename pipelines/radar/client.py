@@ -67,6 +67,7 @@ def capture(get=None,now=None):
             if response.status_code!=200:raise ValueError('Radar source request failed')
             data=bytearray()
             for chunk in response.iter_content(8192):
+                if time.monotonic()-started>180:raise ValueError('Capture time budget exceeded')
                 data.extend(chunk)
                 if len(data)>limit:raise ValueError('Radar byte budget exceeded')
             return bytes(data)

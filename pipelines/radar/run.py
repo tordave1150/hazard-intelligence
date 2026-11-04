@@ -10,6 +10,17 @@ from .client import capture
 PUBLISH_URL='https://hazard-intelligence-lime.vercel.app/api/radar'
 
 
+def wait_for_receiver(get=None,sleep=None):
+    get=get or requests.get;sleep=sleep or time.sleep
+    for attempt in range(30):
+        try:
+            response=get(PUBLISH_URL,timeout=10)
+            if response.status_code==200 and response.json().get('ingestion_protocol')=='tmd-radar-v1':return
+        except requests.RequestException:pass
+        if attempt==29:raise RuntimeError('Compatible production receiver not ready')
+        sleep(5)
+
+
 def publish(payload):
     token_url=os.environ['ACTIONS_ID_TOKEN_REQUEST_URL']
     token=requests.get(token_url,params={'audience':PUBLISH_URL},headers={'Authorization':'Bearer '+os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']},timeout=20).json()['value']
@@ -25,14 +36,8 @@ def main():
     if not args.export and not args.publish:parser.error('Select --export and/or --publish')
     try:
         if args.publish:
-            # A code push can start Actions before its Vercel deployment is ready.
-            for attempt in range(30):
-                try:
-                    response=requests.get(PUBLISH_URL,timeout=10)
-                    if response.status_code==200 and response.json().get('deployment_commit')==os.environ.get('GITHUB_SHA'):break
-                except requests.RequestException:pass
-                if attempt==29:raise RuntimeError('Matching production receiver not ready')
-                time.sleep(5)
+            # Compatible queued jobs/retries remain valid after documentation-only deployments.
+            wait_for_receiver()
         payload=capture()
         if args.export:
             args.export.parent.mkdir(parents=True,exist_ok=True)

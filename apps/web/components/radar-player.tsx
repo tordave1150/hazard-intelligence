@@ -28,7 +28,7 @@ export default function RadarPlayer({snapshot,index,onIndex,opacity,onOpacity,lo
       <label>Opacity {opacity}%<input aria-label="Radar opacity" type="range" min="20" max="100" value={opacity} onChange={e=>onOpacity(Number(e.target.value))}/></label>
     </div>
     <div className="radar-scale" aria-label="TMD rain rate color scale in millimeters per hour">{scale.map(([color,label],i)=><span key={i} title={label+' mm/hour'} style={{background:color}}/>)}</div>
-    <div className="radar-scale-labels"><span>0.21</span><span>2.10</span><span>12.5</span><span>52.2</span><span>217.9</span><span>&gt;636 mm/hour</span></div>
+    <div className="radar-scale-labels"><span>0.21</span><span>2.10</span><span>12.5</span><span>52.2</span><span>217.9</span><span>&gt;636</span></div>
     <p>พื้นที่โปร่งใส/ไม่มีสี: ยังยืนยันไม่ได้ว่าไม่มีฝนหรือเรดาร์ขาดข้อมูล · echo อาจมีสิ่งที่ไม่ใช่ฝน · ขอบภาพไม่รับรองพื้นที่ตรวจวัดครบ</p>
     <details><summary>เวลา แหล่งข้อมูล และระดับสี</summary><p>ล่าสุดในชุด {bangkokTime(frames.at(-1)?.observed_at)} · เก็บข้อมูล {bangkokTime(snapshot.feed?.fetched_at)} · รอบเก็บ {String(snapshot.health?.status??'UNKNOWN')} · เป้าหมายทุก 15 นาที ตารางอาจล่าช้า</p>
       {snapshot.feed&&radarMissingSlots(snapshot.feed)>0&&<p>ขาดช่วงเวลา 15 นาทีภายในชุด {radarMissingSlots(snapshot.feed)} ช่วง · ไม่เติมภาพหรือค่าฝนเอง</p>}
