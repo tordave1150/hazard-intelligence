@@ -7,6 +7,7 @@ no returned links, assets, raw feature values or credentials reach artifacts.
 An observed empty page is not an all-clear or a satellite acquisition timestamp.
 """
 import argparse
+import gzip
 from datetime import datetime
 import json
 import os
@@ -31,10 +32,12 @@ def load_reviewed_request(path=None):
     path=REQUEST_PATH if path is None else path
     if path.stat().st_size>1024:raise ValueError('Request file too large')
     request=json.loads(path.read_text(encoding='utf-8'))
-    if not isinstance(request,dict) or not {'request_id','window','ap_idn'}<=set(request) or set(request)-{'request_id','window','ap_idn','service','compare_windows'}:
+    if not isinstance(request,dict) or not {'request_id','window','ap_idn'}<=set(request) or set(request)-{'request_id','window','ap_idn','service','compare_windows','sample_limit'}:
         raise ValueError('Invalid request fields')
-    if any(not isinstance(v,str) for k,v in request.items() if k!='compare_windows'):raise ValueError('Invalid request types')
+    if any(not isinstance(v,str) for k,v in request.items() if k not in ['compare_windows','sample_limit']):raise ValueError('Invalid request types')
     if 'compare_windows' in request and type(request['compare_windows']) is not bool:raise ValueError('Invalid comparison flag')
+    if 'sample_limit' in request and (type(request['sample_limit']) is not int or request['sample_limit'] not in [1,100,1000]):raise ValueError('Invalid sample limit')
+    if request.get('sample_limit',1)!=1 and (not request.get('compare_windows') or request.get('service','features')!='features'):raise ValueError('Larger sample requires reviewed comparison')
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):raise ValueError('Invalid request ID')
     if request['window'] not in WINDOWS:raise ValueError('Invalid request window')
     if request['ap_idn'] and request['ap_idn'] not in DISTRICTS:raise ValueError('Invalid request district')
@@ -97,17 +100,18 @@ def page_metadata(payload,limit=1):
             'acquisition_time_status':'UNVERIFIED'}
 
 
-def inspect_features(api_key,window='3days',ap_idn='',get=None,clock=time.monotonic,service='features'):
+def inspect_features(api_key,window='3days',ap_idn='',get=None,clock=time.monotonic,service='features',limit=1):
     api_key=api_key.strip();ap_idn=ap_idn.strip()
     if len(api_key)<8 or len(api_key)>4096 or any(c in api_key for c in '\r\n') or api_key.lower().startswith(('http:','https:','gistda_api_key=')):
         return {'result':'INVALID_OR_MISSING_SECRET'},1
     if window not in WINDOWS:return {'result':'INVALID_PRODUCT_WINDOW'},1
+    if type(limit) is not int or limit not in [1,100,1000] or service=='stac' and limit!=1:return {'result':'INVALID_SAMPLE_LIMIT'},1
     if service not in ['features','stac']:return {'result':'INVALID_SERVICE'},1
     if ap_idn and (not re.fullmatch(r'[0-9]{4}',ap_idn) or ap_idn not in DISTRICTS):
         return {'result':'INVALID_DISTRICT_FILTER'},1
     if service=='stac' and ap_idn:return {'result':'INVALID_STAC_FILTER'},1
     endpoint=BASE+window if service=='features' else STAC_ENDPOINTS[window]
-    params={'limit':1,'offset':0} if service=='features' else {}
+    params={'limit':limit,'offset':0} if service=='features' else {}
     if ap_idn:params['ap_idn']=ap_idn
     report={'service':'GISTDA Disaster Platform Features' if service=='features' else 'GISTDA Disaster Platform STAC','product_window':window,'endpoint':endpoint,
             'authentication_transport':'API-Key header','requested_filter':{'ap_idn':ap_idn or None},
@@ -121,7 +125,7 @@ def inspect_features(api_key,window='3days',ap_idn='',get=None,clock=time.monoto
             chunks=[];size=0
             for chunk in response.iter_content(chunk_size=65536):
                 size+=len(chunk)
-                if size>MAX_BYTES:return {**report,'result':'RESPONSE_TOO_LARGE'},1
+                if size>(MAX_BYTES if limit==1 else MAX_BYTES*4):return {**report,'result':'RESPONSE_TOO_LARGE'},1
                 if clock()>deadline:return {**report,'result':'DEADLINE_EXCEEDED'},1
                 chunks.append(chunk)
             try:
@@ -146,12 +150,23 @@ def inspect_features(api_key,window='3days',ap_idn='',get=None,clock=time.monoto
                 try:report['stac_metadata']=stac_metadata(payload,api_key)
                 except (ValueError,TypeError,OverflowError):return {**report,'result':'STAC_ITEM_SCHEMA_UNVERIFIED'},1
                 return {**report,'result':'STAC_ITEM_OBSERVED_SCHEMA_UNVERIFIED'},0
-            try:report['page_metadata']=page_metadata(payload)
+            try:report['page_metadata']=page_metadata(payload,limit=limit)
             except (ValueError,TypeError,OverflowError):return {**report,'result':'FEATURE_COLLECTION_SCHEMA_UNVERIFIED'},1
             if api_key in report['page_metadata']['response_timestamp']:
                 return {**report,'page_metadata':None,'result':'FEATURE_COLLECTION_SCHEMA_UNVERIFIED'},1
             if payload['features']:
                 report['sample_quality']=sample_quality(payload['features'][0],ap_idn,'crs' in payload)
+            if limit>1:
+                rows=[{'geometry':f.get('geometry'),'area_ids':[str(f['properties'].get('pv_idn')),str(f['properties'].get('ap_idn'))]} for f in payload['features']]
+                blocks=[json.dumps(rows[i:i+100],separators=(',',':')).encode() for i in range(0,len(rows),100)]
+                def positions(value):
+                    if not isinstance(value,list):return 0
+                    if value and isinstance(value[0],(int,float)):return 1
+                    return sum(positions(item) for item in value)
+                report['transfer_measurements']={'requested_limit':limit,'response_bytes':size,'normalized_sample_bytes':sum(map(len,blocks)),
+                    'gzip_100_row_blocks_bytes':sum(len(gzip.compress(block,mtime=0)) for block in blocks),
+                    'positions':sum(positions((f.get('geometry') or {}).get('coordinates')) for f in payload['features']),
+                    'scope':'One bounded page; byte counts only, no stored geometry or raw values'}
             result='EMPTY_FEATURE_COLLECTION_OBSERVED' if report['page_metadata']['empty_result'] else 'FEATURE_PAGE_OBSERVED_SCHEMA_UNVERIFIED'
             return {**report,'result':result},0
     except requests.RequestException:
@@ -185,7 +200,7 @@ def main(reviewed_request=False):
     if request and request.get('compare_windows'):
         reports=[];codes=[]
         for selected_window in ['1day','3days','7days','30days']:
-            result,code=inspect_features(os.getenv('GISTDA_API_KEY',''),selected_window,'',service='features')
+            result,code=inspect_features(os.getenv('GISTDA_API_KEY',''),selected_window,'',service='features',limit=request.get('sample_limit',1))
             reports.append(result);codes.append(code)
         report={'result':'WINDOW_COMPARISON_OBSERVED' if not any(codes) else 'WINDOW_COMPARISON_INCOMPLETE',
                 'reviewed_request_id':request['request_id'],'requested_scope':'national','published_product_unchanged':'3days',

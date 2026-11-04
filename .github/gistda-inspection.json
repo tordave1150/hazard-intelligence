@@ -1,7 +1,8 @@
 {
-  "request_id": "2026-11-04-01",
+  "request_id": "2026-11-04-02",
   "service": "features",
   "window": "3days",
   "ap_idn": "",
-  "compare_windows": true
+  "compare_windows": true,
+  "sample_limit": 1000
 }

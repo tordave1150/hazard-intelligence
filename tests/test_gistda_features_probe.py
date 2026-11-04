@@ -157,6 +157,18 @@ def test_comparison_requires_explicit_boolean_and_national_features_scope(tmp_pa
     with pytest.raises(ValueError):probe.load_reviewed_request(path)
 
 
+def test_reviewed_sample_measures_compression_without_exposing_geometry_or_secret():
+    row={'type':'Feature','properties':{'pv_idn':'10','ap_idn':'1001','private':KEY},'geometry':{'type':'Polygon','coordinates':[[[100,13],[101,13],[101,14],[100,13]]]}}
+    calls=[]
+    def get(url,**kwargs):calls.append(kwargs);return Response(page([row]*100,matched=132960))
+    report,code=probe.inspect_features(KEY,window='30days',limit=1000,get=get)
+    assert code==0 and calls[0]['params']=={'limit':1000,'offset':0}
+    measured=report['transfer_measurements']
+    assert measured['requested_limit']==1000 and measured['positions']==400
+    assert measured['gzip_100_row_blocks_bytes']<measured['normalized_sample_bytes']<measured['response_bytes']
+    assert KEY not in json.dumps(report) and 'coordinates' not in json.dumps(measured)
+
+
 @pytest.mark.parametrize('failed',[False,True])
 def test_comparison_is_four_bounded_independent_reads_and_never_substitutes_longer_window(tmp_path,monkeypatch,capsys,failed):
     path=tmp_path/'request.json'
