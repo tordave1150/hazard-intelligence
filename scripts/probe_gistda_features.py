@@ -1,6 +1,7 @@
 """Bounded Disaster Platform Features inspection, following the official manual.
 
-One page/item, one fixed-host GET, API-Key header only. No MongoDB/publication.
+One page/item per selected window, fixed-host GET, API-Key header only. No MongoDB/publication.
+An explicit reviewed national comparison makes exactly four independent one-page requests.
 Logs contain bounded structure and validated response/item-time metadata only;
 no returned links, assets, raw feature values or credentials reach artifacts.
 An observed empty page is not an all-clear or a satellite acquisition timestamp.
@@ -30,14 +31,16 @@ def load_reviewed_request(path=None):
     path=REQUEST_PATH if path is None else path
     if path.stat().st_size>1024:raise ValueError('Request file too large')
     request=json.loads(path.read_text(encoding='utf-8'))
-    if not isinstance(request,dict) or not {'request_id','window','ap_idn'}<=set(request) or set(request)-{'request_id','window','ap_idn','service'}:
+    if not isinstance(request,dict) or not {'request_id','window','ap_idn'}<=set(request) or set(request)-{'request_id','window','ap_idn','service','compare_windows'}:
         raise ValueError('Invalid request fields')
-    if any(not isinstance(v,str) for v in request.values()):raise ValueError('Invalid request types')
+    if any(not isinstance(v,str) for k,v in request.items() if k!='compare_windows'):raise ValueError('Invalid request types')
+    if 'compare_windows' in request and type(request['compare_windows']) is not bool:raise ValueError('Invalid comparison flag')
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):raise ValueError('Invalid request ID')
     if request['window'] not in WINDOWS:raise ValueError('Invalid request window')
     if request['ap_idn'] and request['ap_idn'] not in DISTRICTS:raise ValueError('Invalid request district')
     if request.get('service','features') not in ['features','stac']:raise ValueError('Invalid service')
     if request.get('service')=='stac' and request['ap_idn']:raise ValueError('STAC item has no district filter')
+    if request.get('compare_windows') and (request.get('service','features')!='features' or request['ap_idn']):raise ValueError('Comparison requires national Features scope')
     return request
 
 
@@ -179,6 +182,16 @@ def main(reviewed_request=False):
             print(json.dumps({'result':'DISTRICT_FILTER_REQUIRED'}))
             raise SystemExit(1) from None
     service=request.get('service','features') if request else os.getenv('GISTDA_INSPECTION_SERVICE','features')
+    if request and request.get('compare_windows'):
+        reports=[];codes=[]
+        for selected_window in ['1day','3days','7days','30days']:
+            result,code=inspect_features(os.getenv('GISTDA_API_KEY',''),selected_window,'',service='features')
+            reports.append(result);codes.append(code)
+        report={'result':'WINDOW_COMPARISON_OBSERVED' if not any(codes) else 'WINDOW_COMPARISON_INCOMPLETE',
+                'reviewed_request_id':request['request_id'],'requested_scope':'national','published_product_unchanged':'3days',
+                'scope':'Four one-page count/schema inspections; no geometry collection or publication',
+                'windows':reports,'interpretation':'Counts belong to separate retrospective products; no acquisition time, coverage or current flooding inferred'}
+        print(json.dumps(report,ensure_ascii=True,allow_nan=False));raise SystemExit(int(any(codes)))
     report,code=inspect_features(os.getenv('GISTDA_API_KEY',''),window,ap_idn,service=service)
     if request:report['reviewed_request_id']=request['request_id']
     else:report['requested_scope']=query_scope

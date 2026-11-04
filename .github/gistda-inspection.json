@@ -1,6 +1,7 @@
 {
-  "request_id": "2026-10-29-02",
+  "request_id": "2026-11-04-01",
   "service": "features",
   "window": "3days",
-  "ap_idn": ""
+  "ap_idn": "",
+  "compare_windows": true
 }

@@ -149,6 +149,35 @@ def test_reviewed_request_selects_explicit_window_without_manual_environment_fal
     assert json.loads(capsys.readouterr().out)=={'result':'INVALID_REVIEWED_REQUEST'}
 
 
+@pytest.mark.parametrize('bad',[{'compare_windows':'true'},{'compare_windows':1},{'compare_windows':True,'service':'stac'},
+                              {'compare_windows':True,'ap_idn':'2604'}])
+def test_comparison_requires_explicit_boolean_and_national_features_scope(tmp_path,bad):
+    path=tmp_path/'request.json'
+    path.write_text(json.dumps({'request_id':'2026-11-04-01','window':'3days','ap_idn':'',**bad}),encoding='utf-8')
+    with pytest.raises(ValueError):probe.load_reviewed_request(path)
+
+
+@pytest.mark.parametrize('failed',[False,True])
+def test_comparison_is_four_bounded_independent_reads_and_never_substitutes_longer_window(tmp_path,monkeypatch,capsys,failed):
+    path=tmp_path/'request.json'
+    path.write_text(json.dumps({'request_id':'2026-11-04-01','window':'3days','ap_idn':'','compare_windows':True}),encoding='utf-8')
+    monkeypatch.setattr(probe,'REQUEST_PATH',path);monkeypatch.setenv('GISTDA_API_KEY',KEY)
+    monkeypatch.setenv('GISTDA_FEATURE_AP_IDN','2604')
+    calls=[]
+    def get(url,**kwargs):
+        calls.append((url,kwargs))
+        return Response(page(),status=503 if failed and url.endswith('7days') else 200)
+    monkeypatch.setattr(probe.requests,'get',get)
+    with pytest.raises(SystemExit) as exit:probe.main(reviewed_request=True)
+    assert exit.value.code==int(failed)
+    assert [url for url,_ in calls]==[probe.BASE+w for w in ['1day','3days','7days','30days']]
+    assert all(kwargs['params']=={'limit':1,'offset':0} and kwargs['headers']['API-Key']==KEY and kwargs['allow_redirects'] is False for _,kwargs in calls)
+    output=capsys.readouterr().out;report=json.loads(output)
+    assert KEY not in output and report['published_product_unchanged']=='3days'
+    assert report['result']==('WINDOW_COMPARISON_INCOMPLETE' if failed else 'WINDOW_COMPARISON_OBSERVED')
+    if failed:assert 'page_metadata' not in report['windows'][2]
+
+
 @pytest.mark.parametrize('query_scope',[None,'national'])
 def test_manual_national_scope_ignores_retained_district_default(query_scope,monkeypatch,capsys):
     monkeypatch.setenv('GISTDA_API_KEY',KEY)
