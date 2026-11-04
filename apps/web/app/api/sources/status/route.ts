@@ -1,3 +1,4 @@
+import {readRadarSnapshot} from '@/lib/radar-snapshot';
 import registry from '@/data/source-registry.json';
 import {readSnapshot} from '@/lib/snapshot';
 import {readDamSnapshot} from '@/lib/dam-snapshot';
@@ -11,8 +12,9 @@ import {monitorSource} from '@/lib/source-health';
 import type {Freshness} from '@/lib/types';
 export const dynamic='force-dynamic';
 export async function GET(){
-  const [weather,dams,warnings,floods,hourly,gauges,rain]=await Promise.all([readSnapshot(),readDamSnapshot(),readWarningSnapshot(),readFloodSnapshot(),readHourlySnapshot(),readGaugeSnapshot(),readRainSnapshot()]);
+  const [weather,dams,warnings,floods,hourly,gauges,rain,radar]=await Promise.all([readSnapshot(),readDamSnapshot(),readWarningSnapshot(),readFloodSnapshot(),readHourlySnapshot(),readGaugeSnapshot(),readRainSnapshot(),readRadarSnapshot()]);
   const states:Record<string,{freshness:Freshness;health:Record<string,unknown>|null;storage:string;query_freshness?:Freshness;available?:boolean;scope_area_id?:string|null}>={
+    tmd_radar:{freshness:radar.freshness,health:radar.health,storage:radar.storage,available:!!radar.feed,scope_area_id:'TH'},
     open_meteo:{freshness:weather.freshness,health:weather.status,storage:weather.storage},
     rid:{freshness:dams.freshness,health:dams.health,storage:dams.storage},tmd:{freshness:warnings.freshness,health:warnings.health,storage:warnings.storage},
     gistda:{freshness:floods.freshness,health:floods.health,storage:floods.storage,query_freshness:floods.query_freshness,available:!!floods.feed,scope_area_id:floods.feed?.area_id??null},

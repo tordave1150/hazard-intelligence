@@ -1,8 +1,8 @@
 import {stationColors} from '@/lib/map-stations';
 import {damGatePath} from '@/lib/map-dams';
 
-export type MapLegendEntry={kind:'water'|'rain'|'dam'|'warning'|'flood';detail:string};
-const labels={water:'ระดับน้ำ (น้ำ)',rain:'ฝนสถานี (ฝน)',dam:'เขื่อน · วง % ความจุปกติ',warning:'คำเตือน CAP',flood:'น้ำท่วม GISTDA'};
+export type MapLegendEntry={kind:'water'|'rain'|'dam'|'warning'|'flood'|'radar';detail:string};
+const labels={radar:'เรดาร์ · ความเข้มฝนโดยประมาณ',water:'ระดับน้ำ (น้ำ)',rain:'ฝนสถานี (ฝน)',dam:'เขื่อน · วง % ความจุปกติ',warning:'คำเตือน CAP',flood:'น้ำท่วม GISTDA'};
 
 export default function MapLegend({entries}:{entries:MapLegendEntry[]}){
   const stations=entries.some(entry=>entry.kind==='water'||entry.kind==='rain');

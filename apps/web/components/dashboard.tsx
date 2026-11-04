@@ -1,4 +1,6 @@
 'use client';
+import RadarPlayer from './radar-player';
+import {emptyRadar,radarFreshness,radarVisible,type RadarSnapshot,type RadarLoad} from '@/lib/radar';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -35,6 +37,8 @@ const emptyHourly:HourlySnapshot={records:[],health:null,storage:'unconfigured',
 const emptyFloods:FloodSnapshot={feed:null,records:[],health:null,storage:'unconfigured',error:null,freshness:'UNAVAILABLE',query_freshness:'UNAVAILABLE'};
 
 export default function Dashboard({areas}:{areas:Area[]}){
+  const [radarSnapshot,setRadarSnapshot]=useState<RadarSnapshot>(emptyRadar),[showRadar,setShowRadar]=useState(false),[radarIndex,setRadarIndex]=useState(0),[radarOpacity,setRadarOpacity]=useState(78),[radarLoad,setRadarLoad]=useState<RadarLoad|null>(null);
+  const radarFeedRef=useRef<string|null>(null);
   const [provincesOpen,setProvincesOpen]=useState(false);
   const [geographyMode,setGeographyMode]=useState<'administrative'|'basin'>('administrative');
   const [rainSnapshot,setRainSnapshot]=useState<RainSnapshot>(emptyRain),[showRain,setShowRain]=useState(false),[selectedRain,setSelectedRain]=useState<string|null>(null);
@@ -53,11 +57,12 @@ export default function Dashboard({areas}:{areas:Area[]}){
   const [activeEvidence,setActiveEvidence]=useState<'tmd'|'gistda'|'rid'|'thaiwater'|'thaiwater_rain'>('tmd');
   const [sourcesOpen,setSourcesOpen]=useState(false),[leftOpen,setLeftOpen]=useState(false),[rightOpen,setRightOpen]=useState(false),[refresh,setRefresh]=useState(0);
   const {now,theme}=useTimeTheme(),clock=now??0,today=bangkokDate(clock),date=selectedDate??today;
-  const mode=dashboardMode(date,today,todayMode),background=effectiveBackground(mode,rainfall,geographyMode),forecastVisible=background!=='off';
+  const mode=dashboardMode(date,today,todayMode),background=effectiveBackground(mode,rainfall,geographyMode,showRadar),forecastVisible=background==='daily'||background==='hourly';
   const chooseBackground=(next:MapBackground)=>{
     if(!backgroundAvailable(next,date,today,geographyMode))return;
-    setRainfall(next!=='off');
-    if(next!=='off')setTodayMode(next);
+    setShowRadar(next==='radar');
+    setRainfall(next==='daily'||next==='hourly');
+    if(next==='daily'||next==='hourly')setTodayMode(next);
   };
   const setDate=(value:string)=>setSelectedDate(value===today?null:value);
   const [hourlySnapshot,setHourlySnapshot]=useState<HourlySnapshot>(emptyHourly),[selectedHour,setSelectedHour]=useState(''),[hourlyLoading,setHourlyLoading]=useState(false),[hourlyChecked,setHourlyChecked]=useState(false);
@@ -80,6 +85,16 @@ export default function Dashboard({areas}:{areas:Area[]}){
     document.addEventListener('keydown',handle);
     return()=>{document.removeEventListener('keydown',handle);if(previous?.isConnected)previous.focus({preventScroll:true});};
   },[sourcesOpen]);
+  useEffect(()=>{
+    const controller=new AbortController();
+    const load=()=>fetch('/api/radar',{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error();return response.json();}).then((value:RadarSnapshot)=>{
+      if(controller.signal.aborted)return;
+      if(value.feed?.fetched_at!==radarFeedRef.current){setRadarIndex(Math.max(0,(value.feed?.frames.length??1)-1));radarFeedRef.current=value.feed?.fetched_at??null;}
+      setRadarSnapshot(value);
+    }).catch(()=>{if(!controller.signal.aborted)setRadarSnapshot({...emptyRadar,error:'Radar snapshot unavailable'});});
+    load();const timer=setInterval(load,60000);return()=>{controller.abort();clearInterval(timer);};
+  },[refresh]);
+  const radarStatus=radarFreshness(radarSnapshot.feed,clock),radarFrame=radarSnapshot.feed?.frames[radarIndex]??null;
   const area=lookup.get(selected)??lookup.get('TH')!;
   useEffect(()=>{rightPanelRef.current?.scrollTo({top:0,behavior:'auto'});},[area.id,activeEvidence,selectedGauge,selectedRain,selectedDam]);
   useEffect(()=>{
@@ -165,7 +180,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   const validWarnings=warningsInScope.filter(r=>warningState(r,warningSnapshot.records,clock)==='CURRENT').length;
   const mapWarnings=useMemo(()=>showWarnings?warningMapRecords(warningSnapshot.records,selectedWarning,tmdStatus,clock).filter(r=>warningInArea(r,area,areas)):[],[showWarnings,warningSnapshot.records,selectedWarning,tmdStatus,clock,area,areas]);
   const damsInScope=useMemo(()=>damSnapshot.records.filter(d=>damInArea(d,area)),[damSnapshot.records,area]);
-  const availableSources=Number(snapshot.records.length>0)+Number(damSnapshot.records.length>0)+Number(warningSnapshot.feed!==null)+Number(floodSnapshot.feed!==null)+Number(hourlySnapshot.records.length>0)+Number(gaugeSnapshot.feed!==null)+Number(rainSnapshot.feed!==null);
+  const availableSources=Number(radarSnapshot.feed!==null)+Number(snapshot.records.length>0)+Number(damSnapshot.records.length>0)+Number(warningSnapshot.feed!==null)+Number(floodSnapshot.feed!==null)+Number(hourlySnapshot.records.length>0)+Number(gaugeSnapshot.feed!==null)+Number(rainSnapshot.feed!==null);
   const dateLabel=date?`${date===bangkokDate(clock)?'Today · ':''}${new Date(date+'T00:00:00+07:00').toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'numeric'})}`:'No selected forecast date';
   const recordsById=useMemo(()=>new Map(snapshot.records.map(r=>[r.location_id,r])),[snapshot.records]);
   const current=recordsById.get(area.id);
@@ -192,6 +207,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`thailand-weather-${area.id}-${date||'unavailable'}.json`;a.click();URL.revokeObjectURL(url);
   }
   const mapEvidence:MapLegendEntry[]=[];
+  if(showRadar)mapEvidence.push({kind:'radar',detail:`TMD composite · ${radarStatus} · frame ${bangkokTime(radarFrame?.observed_at)} · UTC source time · mm/hour estimate · blank pixels do not establish no rain`});
   if(showGauges)mapEvidence.push({kind:'water',detail:`HII / ThaiWater · checked ${bangkokTime(gaugeSnapshot.feed?.fetched_at)} · ${gaugeStatus} query · ม.รทก. ไม่ใช่ความลึกน้ำท่วม · observation timezone / age unknown`});
   if(showRain)mapEvidence.push({kind:'rain',detail:`HII / ThaiWater · checked ${bangkokTime(rainSnapshot.feed?.fetched_at)} · ${rainStatus} query · mm/24h และ mm/1h ตามสถานี ไม่ใช่ค่าเฉลี่ยพื้นที่ · observation timezone / age unknown`});
   if(showDams&&damSnapshot.records.length>0)mapEvidence.push({kind:'dam',detail:`RID daily storage · ${reportDate(damSnapshot.records[0].report_date)} · ${ridStatus} · วงแสดง % ปริมาตรเทียบความจุปกติ (+ คือเกิน 100%, ? คือไม่ระบุ) · สีเทาเมื่อเวลาไม่สด/ไม่ยืนยัน · ไม่ใช่ระดับน้ำหรือเกณฑ์อันตราย · เลือกจากรายการเพื่อซูมจุดที่อยู่ใกล้กัน`});
@@ -221,10 +237,11 @@ export default function Dashboard({areas}:{areas:Area[]}){
       <div className="workspace-bar"><nav aria-label="Geography breadcrumb">{trail.map((a,i)=><span key={a.id}>{i>0&&<ChevronRight size={12}/>}<button onClick={()=>select(a.id)} aria-current={i===trail.length-1?'location':undefined}>{a.level==='national'?<><Compass size={14}/> Thailand</>:a.name}</button></span>)}</nav><div className="view-controls"><button className="mobile-control" onClick={()=>setLeftOpen(!leftOpen)}><SlidersHorizontal size={15}/> Layers</button><button className={is3d?'':'active'} aria-pressed={!is3d} onClick={()=>setIs3d(false)}>2D</button><button className={is3d?'active':''} aria-pressed={is3d} onClick={()=>setIs3d(true)}>3D</button><button className="mobile-control" onClick={()=>setRightOpen(!rightOpen)}><Info size={15}/> Area</button></div></div>
       {geographyMode==='basin'&&<p className="basin-context-note">22 ลุ่มน้ำจาก DDPM GIS · จับคู่จุดสถานีและเขื่อนเฉพาะภายในขอบเขตที่ยืนยันได้ จุดใกล้ขอบ/ชายฝั่งยังไม่จับคู่ ขอบเขตย่อเพื่อแสดงผล ไม่ได้อนุมานทางน้ำหรือลำดับต้นน้ำ–ปลายน้ำ · คำเตือนและดาวเทียมยังใช้ตัวกรองจังหวัด</p>}
       <MapLegend entries={mapEvidence}/>
+      {showRadar&&<RadarPlayer snapshot={radarSnapshot} index={radarIndex} onIndex={setRadarIndex} opacity={radarOpacity} onOpacity={setRadarOpacity} load={radarLoad} now={clock}/>}
       <div className="workspace-body">
         <aside className={`left-panel ${leftOpen?'mobile-open':''}`} aria-label="Layers and geography"><div className="panel-heading"><h2><Layers3 size={16}/> Map layers</h2><button className="mobile-close" aria-label="Close layers" onClick={()=>setLeftOpen(false)}><X size={16}/></button></div>
           <p className="panel-description">One map. Independent sources.</p>
-          <div className="background-controls"><label htmlFor="map-background">Forecast background</label><select id="map-background" value={background} onChange={e=>chooseBackground(e.target.value as MapBackground)}><option value="off">Off · geography only</option><option value="daily" disabled={!backgroundAvailable('daily',date,today,geographyMode)}>Daily forecast · Open-Meteo</option><option value="hourly" disabled={!backgroundAvailable('hourly',date,today,geographyMode)}>Today’s hourly forecast · Open-Meteo</option></select><p>{geographyMode==='basin'?'Forecast backgrounds are unavailable for basin boundaries.':'One forecast fill at a time. Observed station rain stays as points.'}</p></div>
+          <div className="background-controls"><label htmlFor="map-background">Map background</label><select id="map-background" value={background} onChange={e=>chooseBackground(e.target.value as MapBackground)}><option value="off">Off · geography only</option><option value="radar">Observed radar estimate · TMD</option><option value="daily" disabled={!backgroundAvailable('daily',date,today,geographyMode)}>Daily forecast · Open-Meteo</option><option value="hourly" disabled={!backgroundAvailable('hourly',date,today,geographyMode)}>Today’s hourly forecast · Open-Meteo</option></select><p>{geographyMode==='basin'?'Radar keeps its own geographic extent. Basin forecast fills are unavailable.':'One radar image or forecast fill at a time. Observed station rain stays as points.'}</p></div>
           <div className="metric-controls"><label htmlFor="metric">Display metric</label><select id="metric" disabled={!forecastVisible} value={metric} onChange={e=>setMetric(e.target.value as Metric)}><option value="rainfall_mm">Rainfall · {displayUnit}</option><option value="rain_probability_pct">Chance of rain · %</option></select><label className="opacity-label">Layer opacity <span>{opacity}%</span><input aria-label="Layer opacity" disabled={!forecastVisible} type="range" min="15" max="100" value={opacity} onChange={e=>setOpacity(+e.target.value)}/></label></div>
           <fieldset className="source-overlays"><legend>Source overlays</legend><label className={`layer ${damSnapshot.records.length?'enabled':'planned'}`}><Droplets size={17}/><span><b>Reservoirs & dams</b><small>RID · {damSnapshot.records.length?'daily storage report':'awaiting first report'}</small></span><input aria-label="RID reservoir reports" type="checkbox" checked={showDams} disabled={!damSnapshot.records.length} onChange={e=>{setShowDams(e.target.checked);setSelectedDam(null);if(e.target.checked){setActiveEvidence('rid');setRightOpen(true);setLeftOpen(false);}}}/></label>
           <label className={`layer ${warningSnapshot.feed?'enabled':'planned'}`}><Radio size={17}/><span><b>Agency warnings</b><small>TMD · {warningSnapshot.feed?'CAP messages':'awaiting first feed'}</small></span><input aria-label="TMD CAP messages" type="checkbox" checked={showWarnings} disabled={!warningSnapshot.feed||geographyMode==='basin'} onChange={e=>{setShowWarnings(e.target.checked);setSelectedWarning(null);if(e.target.checked){setActiveEvidence('tmd');setRightOpen(true);setLeftOpen(false);}}}/></label>
@@ -241,7 +258,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
           </div>
           <div className="left-footer"><Link href="/health"><Activity size={13}/> Data health <ArrowUpRight size={12}/></Link><a href="/methodology"><Info size={13}/> Data & methodology <ArrowUpRight size={12}/></a></div>
         </aside>
-        <div className="map-column"><MapView geographyMode={geographyMode} area={area} areas={areas} records={snapshot.records} gauges={mapStationRows} showGauges={showGauges||showRain} selectedGauge={selectedRain??selectedGauge} onSelectGauge={id=>id.startsWith('THR-')?selectRain(id):selectGauge(id)} dams={damsInScope} showDams={showDams} damFreshness={ridStatus} selectedDam={selectedDam} onSelectDam={selectDam} warnings={mapWarnings} onSelectWarning={selectWarning} floods={mapFloods} floodFreshness={gistdaStatus} selectedFlood={selectedFlood} onSelectFlood={selectFlood} date={date} metric={metric} is3d={is3d} terrain={terrain} theme={theme} hourly={mode==='hourly'?{records:hourlySnapshot.records,validEnd:activeHour?.valid_end??''}:null} validTimeLabel={mode==='hourly'?(activeHour?hourLabel(activeHour):'No hourly interval available'):`${date} · ICT 00:00–24:00`} rainfall={forecastVisible} extrude={extrude} opacity={opacity} freshness={displayStatus} onSelect={select}/>
+        <div className="map-column"><MapView radarFrame={showRadar&&radarVisible(radarStatus)?radarFrame:null} radarOpacity={radarOpacity} onRadarLoad={setRadarLoad} geographyMode={geographyMode} area={area} areas={areas} records={snapshot.records} gauges={mapStationRows} showGauges={showGauges||showRain} selectedGauge={selectedRain??selectedGauge} onSelectGauge={id=>id.startsWith('THR-')?selectRain(id):selectGauge(id)} dams={damsInScope} showDams={showDams} damFreshness={ridStatus} selectedDam={selectedDam} onSelectDam={selectDam} warnings={mapWarnings} onSelectWarning={selectWarning} floods={mapFloods} floodFreshness={gistdaStatus} selectedFlood={selectedFlood} onSelectFlood={selectFlood} date={date} metric={metric} is3d={is3d} terrain={terrain} theme={theme} hourly={mode==='hourly'?{records:hourlySnapshot.records,validEnd:activeHour?.valid_end??''}:null} validTimeLabel={mode==='hourly'?(activeHour?hourLabel(activeHour):'No hourly interval available'):`${date} · ICT 00:00–24:00`} rainfall={forecastVisible} extrude={extrude} opacity={opacity} freshness={displayStatus} onSelect={select}/>
           {forecastVisible&&<div className="legend"><div><b>{metricLabel(metric)}</b><span>{metricUnit(metric,mode==='hourly'?'hourly':'daily')} · representative point</span></div><div className="legend-scale">{(metric==='rainfall_mm'?(mode==='hourly'?[0,.2,1,5,10]:[0,1,10,25,50]):[0,20,40,60,80]).map(v=><span key={v}><i style={{background:`rgba(${metricColor(v,metric,mode==='hourly'?'hourly':'daily').slice(0,3).join(',')},1)`}}/>{v}{v===(metric==='rainfall_mm'?(mode==='hourly'?10:50):80)?'+':''}</span>)}<span><i className="no-data"/>No data / stale</span></div></div>}
         </div>
         <aside ref={rightPanelRef} className={`right-panel ${rightOpen?'mobile-open':''}`} aria-label="Area intelligence"><div className="panel-heading"><h2>Area intelligence</h2><button className="mobile-close" aria-label="Close area intelligence" onClick={()=>setRightOpen(false)}><X size={16}/></button></div>

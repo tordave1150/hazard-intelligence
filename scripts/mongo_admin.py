@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 from pymongo import MongoClient
+from pipelines.radar.publication import RadarPublisher,check_envelope as check_radar_envelope
 from pipelines.shared.publication import Publisher
 from pipelines.shared.schemas import validate_record
 from pipelines.shared.locations import weather_locations
@@ -30,6 +31,7 @@ def verify_database(db, include_retired=False):
            ('thaiwater','national_waterlevel','gauge_latest','snapshot_id','ThaiWaterFeed',['latest'],check_gauge_envelope),
            ('thaiwater','national_rain_24h','rain_gauge_latest','snapshot_id','ThaiWaterRainFeed',['latest'],check_rain_envelope),
            ('open_meteo','today_hourly','weather_hourly_latest','location_id','HourlyForecast',[a['id'] for a in weather_locations('all')],check_hourly_batch)]
+    specs.append(('tmd_radar','composite_rain_rate','radar_latest','snapshot_id','RadarManifest',['latest'],check_radar_envelope))
     if include_retired:
         specs += [('gistda','flood_1day_ongkharak','satellite_flood_latest','snapshot_id','GistdaFloodFeed',['latest'],check_flood_envelope),
                   ('gistda','flood_1day_thailand','satellite_flood_national_latest','snapshot_id','GistdaNationalFloodFeed',['latest'],check_national_envelope)]
@@ -78,7 +80,7 @@ def verify_database(db, include_retired=False):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('command',choices=['audit','verify','rollback','unlock'])
-    parser.add_argument('--source',choices=['open_meteo','hourly','rid','tmd','gistda','thaiwater','thaiwater_rain','gistda_1day','gistda_pilot'],default='open_meteo')
+    parser.add_argument('--source',choices=['tmd_radar','open_meteo','hourly','rid','tmd','gistda','thaiwater','thaiwater_rain','gistda_1day','gistda_pilot'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
     args=parser.parse_args()
@@ -96,11 +98,11 @@ def main():
         elif args.command=='verify':
             print(json.dumps(verify_database(db,include_retired=args.include_retired),default=str,indent=2))
         elif args.command=='rollback':
-            {'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'thaiwater':GaugePublisher,'thaiwater_rain':RainPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
+            {'tmd_radar':RadarPublisher,'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'thaiwater':GaugePublisher,'thaiwater_rain':RainPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')
         else:
             if not args.stopped_run_token:parser.error('Recovery requires exact --stopped-run-token after the worker is confirmed stopped')
-            key={'rid':f'rid:{PRODUCT}','tmd':'tmd:cap_warnings','open_meteo':'open_meteo:daily_forecast','hourly':'open_meteo:today_hourly','gistda':'gistda:'+flood_limits.PRODUCT,'thaiwater':'thaiwater:national_waterlevel','thaiwater_rain':'thaiwater:national_rain_24h','gistda_1day':'gistda:flood_1day_thailand','gistda_pilot':'gistda:flood_1day_ongkharak'}[args.source]
+            key={'tmd_radar':'tmd_radar:composite_rain_rate','rid':f'rid:{PRODUCT}','tmd':'tmd:cap_warnings','open_meteo':'open_meteo:daily_forecast','hourly':'open_meteo:today_hourly','gistda':'gistda:'+flood_limits.PRODUCT,'thaiwater':'thaiwater:national_waterlevel','thaiwater_rain':'thaiwater:national_rain_24h','gistda_1day':'gistda:flood_1day_thailand','gistda_pilot':'gistda:flood_1day_ongkharak'}[args.source]
             result=db.etl_locks.delete_one({'_id':key,'token':args.stopped_run_token})
             print(json.dumps({'recovered_locks':result.deleted_count}))
 

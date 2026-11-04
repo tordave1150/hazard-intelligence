@@ -57,7 +57,7 @@ def test_rain_source_preserves_unknown_observation_age():
 
 def test_source_health_separates_planned_source_and_supplies_schedule_evidence():
     value=requests.get(BASE+'/api/sources/status',timeout=25).json()
-    assert value['checked_at'] and len(value['sources'])==7
+    assert value['checked_at'] and len(value['sources'])==8
     for source in value['sources']:
         monitor=source['monitoring']
         assert monitor['cadence_hours'] and monitor['actions_url'].startswith('https://github.com/tordave1150/hazard-intelligence/actions/workflows/')
@@ -206,3 +206,23 @@ def test_corrected_wiang_kao_identity_and_forecast_read_compatibility():
         assert len(data['records'])==1 and data['records'][0]['location_id']=='TH-D-4029'
         assert data['records'][0]['point']=={'lat':16.725377,'lon':102.291901}
     assert requests.get(BASE+'/api/weather?area_id=TH-D-4026',timeout=15).status_code==404
+def test_radar_metadata_keeps_images_out_of_the_response():
+    response=requests.get(BASE+'/api/radar',timeout=20)
+    assert response.status_code==200
+    body=response.json()
+    assert body['freshness'] in ['FRESH','DELAYED','STALE','UNKNOWN','UNAVAILABLE']
+    if body['feed']:
+        feed=body['feed']
+        assert feed['source_id']=='tmd_radar' and feed['units']=='mm/hour'
+        assert 1<=len(feed['frames'])<=13
+        assert all('image_base64' not in frame and 'url' in frame for frame in feed['frames'])
+
+
+@pytest.mark.parametrize('query',['?url=https://example.com','?area_id=TH','?frame=0'])
+def test_radar_does_not_accept_external_targets_or_area_aggregation(query):
+    assert requests.get(BASE+'/api/radar'+query,timeout=15).status_code==400
+
+
+def test_radar_publication_requires_scoped_workflow_authentication():
+    response=requests.post(BASE+'/api/radar',json={'capture_failed':True},timeout=15)
+    assert response.status_code in [401,403]
