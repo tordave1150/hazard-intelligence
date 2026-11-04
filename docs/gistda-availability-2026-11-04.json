@@ -1,0 +1,343 @@
+{
+  "reviewed_at_utc": "2026-11-04T16:19:07.851Z",
+  "scope": "GISTDA national flood product availability investigation; no map window change",
+  "implementation_commit": "2721906e5e7a3bcec12f33b4f82d4c7b3059842d",
+  "production_snapshot": {
+    "source_id": "gistda",
+    "product_id": "flood_3days_thailand",
+    "record_count": 0,
+    "response_at": "2026-11-04T09:30:15.583Z",
+    "fetched_at": "2026-11-04T09:30:15.723482+00:00",
+    "observed_at": null,
+    "observation_time_status": "NOT_SUPPLIED",
+    "complete_provider_query": true
+  },
+  "scheduled_runs": [
+    {
+      "query_day_utc": "2026-11-04",
+      "run_id": 41807947529,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41807947529",
+      "job_id": 126499610360,
+      "workflow_conclusion": "success",
+      "result": {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 0,
+        "product_id": "flood_3days_thailand",
+        "product_window": "3days",
+        "page_count": 1,
+        "stored_documents": 1,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true
+      }
+    },
+    {
+      "query_day_utc": "2026-11-03",
+      "run_id": 41613330980,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41613330980",
+      "job_id": 125840475873,
+      "workflow_conclusion": "failure",
+      "result": {
+        "source_id": "gistda",
+        "status": "FAILED",
+        "stage": "collect",
+        "reason": "NATIONAL_FEATURE_BUDGET_EXCEEDED"
+      }
+    },
+    {
+      "query_day_utc": "2026-11-02",
+      "run_id": 41422496098,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41422496098",
+      "job_id": 125201138648,
+      "workflow_conclusion": "success",
+      "result": {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 0,
+        "product_id": "flood_3days_thailand",
+        "product_window": "3days",
+        "page_count": 1,
+        "stored_documents": 1,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true
+      }
+    },
+    {
+      "query_day_utc": "2026-11-01",
+      "run_id": 41293032035,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41293032035",
+      "job_id": 124808052139,
+      "workflow_conclusion": "success",
+      "result": {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 0,
+        "product_id": "flood_3days_thailand",
+        "product_window": "3days",
+        "page_count": 1,
+        "stored_documents": 1,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true
+      }
+    },
+    {
+      "query_day_utc": "2026-10-31",
+      "run_id": 41185099719,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41185099719",
+      "job_id": 124490320423,
+      "workflow_conclusion": "success",
+      "result": {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 597,
+        "product_id": "flood_3days_thailand",
+        "product_window": "3days",
+        "page_count": 6,
+        "stored_documents": 6,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true
+      }
+    },
+    {
+      "query_day_utc": "2026-10-30",
+      "run_id": 41028730508,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41028730508",
+      "job_id": 123973047341,
+      "workflow_conclusion": "success",
+      "result": {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 803,
+        "product_id": "flood_3days_thailand",
+        "product_window": "3days",
+        "page_count": 9,
+        "stored_documents": 9,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true
+      }
+    }
+  ],
+  "comparison": {
+    "run_id": 41865924093,
+    "job_id": 126699969520,
+    "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41865924093",
+    "reviewed_request_id": "2026-11-04-01",
+    "result": "WINDOW_COMPARISON_OBSERVED",
+    "windows": [
+      {
+        "product_window": "1day",
+        "http_status": 200,
+        "result": "EMPTY_FEATURE_COLLECTION_OBSERVED",
+        "number_matched": 0,
+        "number_returned": 0,
+        "response_timestamp": "2026-11-04T16:18:54.789Z",
+        "timestamp_meaning": "API response time; not satellite acquisition time",
+        "empty_result": true,
+        "complete_collection": true,
+        "returned_links_discarded": 2,
+        "coverage": "Requested service/filter only; zero features does not establish safe or complete satellite coverage",
+        "acquisition_time_status": "UNVERIFIED",
+        "sample_quality": null,
+        "property_names": []
+      },
+      {
+        "product_window": "3days",
+        "http_status": 200,
+        "result": "EMPTY_FEATURE_COLLECTION_OBSERVED",
+        "number_matched": 0,
+        "number_returned": 0,
+        "response_timestamp": "2026-11-04T16:19:00.484Z",
+        "timestamp_meaning": "API response time; not satellite acquisition time",
+        "empty_result": true,
+        "complete_collection": true,
+        "returned_links_discarded": 2,
+        "coverage": "Requested service/filter only; zero features does not establish safe or complete satellite coverage",
+        "acquisition_time_status": "UNVERIFIED",
+        "sample_quality": null,
+        "property_names": []
+      },
+      {
+        "product_window": "7days",
+        "http_status": 200,
+        "result": "FEATURE_PAGE_OBSERVED_SCHEMA_UNVERIFIED",
+        "number_matched": 50816,
+        "number_returned": 1,
+        "response_timestamp": "2026-11-04T16:19:04.632Z",
+        "timestamp_meaning": "API response time; not satellite acquisition time",
+        "empty_result": false,
+        "complete_collection": false,
+        "returned_links_discarded": 3,
+        "coverage": "Requested service/filter only; zero features does not establish safe or complete satellite coverage",
+        "acquisition_time_status": "UNVERIFIED",
+        "sample_quality": {
+          "scope": "One inspected feature only; no complete dataset or source acceptance",
+          "geometry": {
+            "status": "SYNTAX_AND_TOPOLOGY_VALID",
+            "geometry_type": "MultiPolygon",
+            "positions_checked": 26,
+            "rings_checked": 2,
+            "coordinate_interpretation": "RFC 7946 longitude/latitude syntax test; provider CRS still unverified",
+            "within_pinned_thailand_bbox": true,
+            "spatial_accuracy": "UNVERIFIED"
+          },
+          "administrative_codes": {
+            "province": "KNOWN_PINNED_CODE",
+            "district": "KNOWN_PINNED_CODE",
+            "province_district_relationship": "MATCH",
+            "requested_district": "NOT_REQUESTED",
+            "tambon_parent_prefix": "MATCH_FORMAT_ONLY",
+            "tambon_identity": "NOT_VERIFIED",
+            "registry_currency": "Pinned DOPA directory 2023-09-01; later changes/legal boundaries unverified",
+            "meaning": "Property code consistency only; not spatial clipping or coverage verification"
+          },
+          "provider_metadata_presence": {
+            "_createdAt": true,
+            "_updatedAt": true,
+            "file_name": true,
+            "f_area": true,
+            "h3_area": true,
+            "_area": true,
+            "rice_area": true
+          },
+          "acquisition_time_status": "UNVERIFIED",
+          "area_units_status": "UNVERIFIED",
+          "empty_and_coverage_semantics": "UNVERIFIED",
+          "public_display_permission": "UNVERIFIED",
+          "public_layer_ready": false,
+          "no_inference": "No acquisition date from metadata/filename; no flood area, exposure counts or all-clear inferred"
+        },
+        "property_names": [
+          "_area",
+          "_createdAt",
+          "_createdBy",
+          "_id",
+          "_updatedAt",
+          "_updatedBy",
+          "ap_en",
+          "ap_idn",
+          "ap_tn",
+          "building",
+          "f_area",
+          "file_name",
+          "h3_address",
+          "h3_area",
+          "hospital",
+          "length_road",
+          "mongo_id",
+          "population",
+          "pv_en",
+          "pv_idn",
+          "pv_tn",
+          "re_royin",
+          "re_royin_2",
+          "rice_area",
+          "school",
+          "tb_en",
+          "tb_idn",
+          "tb_tn"
+        ]
+      },
+      {
+        "product_window": "30days",
+        "http_status": 200,
+        "result": "FEATURE_PAGE_OBSERVED_SCHEMA_UNVERIFIED",
+        "number_matched": 132960,
+        "number_returned": 1,
+        "response_timestamp": "2026-11-04T16:19:07.851Z",
+        "timestamp_meaning": "API response time; not satellite acquisition time",
+        "empty_result": false,
+        "complete_collection": false,
+        "returned_links_discarded": 3,
+        "coverage": "Requested service/filter only; zero features does not establish safe or complete satellite coverage",
+        "acquisition_time_status": "UNVERIFIED",
+        "sample_quality": {
+          "scope": "One inspected feature only; no complete dataset or source acceptance",
+          "geometry": {
+            "status": "SYNTAX_AND_TOPOLOGY_VALID",
+            "geometry_type": "MultiPolygon",
+            "positions_checked": 9,
+            "rings_checked": 2,
+            "coordinate_interpretation": "RFC 7946 longitude/latitude syntax test; provider CRS still unverified",
+            "within_pinned_thailand_bbox": true,
+            "spatial_accuracy": "UNVERIFIED"
+          },
+          "administrative_codes": {
+            "province": "KNOWN_PINNED_CODE",
+            "district": "KNOWN_PINNED_CODE",
+            "province_district_relationship": "MATCH",
+            "requested_district": "NOT_REQUESTED",
+            "tambon_parent_prefix": "MATCH_FORMAT_ONLY",
+            "tambon_identity": "NOT_VERIFIED",
+            "registry_currency": "Pinned DOPA directory 2023-09-01; later changes/legal boundaries unverified",
+            "meaning": "Property code consistency only; not spatial clipping or coverage verification"
+          },
+          "provider_metadata_presence": {
+            "_createdAt": true,
+            "_updatedAt": true,
+            "file_name": true,
+            "f_area": true,
+            "h3_area": true,
+            "_area": true,
+            "rice_area": true
+          },
+          "acquisition_time_status": "UNVERIFIED",
+          "area_units_status": "UNVERIFIED",
+          "empty_and_coverage_semantics": "UNVERIFIED",
+          "public_display_permission": "UNVERIFIED",
+          "public_layer_ready": false,
+          "no_inference": "No acquisition date from metadata/filename; no flood area, exposure counts or all-clear inferred"
+        },
+        "property_names": [
+          "_area",
+          "_createdAt",
+          "_createdBy",
+          "_id",
+          "_updatedAt",
+          "_updatedBy",
+          "ap_en",
+          "ap_idn",
+          "ap_tn",
+          "building",
+          "f_area",
+          "file_name",
+          "h3_address",
+          "h3_area",
+          "hospital",
+          "length_road",
+          "mongo_id",
+          "population",
+          "pv_en",
+          "pv_idn",
+          "pv_tn",
+          "re_royin",
+          "re_royin_2",
+          "rice_area",
+          "school",
+          "tb_en",
+          "tb_idn",
+          "tb_tn"
+        ]
+      }
+    ]
+  },
+  "operating_limits": {
+    "max_features": 20000,
+    "max_source_bytes": 67108864,
+    "max_normalized_feed_bytes": 33554432,
+    "max_positions": 2000000,
+    "max_chunks": 512,
+    "max_collection_seconds": 600
+  },
+  "limitations": [
+    "Comparison reads one page per window and records provider counts; it does not validate or collect all 7/30-day geometry",
+    "Acquisition dates and valid/clear satellite coverage are not supplied by the current accepted feed",
+    "Empty results do not establish no flood, no satellite pass, cleared conditions or complete coverage",
+    "A/B latest generations are not a 30-day observation archive",
+    "Counts represent provider feature fragments, not unique flood incidents or affected area"
+  ]
+}
