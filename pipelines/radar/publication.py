@@ -9,7 +9,7 @@ def check_envelope(records,expected_ids):
     feed=records[0];validate_record('RadarManifest',feed)
     frames=feed['frames'];times=[datetime.fromisoformat(f['observed_at'].replace('Z','+00:00')).timestamp() for f in frames]
     fetched=datetime.fromisoformat(feed['fetched_at'].replace('Z','+00:00')).timestamp()
-    if times!=sorted(set(times)) or times[-1]-times[0]>10800 or any(t%900 or t>fetched+300 for t in times):raise ValueError('Invalid radar times')
+    if times!=sorted(set(times)) or times[-1]-times[0]>10800 or any(t%(feed.get('sampling_minutes',15)*60) or t>fetched+300 for t in times):raise ValueError('Invalid radar times')
     if sum(f['byte_length'] for f in frames)>2800000:raise ValueError('Radar byte budget exceeded')
     for f in frames:
         leaf=f['observed_at'].replace('-','').replace(':','')+'-'+f['sha256']+'.png'

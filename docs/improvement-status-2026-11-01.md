@@ -10,9 +10,11 @@ Updated 4 November 2026, Asia/Bangkok. This tracks accepted increments against t
 | A1 individual dams | Shipped | All 35 original points/list entries; no centroid/count-circle navigation; nearby markers may overlap |
 | A2 dam icon/ring | Shipped | Percent of normal capacity, null/zero distinction, original >100% value, uniform size within zoom class, 2D/3D |
 | B layer architecture | Shipped | [Background/ordering release](map-layers-release-2026-11-01.md); single forecast background, independent overlays, shared 2D/3D order; station rain remains points |
-| C0 source acceptance | TMD image display accepted with explicit qualifications; other candidates pending | [Qualified TMD image acceptance](tmd-radar-acceptance-2026-11-04.md) supersedes the original discovery for PNG display only; numerical QPE units and nowcasting time/coverage/rights remain unresolved |
-| C1 radar image player | Shipped | [Image release](radar-release-2026-11-04.md), bounded capture, Blob files, metadata A/B and frame/time controls |
-| C3 nowcasting | Pending separate source acceptance | UTC, issue/valid times, actual coverage and rights remain unresolved |
+| C0 source acceptance | TMD image display accepted with explicit qualifications; other candidates pending | [Qualified TMD image acceptance](tmd-radar-acceptance-2026-11-04.md) covers PNG display only; numerical QPE remains unqualified. [Nowcasting recheck](nowcasting-review-2026-11-04.md) establishes southern filename UTC/dBZ but records duplicate and out-of-horizon frames |
+| C1 radar image player | Shipped; quota follow-up implemented | [Image release](radar-release-2026-11-04.md), [operations follow-up](radar-operations-2026-11-04.md): half-hour samples, reuse, conservative upload reservations and preserved failure stages |
+| C3 nowcasting | Blocked at source acceptance; read-only inspector added | [Current receipt](nowcasting-review-2026-11-04.json); southern issue time/coverage/reuse remain unqualified, Bangkok and Khon Kaen candidates are old. No forecast publication |
 | C2 station rainfall | Already connected before this proposal increment | [Rain/province/basin release](province-rain-basin-release-2026-10-30.md); radar QPE remains separate and unconnected |
 | C4 rainfall polygons | Deferred | No station-to-province rainfall fill without an accepted method |
 | D dam photos | Deferred | Per-image permission/attribution review still required |
+
+Further map fit and mobile/layout work is explicitly deferred by the user to a later combined pass. Existing release screenshots are historical verification, not evidence of new layout work in this increment.

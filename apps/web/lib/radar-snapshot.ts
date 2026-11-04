@@ -19,7 +19,7 @@ export async function readRadarSnapshot():Promise<RadarSnapshot>{
         if(i===2)throw Error('Radar generation changed');
       }
       const status=await db.collection('source_status').findOne({_id:radarKey as never},{maxTimeMS:5000});
-      if(status)result.health=Object.fromEntries(['last_attempt','last_success','completed_at','status','frame_count','latest_observed_at','quality_issue_count','run_url','failure_stage','error_type'].map(key=>[key,status[key]??null]));
+      if(status)result.health=Object.fromEntries(['last_attempt','last_success','completed_at','status','last_result','frame_count','latest_observed_at','quality_issue_count','run_url','failure_stage','error_type','blob_upload_reserved','blob_upload_remaining','blob_upload_limit'].map(key=>[key,status[key]??null]));
     }else if(process.env.NODE_ENV!=='production'&&process.env.HAZARD_LOCAL_SNAPSHOT==='1'){
       const payload=JSON.parse(await readFile(path.join(process.cwd(),'data/local/radar-capture.json'),'utf8'));
       const frames=payload.frames.map(({observed_at,sha256,byte_length,width,height}:{observed_at:string;sha256:string;byte_length:number;width:number;height:number})=>({observed_at,sha256,byte_length,width,height,url:'/api/radar/frame/'+sha256}));

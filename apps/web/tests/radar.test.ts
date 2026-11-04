@@ -7,6 +7,8 @@ import {decodedRadarCandidate} from '../lib/radar-capture';
 import {radarPng} from '../lib/radar-png';
 import {validatedRadar,radarFreshness,radarVisible,radarMissingSlots,radarControlPixel,type RadarManifest} from '../lib/radar';
 import {effectiveBackground,backgroundAvailable} from '../lib/map-layer-state';
+import {reserveRadarUploads} from '../lib/radar-budget';
+import {monitorSource} from '../lib/source-health';
 const png=readFileSync(new URL('../../../tests/fixtures/radar/synthetic-transparent.png',import.meta.url));
 const checked=radarPng(png),now=Date.parse('2026-11-04T12:46:00Z');
 const frame={...checked,observed_at:'2026-11-04T12:45:00Z',url:'https://fixture.public.blob.vercel-storage.com/tmd-radar/20261104T124500Z-'+checked.sha256+'.png'};
@@ -16,7 +18,7 @@ const feed:RadarManifest={schema_version:'2.0',source_id:'tmd_radar',product_id:
 describe('Radar contract and immutable image binding',()=>{
   it('accepts original source geometry and validated image hash, never image bytes in metadata',()=>{
     expect(checked.sha256).toBe(createHash('sha256').update(png).digest('hex'));
-    const candidate={...feed,frames:[{...checked,observed_at:frame.observed_at,path:'zr/24.png',image_base64:png.toString('base64')}]};
+    const candidate={...feed,frames:[{...checked,observed_at:'2026-11-04T12:30:00Z',path:'zr/24.png',image_base64:png.toString('base64')}]};
     expect(decodedRadarCandidate(candidate,now).feed.frames[0].sha256).toBe(checked.sha256);
     expect(()=>validatedRadar({...feed,frames:[{...frame,image_base64:'unwanted'}]})).toThrow();
   });
@@ -43,6 +45,24 @@ describe('Radar contract and immutable image binding',()=>{
     const older={...frame,observed_at:'2026-11-04T12:00:00Z',url:frame.url.replace('124500','120000')};
     const gap=validatedRadar({...feed,frames:[older,frame]});expect(radarMissingSlots(gap)).toBe(2);
   });
+  it('enforces half-hour uploads for legacy captures while preserving gaps and old readable metadata',()=>{
+    const candidate={...feed,frames:['11:00','11:15','12:00','12:15','12:30','12:45'].map((time,i)=>({...checked,observed_at:'2026-11-04T'+time+':00Z',path:'zr/'+String(i).padStart(2,'0')+'.png',image_base64:png.toString('base64')}))};
+    const sampled=decodedRadarCandidate(candidate,now).feed;
+    expect(sampled.sampling_minutes).toBe(30);
+    expect(sampled.frames.map(f=>f.observed_at.slice(11,16))).toEqual(['11:00','12:00','12:30']);
+    expect(radarMissingSlots(sampled)).toBe(1);
+    expect(validatedRadar(feed).frames[0].observed_at).toBe('2026-11-04T12:45:00Z');
+    expect(()=>validatedRadar({...feed,sampling_minutes:30})).toThrow();
+    expect(()=>decodedRadarCandidate({...candidate,frames:[candidate.frames[1]]},now)).toThrow();
+  });
+  it('does not freshen a half-hour sample with its newer capture time',()=>{
+    const sampled={...feed,frames:[{...frame,observed_at:'2026-11-04T12:30:00Z'}]};
+    expect(radarFreshness(sampled,Date.parse('2026-11-04T13:16:00Z'))).toBe('DELAYED');
+  });
+  it('reports the half-hour cron with its grace period',()=>{
+    const result=monitorSource('tmd_radar','FRESH',{status:'SUCCESS',last_attempt:'2026-11-04T12:22:00Z',last_success:'2026-11-04T12:22:00Z'},Date.parse('2026-11-04T12:25:00Z'));
+    expect(result.cadence_hours).toBe(.5);expect(result.expected_by).toBe('2026-11-04T13:22:00.000Z');
+  });
   it('keeps radar and forecast fills exclusive, including in basin context',()=>{
     expect(effectiveBackground('daily',true,'administrative',true)).toBe('radar');
     expect(effectiveBackground('hourly',true,'basin',true)).toBe('radar');
@@ -57,6 +77,26 @@ describe('Radar contract and immutable image binding',()=>{
   it('rejects corrupted or truncated image bytes before upload',()=>{
     expect(()=>radarPng(png.subarray(0,50))).toThrow();
     const corrupt=Buffer.from(png);corrupt[50]^=1;expect(()=>radarPng(corrupt)).toThrow();
+  });
+});
+
+describe('Conservative Blob upload reservations',()=>{
+  it('reserves migration headroom and charges only new files, not reused images',()=>{
+    const first=reserveRadarUploads(undefined,7,now);
+    expect(first.reserved).toBe(107);expect(first.remaining).toBe(1693);
+    expect(reserveRadarUploads(first.reservations,0,now).reserved).toBe(107);
+    expect(reserveRadarUploads(first.reservations,1,now).reserved).toBe(108);
+  });
+  it('blocks a whole batch before upload, preserves reservations and covers month boundaries',()=>{
+    const rows=[{day:'2026-11-04',count:1799}];
+    expect(()=>reserveRadarUploads(rows,2,now)).toThrow('budget exhausted');
+    expect(rows[0].count).toBe(1799);
+    expect(reserveRadarUploads(rows,1,Date.parse('2026-12-01T12:00Z')).reserved).toBe(1800);
+    expect(reserveRadarUploads(rows,1,Date.parse('2026-12-05T23:59Z')).reserved).toBe(1800);
+    expect(reserveRadarUploads(rows,1,Date.parse('2026-12-06T00:00Z')).reserved).toBe(1);
+  });
+  it.each([[{day:'2026-02-30',count:1}],[{day:'2026-11-05',count:1}],[{day:'2026-11-04',count:-1}],[{day:'2026-11-04',count:1},{day:'2026-11-04',count:2}]].map(rows=>({rows})))('fails closed on invalid stored reservations %s',({rows})=>{
+    expect(()=>reserveRadarUploads(rows,1,now)).toThrow();
   });
 });
 

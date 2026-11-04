@@ -2,6 +2,8 @@
 
 4 November 2026, Asia/Bangkok. This C1 increment implements the [qualified TMD composite image product](tmd-radar-acceptance-2026-11-04.md). Numerical QPE and nowcasting remain separate, unaccepted products.
 
+**Operating-policy update:** the later [quota/continuity follow-up](radar-operations-2026-11-04.md) supersedes this initial release's 15-minute/13-frame collection policy. Current publication uses fixed half-hour samples, at most seven frames; the original release receipts below remain historical evidence.
+
 Choose **Map background → Observed radar estimate · TMD**. Play/pause, previous/next, timeline, latest frame and independent opacity operate on at most 13 source images spanning three hours. The selected image's ICT and original UTC time stay visible. Radar and Open-Meteo forecast fills are mutually exclusive; station, dam, warning and flood choices are preserved. The same native image source is used in 2D/3D and basin context without claiming basin rainfall aggregates. Original image colors and TMD's published scale are retained.
 
 New frames stay hidden until successful image-source metadata loading. A failed image is hidden and stops advancement. A stale/unknown feed is hidden and playback is disabled. Latest source observation and retrieval age jointly determine FRESH through 45 minutes, DELAYED through 90, then STALE. Historical frames keep their original times even when the latest feed is fresh. Transparent pixels and missing images never establish zero rain, complete coverage or safe conditions; non-rain echoes remain possible.

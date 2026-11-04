@@ -17,7 +17,10 @@ export function decodedRadarCandidate(value:unknown,now=Date.now()){
     images.set(frame.sha256,bytes);
     return {observed_at:frame.observed_at,...checked,url:'https://capture.public.blob.vercel-storage.com/tmd-radar/'+frame.observed_at.replace(/[-:]/g,'')+'-'+checked.sha256+'.png'};
   });
-  const feed=validatedRadar({...candidate,frames});
-  if(Date.parse(feed.fetched_at)>now+300000||now-Date.parse(feed.fetched_at)>600000||now-Date.parse(frames.at(-1)!.observed_at)>5400000)throw Error('Stale capture');
+  const original=validatedRadar({...candidate,frames});
+  // Enforce the upload policy even for queued producers using the legacy cadence.
+  const selected=original.frames.filter(frame=>Date.parse(frame.observed_at)%1800000===0);
+  const feed=validatedRadar({...original,sampling_minutes:30,frames:selected});
+  if(Date.parse(feed.fetched_at)>now+300000||now-Date.parse(feed.fetched_at)>600000||now-Date.parse(feed.frames.at(-1)!.observed_at)>5400000)throw Error('Stale capture');
   return {feed,images};
 }

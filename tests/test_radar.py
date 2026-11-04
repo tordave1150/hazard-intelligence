@@ -1,12 +1,12 @@
 import base64
 from copy import deepcopy
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 from pathlib import Path
 import hashlib
 import json
 import mongomock
 import pytest
-from pipelines.radar.client import parse_list,validate_png,capture,BASE
+from pipelines.radar.client import parse_list,sampled_frames,validate_png,capture,BASE
 from pipelines.radar.publication import RadarPublisher
 from pipelines.radar.run import wait_for_receiver
 from scripts.mongo_admin import verify_database
@@ -20,7 +20,7 @@ CONFIG=b"RADAR_COORDS: [[95,22.5],[108,22.5],[108,4],[95,4]], BASEMAP: ''; PCAPP
 def test_compatible_receiver_survives_newer_documentation_commit_and_retries():
     class Ready:
         status_code=200
-        def json(self):return {'deployment_commit':'a-newer-documentation-commit','ingestion_protocol':'tmd-radar-v1'}
+        def json(self):return {'deployment_commit':'a-newer-documentation-commit','ingestion_protocol':'tmd-radar-v1','publication_sampling_minutes':30}
     seen=[]
     wait_for_receiver(lambda *args,**kwargs:seen.append(args) or Ready(),lambda _:pytest.fail('Compatible receiver must not sleep'))
     assert len(seen)==1
@@ -48,8 +48,9 @@ def test_capture_hashes_original_times_and_both_passes():
         seen.append(url);assert kwargs['allow_redirects'] is False
         return Response(CONFIG if url.endswith('.html') else LIST.encode() if url.endswith('.list') else b'2026-11-04 12:45' if url.endswith('.latest') else PNG)
     feed=capture(get,NOW)
-    assert len(feed['frames'])==4 and len(seen)==13
-    assert feed['frames'][-1]['observed_at']=='2026-11-04T12:45:00Z'
+    assert len(feed['frames'])==2 and len(seen)==9
+    assert feed['frames'][-1]['observed_at']=='2026-11-04T12:30:00Z'
+    assert feed['sampling_minutes']==30
     assert feed['frames'][0]['sha256']==hashlib.sha256(PNG).hexdigest()
 
 
@@ -81,6 +82,36 @@ def test_original_gaps_are_preserved_and_old_or_future_frames_rejected():
     assert len(parse_list(gap,NOW))==2
     with pytest.raises(ValueError):parse_list(LIST,NOW+5401)
     with pytest.raises(ValueError):parse_list(LIST,NOW-600)
+
+
+def test_half_hour_policy_is_fixed_even_for_delayed_collection_and_keeps_three_hours():
+    end=datetime.fromtimestamp(NOW,timezone.utc)
+    listing='\n'.join(f'background_THA.png "{end-timedelta(minutes=15*(24-i)):%Y-%m-%d %H:%M}" overlay=zr/{i:02}.png' for i in range(25))
+    rows=sampled_frames(parse_list(listing,NOW))
+    assert len(rows)==7
+    assert rows[0]['observed_at']=='2026-11-04T09:30:00Z'
+    assert rows[-1]['observed_at']=='2026-11-04T12:30:00Z'
+    assert all(datetime.fromisoformat(r['observed_at'].replace('Z','+00:00')).minute in [0,30] for r in rows)
+    gap=[r for r in rows if r['observed_at']!='2026-11-04T11:00:00Z']
+    assert len(sampled_frames(gap))==6
+    with pytest.raises(ValueError):sampled_frames([{'observed_at':'2026-11-04T12:45:00Z'}])
+
+
+@pytest.mark.parametrize('stage',['wait','capture','publish','export'])
+def test_only_source_capture_failures_send_capture_failed(monkeypatch,tmp_path,stage):
+    import pipelines.radar.run as runner
+    def fail(*_):raise RuntimeError('simulated failure')
+    calls=[]
+    def publishing(payload):
+        calls.append(payload)
+        if payload!={'capture_failed':True}:fail()
+    monkeypatch.setattr('sys.argv',['radar','--publish']+(['--export',str(tmp_path)] if stage=='export' else []))
+    monkeypatch.setattr(runner,'wait_for_receiver',fail if stage=='wait' else lambda:None)
+    monkeypatch.setattr(runner,'capture',fail if stage=='capture' else lambda:{'frames':[]})
+    monkeypatch.setattr(runner,'publish',publishing)
+    # An existing directory cannot be replaced by an export file.
+    with pytest.raises(RuntimeError):runner.main()
+    assert ({'capture_failed':True} in calls)==(stage=='capture')
 
 
 @pytest.mark.parametrize('data',[b'not png',PNG[:-10],PNG+b'trailing',PNG[:50]+bytes([PNG[50]^1])+PNG[51:]],ids=['text','truncated','trailing','corrupt'])

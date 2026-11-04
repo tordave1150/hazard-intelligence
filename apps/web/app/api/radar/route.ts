@@ -2,13 +2,14 @@ import {NextResponse} from 'next/server';
 import {authorizeRadar} from '@/lib/radar-auth';
 import {publishRadar} from '@/lib/radar-ingest';
 import {readRadarSnapshot} from '@/lib/radar-snapshot';
-import {invalid,json} from '@/lib/http';
+import {invalid} from '@/lib/http';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export const maxDuration=240;
 export async function GET(request:Request){
   if(new URL(request.url).search)return invalid('Radar uses a national image sequence; no query parameters');
-  return json({...await readRadarSnapshot(),ingestion_protocol:'tmd-radar-v1',deployment_commit:process.env.VERCEL_GIT_COMMIT_SHA??null});
+  // Readiness and failure/quota health must not linger in a previous CDN generation.
+  return NextResponse.json({...await readRadarSnapshot(),ingestion_protocol:'tmd-radar-v1',publication_sampling_minutes:30,deployment_commit:process.env.VERCEL_GIT_COMMIT_SHA??null},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request){
   if(process.env.VERCEL_ENV&&process.env.VERCEL_ENV!=='production')return invalid('Ingestion is production-only',403);

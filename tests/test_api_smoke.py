@@ -211,6 +211,8 @@ def test_radar_metadata_keeps_images_out_of_the_response():
     assert response.status_code==200
     body=response.json()
     assert body['ingestion_protocol']=='tmd-radar-v1'
+    assert body['publication_sampling_minutes']==30
+    assert 'no-store' in response.headers.get('Cache-Control','')
     assert body['freshness'] in ['FRESH','DELAYED','STALE','UNKNOWN','UNAVAILABLE']
     if body['feed']:
         feed=body['feed']

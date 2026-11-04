@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths: ['pipelines/radar/**', '.github/workflows/radar.yml', 'apps/web/lib/radar*.ts', 'apps/web/app/api/radar/**']
   schedule:
-    - cron: '7,22,37,52 * * * *' # Best effort; observation age and delays stay visible.
+    - cron: '22,52 * * * *' # Half-hour samples; best effort, actual observation age stays visible.
   workflow_dispatch:
 permissions:
   contents: read

@@ -15,7 +15,9 @@ def wait_for_receiver(get=None,sleep=None):
     for attempt in range(30):
         try:
             response=get(PUBLISH_URL,timeout=10)
-            if response.status_code==200 and response.json().get('ingestion_protocol')=='tmd-radar-v1':return
+            if response.status_code==200:
+                capabilities=response.json()
+                if capabilities.get('ingestion_protocol')=='tmd-radar-v1' and capabilities.get('publication_sampling_minutes')==30:return
         except requests.RequestException:pass
         if attempt==29:raise RuntimeError('Compatible production receiver not ready')
         sleep(5)
@@ -27,18 +29,21 @@ def publish(payload):
     response=requests.post(PUBLISH_URL,json=payload,headers={'Authorization':'Bearer '+token},timeout=240,allow_redirects=False)
     if response.status_code!=200:raise RuntimeError(f'Radar publication returned HTTP {response.status_code}')
     result=response.json()
-    if result.get('status') not in ['SUCCESS','ALREADY_PUBLISHED']:raise RuntimeError('Radar publication was not completed')
+    if result.get('status') not in ['SUCCESS','ALREADY_PUBLISHED','WAITING_FOR_NEXT_SAMPLE']:raise RuntimeError('Radar publication was not completed')
     return result
 
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--export',type=Path);parser.add_argument('--publish',action='store_true');args=parser.parse_args()
     if not args.export and not args.publish:parser.error('Select --export and/or --publish')
+    capturing=False
     try:
         if args.publish:
             # Compatible queued jobs/retries remain valid after documentation-only deployments.
             wait_for_receiver()
+        capturing=True
         payload=capture()
+        capturing=False
         if args.export:
             args.export.parent.mkdir(parents=True,exist_ok=True)
             temporary=args.export.with_suffix('.tmp');temporary.write_text(json.dumps(payload,separators=(',',':')),encoding='utf-8');os.replace(temporary,args.export)
@@ -46,7 +51,7 @@ def main():
             result=publish(payload);print(json.dumps({'source_id':'tmd_radar','status':result.get('status'),'frame_count':result.get('frame_count')}))
         else:print(json.dumps({'source_id':'tmd_radar','status':'CAPTURED','frames':len(payload['frames'])}))
     except Exception as exc:
-        if args.publish:
+        if args.publish and capturing:
             try:publish({'capture_failed':True})
             except Exception:pass
         print(json.dumps({'source_id':'tmd_radar','status':'FAILED','error_type':type(exc).__name__}));raise RuntimeError('Radar capture/publication failed; previous generation retained') from None

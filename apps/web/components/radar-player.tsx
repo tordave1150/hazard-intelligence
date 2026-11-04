@@ -20,6 +20,7 @@ export default function RadarPlayer({snapshot,index,onIndex,opacity,onOpacity,lo
     <p className="radar-clock" role="status">{frame?<>ภาพที่เลือก: <b>{bangkokTime(frame.observed_at)}</b> · ต้นทาง UTC {frame.observed_at.replace('T',' ').replace('Z','')} · {index+1}/{frames.length}</>:'ยังไม่มีชุดภาพเรดาร์ที่ตรวจสอบแล้ว'}</p>
     <p className="radar-load" role="status">{!visible?'หยุดแสดงภาพ: ข้อมูลเก่าหรือยังยืนยันเวลาไม่ได้':failed?'โหลดภาพไม่สำเร็จ · ยังไม่แสดงภาพ เลือกเวลาอื่นหรือลองใหม่':loaded?(index===frames.length-1?'กำลังแสดงภาพล่าสุดในชุด':'กำลังแสดงภาพย้อนหลัง'):'กำลังโหลด · ยังไม่แสดงภาพที่เลือก'}</p>
     {snapshot.health?.status==='FAILED'&&<p>รอบเก็บล่าสุดไม่สำเร็จ · กำลังใช้ชุดภาพล่าสุดที่ตรวจผ่านตามเวลาที่แสดง</p>}
+    {snapshot.health?.status==='FAILED'&&snapshot.health.failure_stage==='BLOB_BUDGET'&&<p>หยุดอัปโหลด: งบสำรองไฟล์เต็มหรือตรวจสอบไม่ได้ · ชุดภาพเดิมจะซ่อนเมื่อเก่าเกินเกณฑ์</p>}
     <div className="radar-playback"><button aria-label={running?'Pause radar':'Play radar'} disabled={!visible||frames.length<2||failed} onClick={()=>setPlaying(value=>!value)}>{running?<Pause size={15}/>:<Play size={15}/>}</button>
       <button aria-label="Previous radar frame" disabled={!visible||index<=0} onClick={()=>{setPlaying(false);onIndex(index-1);}}><ChevronLeft size={16}/></button>
       <input type="range" aria-label="Radar frame" min={0} max={Math.max(0,frames.length-1)} value={Math.min(index,Math.max(0,frames.length-1))} disabled={!visible||frames.length<2} onChange={e=>{setPlaying(false);onIndex(Number(e.target.value));}}/>
@@ -30,8 +31,9 @@ export default function RadarPlayer({snapshot,index,onIndex,opacity,onOpacity,lo
     <div className="radar-scale" aria-label="TMD rain rate color scale in millimeters per hour">{scale.map(([color,label],i)=><span key={i} title={label+' mm/hour'} style={{background:color}}/>)}</div>
     <div className="radar-scale-labels"><span>0.21</span><span>2.10</span><span>12.5</span><span>52.2</span><span>217.9</span><span>&gt;636</span></div>
     <p>พื้นที่โปร่งใส/ไม่มีสี: ยังยืนยันไม่ได้ว่าไม่มีฝนหรือเรดาร์ขาดข้อมูล · echo อาจมีสิ่งที่ไม่ใช่ฝน · ขอบภาพไม่รับรองพื้นที่ตรวจวัดครบ</p>
-    <details><summary>เวลา แหล่งข้อมูล และระดับสี</summary><p>ล่าสุดในชุด {bangkokTime(frames.at(-1)?.observed_at)} · เก็บข้อมูล {bangkokTime(snapshot.feed?.fetched_at)} · รอบเก็บ {String(snapshot.health?.status??'UNKNOWN')} · เป้าหมายทุก 15 นาที ตารางอาจล่าช้า</p>
-      {snapshot.feed&&radarMissingSlots(snapshot.feed)>0&&<p>ขาดช่วงเวลา 15 นาทีภายในชุด {radarMissingSlots(snapshot.feed)} ช่วง · ไม่เติมภาพหรือค่าฝนเอง</p>}
+    <details><summary>เวลา แหล่งข้อมูล และระดับสี</summary><p>ล่าสุดในชุด {bangkokTime(frames.at(-1)?.observed_at)} · เก็บข้อมูล {bangkokTime(snapshot.feed?.fetched_at)} · รอบเก็บ {String(snapshot.health?.status??'UNKNOWN')} · ภาพห่างกัน {snapshot.feed?.sampling_minutes??15} นาที · เป้าหมายเก็บทุก 30 นาที ตารางอาจล่าช้า</p>
+      {snapshot.feed&&radarMissingSlots(snapshot.feed)>0&&<p>ขาดช่วงเวลา {snapshot.feed.sampling_minutes??15} นาทีภายในชุด {radarMissingSlots(snapshot.feed)} ช่วง · ไม่เติมภาพหรือค่าฝนเอง</p>}
+      {typeof snapshot.health?.blob_upload_remaining==='number'&&<p>งบอัปโหลดเรดาร์ที่เหลือ {snapshot.health.blob_upload_remaining} จาก {String(snapshot.health.blob_upload_limit)} ครั้ง · ตัวนับสำรองของแอป ไม่ใช่ยอดใช้งานจาก Vercel</p>}
       <p>ค่าประมาณจาก PCAPPI ระดับ 2 km และสมการ Z–R ตาม TMD · ใช้เวลาและสีของแต่ละภาพ แยกจากพยากรณ์และฝนสะสมสถานี</p>
       <ul className="radar-scale-detail">{scale.map(([color,label],i)=><li key={i}><i style={{background:color}}/>{label} mm/hour</li>)}</ul>
     </details>

@@ -28,7 +28,15 @@ def parse_list(text, now):
     if times!=sorted(set(times)) or len(set(r['path'] for r in rows))!=len(rows):raise ValueError('Duplicate or unordered frames')
     latest=datetime.fromisoformat(times[-1].replace('Z','+00:00')).timestamp()
     if now-latest>5400:raise ValueError('Source radar images stale')
-    return [r for r in rows if latest-datetime.fromisoformat(r['observed_at'].replace('Z','+00:00')).timestamp()<=10800][-13:]
+    return rows
+
+
+def sampled_frames(rows):
+    # Fixed UTC slots prevent delayed jobs from backfilling every 15-minute image.
+    selected=[r for r in rows if datetime.fromisoformat(r['observed_at'].replace('Z','+00:00')).minute%30==0]
+    if not selected:raise ValueError('No half-hour radar samples')
+    latest=datetime.fromisoformat(selected[-1]['observed_at'].replace('Z','+00:00')).timestamp()
+    return [r for r in selected if latest-datetime.fromisoformat(r['observed_at'].replace('Z','+00:00')).timestamp()<=10800][-7:]
 
 
 def validate_png(data):
@@ -81,6 +89,8 @@ def capture(get=None,now=None):
     rows=parse_list(listing.decode('utf-8'),now)
     latest=rows[-1]['observed_at'].replace('T',' ')[:16]
     if clock.decode('utf-8').strip()!=latest:raise ValueError('Source clocks disagree')
+    rows=sampled_frames(rows)
+    if now-datetime.fromisoformat(rows[-1]['observed_at'].replace('Z','+00:00')).timestamp()>5400:raise ValueError('Sampled radar images stale')
     frames=[];total=0
     for row in rows:
         data=fetch(BASE+'images/'+row['path'],MAX_FRAME_BYTES);total+=len(data)
@@ -94,4 +104,4 @@ def capture(get=None,now=None):
         'snapshot_id':'latest','fetched_at':datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z'),
         'source_url':BASE+'index_composite.html','coordinates':COORDINATES,'units':'mm/hour',
         'generation_consistency':'MANIFEST_CLOCK_AND_DOUBLE_IMAGE_HASH_CHECKED_NO_VERSION_TOKEN',
-        'frames':frames}
+        'sampling_minutes':30,'frames':frames}

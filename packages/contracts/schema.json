@@ -3419,6 +3419,13 @@
               }
             }
           }
+        },
+        "sampling_minutes": {
+          "type": "integer",
+          "enum": [
+            15,
+            30
+          ]
         }
       }
     }
