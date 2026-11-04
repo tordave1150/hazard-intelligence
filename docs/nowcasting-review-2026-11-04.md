@@ -12,6 +12,8 @@ The [current manifest](https://satda.tmd.go.th/wp-content/uploads/data/dashboard
 
 Acceptance remains blocked by the observed frame/time defects, qualified issue time, validated coverage/no-data behavior, and branch-specific reuse/storage acceptance. No numerical dBZ/rainfall grid or district prediction is derived from this viewer.
 
+A regional source can be accepted later with explicit, validated regional coverage. Thailand-wide application scope does not require every source to cover the whole country, and does not permit filling unknown areas outside its coverage.
+
 ## Other candidates
 
 - [Bangkok manifest](https://satda.tmd.go.th/wp-content/uploads/nowcasting/bkk/bangkok_frames/manifest.json): explicit `generated_at` 24 June 2026 11:11:26 UTC, stale for the review date; `precipitationIntensity` and regional bounds. Third-party reuse is unresolved.
@@ -21,4 +23,4 @@ Acceptance remains blocked by the observed frame/time defects, qualified issue t
 
 `python -m scripts.inspect_nowcasting --export artifacts/nowcasting-review.json`
 
-The tool fetches only four fixed public text endpoints, rejects redirects and oversized documents, and records an inspection result rather than publishing. It checks frame grammar, valid UTC convention, ordering, duplicates, source counts, base alignment, age and the 180-minute horizon. Even a structurally valid manifest remains unaccepted while issue time, national valid coverage and reuse/storage gates are outstanding. Synthetic tests exercise each rejection and preserve generated/issue-time uncertainty. Other application sources remain unchanged.
+The tool fetches only four fixed public text endpoints, rejects redirects and oversized documents, and records an inspection result rather than publishing. It checks frame grammar, valid UTC convention, ordering, duplicates, source counts, base alignment, age and the 180-minute horizon. Even a structurally valid manifest remains unaccepted while issue time, actual valid coverage/no-data and reuse/storage gates are outstanding. Synthetic tests exercise each rejection and preserve generated/issue-time uncertainty. Other application sources remain unchanged.

@@ -73,9 +73,10 @@
       "NON_INCREASING_VALID_TIMES",
       "FORECAST_OUTSIDE_ADVERTISED_180_MINUTES",
       "ISSUE_TIME_NOT_QUALIFIED",
-      "NATIONAL_VALID_COVERAGE_NOT_ESTABLISHED",
+      "VALID_COVERAGE_AND_NO_DATA_NOT_QUALIFIED",
       "IMAGE_REUSE_AND_FORECAST_STORAGE_BUDGET_NOT_ACCEPTED"
-    ]
+    ],
+    "coverage_scope": "REGIONAL"
   },
   "bangkok": {
     "state": "NOT_ACCEPTED",
@@ -83,9 +84,9 @@
     "stale": true,
     "field": "precipitationIntensity",
     "issues": [
-      "THIRD_PARTY_REUSE_NOT_ACCEPTED",
-      "NOT_A_NATIONAL_PRODUCT"
-    ]
+      "THIRD_PARTY_REUSE_NOT_ACCEPTED"
+    ],
+    "coverage_scope": "REGIONAL"
   },
   "khon_kaen": {
     "state": "NOT_ACCEPTED",
@@ -97,8 +98,8 @@
     ],
     "timezone": "UNKNOWN",
     "issues": [
-      "TIMEZONE_AND_ISSUE_TIME_NOT_QUALIFIED",
-      "NOT_A_NATIONAL_PRODUCT"
-    ]
+      "TIMEZONE_AND_ISSUE_TIME_NOT_QUALIFIED"
+    ],
+    "coverage_scope": "REGIONAL"
   }
 }

@@ -19,7 +19,8 @@ def test_utc_valid_times_are_qualified_but_never_invent_issue_time_from_generate
     assert result['generated_at_raw']=='2026-11-04T21:39:00'
     assert result['issued_at_utc'] is None and result['state']=='NOT_ACCEPTED'
     assert result['display_units']=='dBZ' and result['forecast_leads_minutes']==[30,60]
-    assert 'NATIONAL_VALID_COVERAGE_NOT_ESTABLISHED' in result['issues']
+    assert result['coverage_scope']=='REGIONAL'
+    assert 'VALID_COVERAGE_AND_NO_DATA_NOT_QUALIFIED' in result['issues']
 
 
 def test_duplicate_and_out_of_horizon_frames_block_the_entire_source_without_silent_repair():

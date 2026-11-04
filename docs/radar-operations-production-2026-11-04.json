@@ -1,0 +1,155 @@
+{
+  "reviewed_at": "2026-11-04T15:56:16.948834+00:00",
+  "implementation_commit": "e0dda32d5e895f1ccc8f7a09cab13e0931d562ba",
+  "production_url": "https://hazard-intelligence-lime.vercel.app",
+  "sampling_minutes": 30,
+  "frame_count": 7,
+  "first_observed_at": "2026-11-04T12:30:00Z",
+  "latest_observed_at": "2026-11-04T15:30:00Z",
+  "freshness_at_check": "FRESH",
+  "cache_control": "no-store",
+  "health": {
+    "last_attempt": "2026-11-04T15:53:07.614Z",
+    "last_success": "2026-11-04T15:53:07.614Z",
+    "completed_at": "2026-11-04T15:53:16.917Z",
+    "status": "SUCCESS",
+    "last_result": "PUBLISHED",
+    "frame_count": 7,
+    "latest_observed_at": "2026-11-04T15:30:00Z",
+    "quality_issue_count": 0,
+    "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41862113424",
+    "failure_stage": null,
+    "error_type": null,
+    "blob_upload_reserved": 104,
+    "blob_upload_remaining": 1696,
+    "blob_upload_limit": 1800
+  },
+  "image_bytes": 910217,
+  "image_checks": [
+    {
+      "observed_at": "2026-11-04T12:30:00Z",
+      "sha256": "98cea1bc2a1cce303c1f96f184488810e53333fc5957151caa8aef2ed2f24146",
+      "byte_length": 140120,
+      "http": 200,
+      "png_validated": true
+    },
+    {
+      "observed_at": "2026-11-04T13:00:00Z",
+      "sha256": "8aba64c6f3ddc62e38dba771f21dd37ad8eb523fe5e7c3adf5381dc0fbcd683d",
+      "byte_length": 131866,
+      "http": 200,
+      "png_validated": true
+    },
+    {
+      "observed_at": "2026-11-04T13:30:00Z",
+      "sha256": "93181f8de7e469337a56bc3b4db6aaabb502e24d85bbf90976c0ffee28285bc4",
+      "byte_length": 129958,
+      "http": 200,
+      "png_validated": true
+    },
+    {
+      "observed_at": "2026-11-04T14:00:00Z",
+      "sha256": "d1c9f18fd1d545da0008ae79152325e9ad02d83ec328c1ab45938fc75c512698",
+      "byte_length": 128828,
+      "http": 200,
+      "png_validated": true
+    },
+    {
+      "observed_at": "2026-11-04T14:30:00Z",
+      "sha256": "9ca561bc721f3a12ed47a0b31b1f5cd939ff84a4ca381c8a24ad1aba27266dfe",
+      "byte_length": 125361,
+      "http": 200,
+      "png_validated": true
+    },
+    {
+      "observed_at": "2026-11-04T15:00:00Z",
+      "sha256": "494dd3a03241100a9ef3d02ae41670eaa06be3935d930e4adf64f7798180e030",
+      "byte_length": 129386,
+      "http": 200,
+      "png_validated": true
+    },
+    {
+      "observed_at": "2026-11-04T15:30:00Z",
+      "sha256": "3509819e1a1722aa938986445d3441652a74231f4559a32b5e4297bde7fe50e5",
+      "byte_length": 124698,
+      "http": 200,
+      "png_validated": true
+    }
+  ],
+"github_job_log_checks": [
+  {
+    "job_id": 126686446479,
+    "evidence": [
+      "2026-11-04T15:53:17.3737346Z {\"source_id\": \"tmd_radar\", \"status\": \"SUCCESS\", \"frame_count\": 7}"
+    ]
+  },
+  {
+    "job_id": 126686446633,
+    "evidence": [
+      "2026-11-04T15:52:15.5285094Z  Test Files  6 passed (6)",
+      "2026-11-04T15:52:15.5313710Z       Tests  116 passed (116)",
+      "2026-11-04T15:52:20.0285202Z ✓ Compiled successfully in 4.0s",
+      "2026-11-04T15:52:25.0720246Z   Finished TypeScript in 5.0s ...",
+      "2026-11-04T15:52:26.1989561Z ✓ Generating static pages using 3 workers (7/7) in 234ms"
+    ]
+  },
+  {
+    "job_id": 126686446188,
+    "evidence": [
+      "2026-11-04T15:52:37.9810649Z 300 passed, 29 skipped in 25.97s"
+    ]
+  }
+],
+  "github_runs": [
+    {
+      "id": 41862113424,
+      "event": "push",
+      "status": "queued",
+      "conclusion": null,
+      "created_at": "2026-11-04T15:51:53Z",
+      "run_started_at": "2026-11-04T15:51:53Z",
+      "updated_at": "2026-11-04T15:51:53Z",
+      "html_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41862113424"
+    },
+    {
+      "id": 41862113458,
+      "event": "push",
+      "status": "queued",
+      "conclusion": null,
+      "created_at": "2026-11-04T15:51:53Z",
+      "run_started_at": "2026-11-04T15:51:53Z",
+      "updated_at": "2026-11-04T15:51:53Z",
+      "html_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41862113458"
+    }
+  ],
+  "vercel_commit_status": "success: Deployment has completed",
+  "vercel_deployment_url": "https://vercel.com/jedsadaporn231043-6773s-projects/hazard-intelligence/7C9AhPWWQdrDTDbwK32uaSpk8ENj",
+  "limitations": [
+    "Vercel deployment list API returned 403; production commit and GitHub Vercel commit status verified instead",
+    "No new fit/mobile verification performed",
+    "No radar schedule-event run yet observed; this collection was push-triggered",
+    "Upload reservations are application counters, not Vercel billing usage"
+  ],
+  "http_tests": {
+    "local_passed": 29,
+    "production_passed": 29
+  },
+  "browser": {
+    "latest_frame_loaded": true,
+    "latest_utc": "2026-11-04T15:30:00Z",
+    "latest_ict": "2026-11-04 22:30",
+    "cadence_text_minutes": 30,
+    "budget_remaining_visible": 1696,
+    "console_errors": 0,
+    "proof_artifact": "artifacts/radar-operations-proof-2026-11-04.png",
+    "fit_mobile_changes": false
+  },
+  "upload_reservations": {
+    "initial_headroom": 100,
+    "new_uploads_reserved": 4,
+    "remaining": 1696,
+    "limit": 1800,
+    "is_provider_billing_meter": false
+  },
+  "github_index_observation": "Run API snapshots still reported queued, while downloadable job logs contain completed successful tests/build and radar SUCCESS. Log evidence is recorded separately; do not infer workflow conclusions from stale index state."
+}

@@ -45,12 +45,12 @@ def inspect_south(manifest,viewer,now):
     else:issues.append('INVALID_NOW_INDEX')
     if manifest.get('total_frames')!=len(frames) or manifest.get('obs_count')!=kinds.count('observ') or manifest.get('fc_count')!=kinds.count('swirls'):issues.append('FRAME_COUNTS_DISAGREE')
     # Source display bounds and dBZ legend do not certify a numerical grid or valid pixels.
-    issues+=['ISSUE_TIME_NOT_QUALIFIED','NATIONAL_VALID_COVERAGE_NOT_ESTABLISHED','IMAGE_REUSE_AND_FORECAST_STORAGE_BUDGET_NOT_ACCEPTED']
+    issues+=['ISSUE_TIME_NOT_QUALIFIED','VALID_COVERAGE_AND_NO_DATA_NOT_QUALIFIED','IMAGE_REUSE_AND_FORECAST_STORAGE_BUDGET_NOT_ACCEPTED']
     return {'state':'NOT_ACCEPTED','source_url':URLS['south_manifest'],'viewer_url':URLS['south_viewer'],
         'valid_time_convention':'UTC_FROM_SOURCE_FILENAME_PARSER' if convention else 'UNKNOWN',
         'base_observation_utc':base.isoformat().replace('+00:00','Z') if base and convention else None,
         'issued_at_utc':None,'generated_at_raw':manifest.get('generated_at'),'display_units':'dBZ' if 'dBZ' in viewer else 'UNKNOWN',
-        'frame_count':len(frames),'observation_count':kinds.count('observ'),'forecast_count':kinds.count('swirls'),
+        'coverage_scope':'REGIONAL','frame_count':len(frames),'observation_count':kinds.count('observ'),'forecast_count':kinds.count('swirls'),
         'forecast_leads_minutes':[int((t-base).total_seconds()/60) for t,k in zip(times,kinds) if k=='swirls'] if base else [],
         'duplicate_frame_names':sorted({n for n in names if names.count(n)>1}),
         'image_bounds_raw':frames[0].get('bounds') if isinstance(frames[0],dict) else None,'issues':list(dict.fromkeys(issues))}
@@ -81,11 +81,11 @@ def main():
         try:
             mf=json.loads(documents['bangkok_manifest']);generated=datetime.fromisoformat(mf['generated_at'].replace('Z','+00:00'))
             report['bangkok']={'state':'NOT_ACCEPTED','generated_at_raw':mf['generated_at'],'stale':generated.utcoffset() is None or (now-generated).total_seconds()>5400,
-                'field':mf.get('field'),'issues':['THIRD_PARTY_REUSE_NOT_ACCEPTED','NOT_A_NATIONAL_PRODUCT']}
+                'field':mf.get('field'),'coverage_scope':'REGIONAL','issues':['THIRD_PARTY_REUSE_NOT_ACCEPTED']}
         except (ValueError,KeyError,TypeError):report['bangkok']={'state':'NOT_ACCEPTED','issues':['INVALID_MANIFEST']}
     if 'khon_kaen_viewer' in documents:
         files=sorted(set(re.findall(r'(\d{8}_\d{6})\.png',documents['khon_kaen_viewer'])))
-        report['khon_kaen']={'state':'NOT_ACCEPTED','frame_times_raw':files,'timezone':'UNKNOWN','issues':['TIMEZONE_AND_ISSUE_TIME_NOT_QUALIFIED','NOT_A_NATIONAL_PRODUCT']}
+        report['khon_kaen']={'state':'NOT_ACCEPTED','frame_times_raw':files,'timezone':'UNKNOWN','coverage_scope':'REGIONAL','issues':['TIMEZONE_AND_ISSUE_TIME_NOT_QUALIFIED']}
     output=json.dumps(report,ensure_ascii=False,indent=2)+'\n'
     if args.export:
         args.export.parent.mkdir(parents=True,exist_ok=True);args.export.write_text(output,encoding='utf-8')
