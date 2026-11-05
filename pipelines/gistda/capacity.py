@@ -1,16 +1,21 @@
 """Read-only capacity and lossless compression measurements; no geometry output."""
 from .streaming import WindowPublisher,WINDOWS,product,OBJECT_BUDGET_BYTES,DATABASE_CEILING_BYTES,MAX_PRODUCT_GZIP_BYTES
 from .encoding import VERSIONS,CURRENT_VERSION,pack_rows
+from pymongo.errors import OperationFailure
 
 
 def capacity_report(db,measure=False):
     publisher=WindowPublisher(db,create_indexes=False)
-    stats=db.command('dbStats',scale=1)
+    try:stats=db.command('dbStats',scale=1,freeStorage=1)
+    except OperationFailure:stats=db.command('dbStats',scale=1)
     sizes={r['_id']:r['compressed_bytes'] for r in publisher.objects.find({},{'compressed_bytes':1})}
     used=sum(sizes.values());logical=int(stats.get('dataSize',0))+int(stats.get('indexSize',0))
     report={'object_bytes':used,'object_limit_bytes':OBJECT_BUDGET_BYTES,'object_headroom_bytes':max(0,OBJECT_BUDGET_BYTES-used),
             'database_data_bytes':int(stats.get('dataSize',0)),'database_index_bytes':int(stats.get('indexSize',0)),
             'database_storage_bytes':int(stats.get('storageSize',0)),'database_operational_ceiling_bytes':DATABASE_CEILING_BYTES,
+            'database_reusable_storage_bytes':stats.get('freeStorageSize'),
+            'database_reusable_index_bytes':stats.get('indexFreeStorageSize'),
+            'headroom_basis':'DATA_PLUS_INDEX_OPERATIONAL_GUARD_NOT_DISK_OR_BILLING_QUOTA',
             'database_headroom_bytes':max(0,DATABASE_CEILING_BYTES-logical),'billing_plan_limit':'NOT_DISCOVERED',
             'measurement_encoding':CURRENT_VERSION if measure else None,'windows':[]}
     for window in WINDOWS:

@@ -320,3 +320,19 @@ def test_partial_object_batch_failure_removes_orphans_and_preserves_active(tmp_p
     assert db.snapshot_control.find_one({'_id':before['_id']})==before
     assert p.objects.count_documents({})==len(first['chunks'])
     assert p.verify('3days')['active_records']==1
+
+
+def test_capacity_distinguishes_reusable_allocated_storage_and_unknown_plan_limits(monkeypatch):
+    from pipelines.gistda.capacity import capacity_report
+    from pymongo.errors import OperationFailure
+    db=mongomock.MongoClient().db
+    monkeypatch.setattr(db,'command',lambda *a,**k:{'dataSize':1000,'indexSize':20,'storageSize':9000,'freeStorageSize':7000})
+    measured=capacity_report(db)
+    assert measured['database_reusable_storage_bytes']==7000
+    assert measured['database_headroom_bytes']==stream.DATABASE_CEILING_BYTES-1020
+    assert measured['billing_plan_limit']=='NOT_DISCOVERED'
+    def restricted(*a,**k):
+        if 'freeStorage' in k:raise OperationFailure('unsupported optional free storage field')
+        return {'dataSize':1000,'indexSize':20,'storageSize':9000}
+    monkeypatch.setattr(db,'command',restricted)
+    assert capacity_report(db)['database_reusable_storage_bytes'] is None
