@@ -1,6 +1,6 @@
 # Complete GISTDA products and bounded historical display
 
-5 November 2026, Asia/Bangkok. This increment addresses the [20,000-feature failure](gistda-availability-2026-11-04.md). Production collection results are recorded separately after the compatible reader is deployed and the real run completes. Map fit, viewport and mobile/CSS adjustments remain deferred.
+5 November 2026, Asia/Bangkok. This increment addresses the [20,000-feature failure](gistda-availability-2026-11-04.md). Separate national 3/7/30-day products are deployed and verified in production; the [production receipt](gistda-window-production-2026-11-05.json) records the real run, counts and integrity audit. Map fit, viewport and mobile/CSS adjustments remain deferred.
 
 ## Product and observation meaning
 
@@ -40,6 +40,24 @@ Large country/region/province results show indexed counts and child-area navigat
 
 Local validation covers more than 20,000 input records, corrupt/compressed-bomb data, identity/count changes, failed writes, storage exhaustion, pointer preservation/rollback, archive geometry eviction with retained metadata, source error versus valid zero, historical clocks, country summaries, complete small-area loading, explicit large-district pages and mixed-generation rejection.
 
-Initial full checks: 320 Python tests (29 opt-in HTTP checks skipped), 123 web tests, TypeScript and production build passed. Three additional operational regressions subsequently passed in the 16-test streaming suite. All 29 local HTTP checks passed. Desktop browser QA used explicit synthetic local data and verified empty-state failure history, 3/7/30 selection, country → province → district navigation, 100-of-3,001 paging, the next page and selection of an earlier query with its original retrieval clock. Browser console errors were absent. Synthetic QA is not source acceptance, and fit/mobile were not changed or tested in this increment.
+Final [CI checks](https://github.com/tordave1150/hazard-intelligence/actions/runs/41951405666) on `a0b7fbda5ddbd3884c36d0168c96157034466fed`: 326 Python tests (29 opt-in HTTP checks skipped), 124 web tests, TypeScript and production build passed. The separate HTTP suite passed all 29 checks locally and all 29 against production. Desktop browser QA used explicit synthetic local data and verified empty-state failure history, 3/7/30 selection, country → province → district navigation, 100-of-3,001 paging, the next page and selection of an earlier query with its original retrieval clock. Browser console errors were absent. Synthetic QA is not source acceptance, and fit/mobile were not changed or tested in this increment.
 
 Follow-up tests additionally cover cross-window isolation through the manifest cache, independent per-window failure, bounded receiver readiness and failure breaking a consecutive-empty streak. Metadata audits use a batched object-header query; deep audits stream compressed objects in bounded cursor batches rather than issuing a database round trip for every chunk. Independent catalog/history/run reads are parallelized.
+
+## Production collection and verification
+
+[Publication run 41949042477](https://github.com/tordave1150/hazard-intelligence/actions/runs/41949042477) completed successfully. The three independent products used 185 source pages in total:
+
+| Window | Provider records | Retrieved UTC / ICT | Stored chunks | Compressed bytes |
+| --- | ---: | --- | ---: | ---: |
+| 3days, default | 0 | 5 Nov 01:31 / 08:31 | 0 | 0 |
+| 7days, historical | 50,219 | 5 Nov 01:35 / 08:35 | 555 | 33,298,089 |
+| 30days, historical | 132,962 | 5 Nov 01:45 / 08:45 | 1,455 | 129,567,767 |
+
+Province counts sum exactly to the corresponding national count. These are returned footprint records, not unique events or area measurements. The empty 3-day result is a completed source query, not an ingestion failure or an all-clear. This run fixes the earlier capacity failure without changing those observation semantics.
+
+[Read-only deep audit 41951405711](https://github.com/tordave1150/hazard-intelligence/actions/runs/41951405711) completed successfully: all ten active stored products verified, including decompression, size, SHA-256, schema and administrative checks for every active GISTDA object. Its collector step was skipped; it did not recollect the provider. The same existing workflow accepts an explicit versioned `verify_thailand_windows` push request for this audit. Manual and scheduled runs still publish all three windows.
+
+Vercel reports deployment success for `a0b7fbd`; the public API and desktop browser serve the new reader. Real browser checks verified the 132,962-record country summary, a 15,848-record province, a 3,248-record district with 100 shapes on pages 1/33 and 2/33, and a complete three-record district. The original 08:45 ICT retrieval time and unknown acquisition/current state remained visible. No browser console errors were observed. Temporary test selections do not establish preferred areas. Screenshot evidence is saved locally at `artifacts/gistda-window-production-2026-11-05.png`.
+
+The 30-day geometry is approximately **123.57 MiB**, close to the 128 MiB per-product guard. Future larger or substantially changed products can reach this guard or the protected-generation storage budget; the failure must remain visible while the last complete product is retained. This release does not promise unlimited retention or a complete sequence of thirty daily satellite observations.

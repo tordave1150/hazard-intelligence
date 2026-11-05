@@ -1,0 +1,220 @@
+{
+  "reviewed_at": "2026-11-05T01:59:00Z",
+  "timezone": "Asia/Bangkok",
+  "production_url": "https://hazard-intelligence-lime.vercel.app/",
+  "implementation_commit": "13991c0915ad1cb25e095c19eaabba312a32b2e5",
+  "verified_commit": "a0b7fbda5ddbd3884c36d0168c96157034466fed",
+  "deployment": {
+    "state": "success",
+    "statuses": [
+      {
+        "state": "success",
+        "context": "Vercel",
+        "target_url": "https://vercel.com/jedsadaporn231043-6773s-projects/hazard-intelligence/HCVAL6AUtY3dfNASeFhTo1XuEi6V"
+      }
+    ]
+  },
+  "publication": {
+    "run_id": 41949042477,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41949042477",
+    "job_id": 126988314217,
+    "conclusion": "success",
+    "source_requests": 185,
+    "scope": "Independent unfiltered 3days/7days/30days Thailand products",
+    "windows": [
+      {
+        "window": "3days",
+        "http": 200,
+        "count": 0,
+        "fetched_at": "2026-11-05T01:31:50.305892Z",
+        "generation": "aac2a413-82a0-479b-8956-433cbbebb0e3",
+        "source_pages": 1,
+        "stored_chunks": 0,
+        "compressed_bytes": 0,
+        "province_sum": 0,
+        "status": "SUCCESS"
+      },
+      {
+        "window": "7days",
+        "http": 200,
+        "count": 50219,
+        "fetched_at": "2026-11-05T01:35:07.260626Z",
+        "generation": "4ffbe760-e533-4674-a93e-af07d0ba9a35",
+        "source_pages": 51,
+        "stored_chunks": 555,
+        "compressed_bytes": 33298089,
+        "province_sum": 50219,
+        "status": "SUCCESS"
+      },
+      {
+        "window": "30days",
+        "http": 200,
+        "count": 132962,
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "generation": "6cbe8fb8-cb95-4daf-aea4-56bf6af425ec",
+        "source_pages": 133,
+        "stored_chunks": 1455,
+        "compressed_bytes": 129567767,
+        "province_sum": 132962,
+        "status": "SUCCESS"
+      }
+    ]
+  },
+  "integrity_audit": {
+    "run_id": 41951405711,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41951405711",
+    "job_id": 126997579148,
+    "conclusion": "success",
+    "command": "python -m scripts.mongo_admin verify --deep-flood",
+    "collector_step": "skipped",
+    "provider_recollection": false,
+    "verified_products": [
+      {
+        "source_id": "open_meteo",
+        "product_id": "daily_forecast",
+        "status": "VERIFIED",
+        "active_records": 1005,
+        "total_documents": 2010,
+        "document_limit": 2010,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "rid",
+        "product_id": "daily_dam_storage",
+        "status": "VERIFIED",
+        "active_records": 35,
+        "total_documents": 70,
+        "document_limit": 70,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "tmd",
+        "product_id": "cap_warnings",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "gistda",
+        "product_id": "flood_3days_thailand",
+        "status": "VERIFIED",
+        "active_records": 0,
+        "stored_chunks": 0,
+        "storage_version": "gzip-v1"
+      },
+      {
+        "source_id": "gistda",
+        "product_id": "flood_7days_thailand",
+        "status": "VERIFIED",
+        "active_records": 50219,
+        "stored_chunks": 555,
+        "storage_version": "gzip-v1"
+      },
+      {
+        "source_id": "gistda",
+        "product_id": "flood_30days_thailand",
+        "status": "VERIFIED",
+        "active_records": 132962,
+        "stored_chunks": 1455,
+        "storage_version": "gzip-v1"
+      },
+      {
+        "source_id": "thaiwater",
+        "product_id": "national_waterlevel",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "thaiwater",
+        "product_id": "national_rain_24h",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "open_meteo",
+        "product_id": "today_hourly",
+        "status": "VERIFIED",
+        "active_records": 1005,
+        "total_documents": 2010,
+        "document_limit": 2010,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "tmd_radar",
+        "product_id": "composite_rain_rate",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      }
+    ]
+  },
+  "checks": {
+    "run_id": 41951405666,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41951405666",
+    "conclusion": "success",
+    "python_passed": 326,
+    "python_opt_in_http_skipped": 29,
+    "web_passed": 124,
+    "typecheck": "passed",
+    "build": "passed",
+    "production_http": {
+      "passed": 29,
+      "duration_seconds": 33.02
+    }
+  },
+  "public_api_geometry": {
+    "window": "7days",
+    "province": "TH-P-14",
+    "province_count": 10673,
+    "district": "TH-D-1412",
+    "district_count": 1559,
+    "first_page_records": 100,
+    "first_page_bytes": 212020,
+    "second_page_records": 100,
+    "same_generation": true,
+    "no_overlapping_ids": true,
+    "acquisition_at": null,
+    "raw_properties_not_exposed": true
+  },
+  "desktop_browser": {
+    "url": "https://hazard-intelligence-lime.vercel.app/",
+    "default_window": "3days",
+    "default_count": 0,
+    "selected_window": "30days",
+    "national_count": 132962,
+    "province": "TH-P-60",
+    "province_count": 15848,
+    "paged_district": "TH-D-6003",
+    "paged_district_count": 3248,
+    "first_page": "1/33",
+    "next_page": "2/33",
+    "page_features": 100,
+    "complete_small_area": "TH-D-6012",
+    "complete_small_area_count": 3,
+    "original_retrieval_label": "05 Nov, 08:45 ICT",
+    "unknown_acquisition_and_current_state": true,
+    "console_errors": 0,
+    "screenshot": "artifacts/gistda-window-production-2026-11-05.png",
+    "fit_or_mobile_changed": false
+  },
+  "limitations": [
+    "Counts are provider footprint records, not unique incidents or flooded area.",
+    "Successful zero 3-day results do not establish no flooding or a missed satellite pass.",
+    "Satellite acquisition and valid/clear image coverage remain unknown.",
+    "Query history starts with actually retained snapshots, not thirty invented daily observations.",
+    "30-day compressed geometry is about 123.57 MiB, near the 128 MiB per-product guard; changed/larger candidates can be rejected while retaining complete published products.",
+    "The provider has no snapshot version token; count/duplicate validation cannot prove immutability during pagination.",
+    "Radar schedule execution exists but continuous 30-minute delivery is unproven; two empty Blob-store deletions remain pending dashboard access.",
+    "Nowcasting and numerical QPE remain unqualified after 5 November source rechecks."
+  ]
+}
