@@ -1,0 +1,240 @@
+{
+  "recorded_at": "2026-11-05 14:09:03 UTC",
+  "implementation_commit": "982ec5cd5eaefb838909c608cdec84635b1da5a7",
+  "maintenance_commit": "9f9722856814a47872ac64cf9c3637910fb24443",
+  "implementation_ci": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42041052414",
+  "maintenance_action": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42041297401",
+  "maintenance_conclusion": "success",
+  "maintenance_ci": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42041297432",
+  "maintenance_ci_conclusion": "success",
+  "deployment_status": "success",
+  "test_results": {
+    "python": 344,
+    "web": 133,
+    "local_http": 31,
+    "production_http": 31,
+    "typecheck": "passed",
+    "production_build": "passed"
+  },
+  "index_backfill": [
+    {
+      "generation": "0a658308-fc87-4c2e-a23a-43f935da0291",
+      "window": "3days",
+      "status": "INDEXED",
+      "record_count": 0,
+      "fetched_at": "2026-11-05T01:31:50.305892Z",
+      "spatial_compressed_bytes": 0
+    },
+    {
+      "generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+      "window": "7days",
+      "status": "INDEXED",
+      "record_count": 50219,
+      "fetched_at": "2026-11-05T01:35:07.260626Z",
+      "spatial_compressed_bytes": 1442737
+    },
+    {
+      "generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+      "window": "30days",
+      "status": "INDEXED",
+      "record_count": 132962,
+      "fetched_at": "2026-11-05T01:45:25.752550Z",
+      "spatial_compressed_bytes": 3824294
+    },
+    {
+      "generation": "24e7901b-0fcf-4030-a522-ad16aff8ac99",
+      "window": "3days",
+      "status": "INDEXED",
+      "record_count": 0,
+      "fetched_at": "2026-11-05T09:39:48.752772Z",
+      "spatial_compressed_bytes": 0
+    },
+    {
+      "generation": "bda8bd20-dde7-47bc-93bc-c2cbf6d2279c",
+      "window": "7days",
+      "status": "INDEXED",
+      "record_count": 48815,
+      "fetched_at": "2026-11-05T09:43:00.998110Z",
+      "spatial_compressed_bytes": 1403339
+    }
+  ],
+  "capacity": {
+    "object_bytes": 183069657,
+    "geometry_object_bytes": 176399287,
+    "spatial_object_bytes": 6670370,
+    "object_limit_bytes": 335544320,
+    "object_headroom_bytes": 152474663,
+    "database_data_bytes": 208024595,
+    "database_index_bytes": 3211264,
+    "database_storage_bytes": 485756928,
+    "database_operational_ceiling_bytes": 419430400,
+    "database_reusable_storage_bytes": null,
+    "database_reusable_index_bytes": 0,
+    "headroom_basis": "DATA_PLUS_INDEX_OPERATIONAL_GUARD_NOT_DISK_OR_BILLING_QUOTA",
+    "database_headroom_bytes": 208194541,
+    "billing_plan_limit": "NOT_DISCOVERED",
+    "measurement_encoding": null,
+    "windows": [
+      {
+        "window": "3days",
+        "generation": "24e7901b-0fcf-4030-a522-ad16aff8ac99",
+        "storage_version": "msgpack-gzip-v1",
+        "record_count": 0,
+        "fetched_at": "2026-11-05T09:39:48.752772Z",
+        "compressed_bytes": 0,
+        "spatial_compressed_bytes": 0,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 134217728,
+        "identical_chunk_replay_added_bytes": 0,
+        "next_source_query_deduplication": "NOT_PREDICTED",
+        "requires_storage_migration": false,
+        "fully_changed_next_query_object_bytes": 183069657,
+        "fully_changed_next_query_fits_object_budget": true
+      },
+      {
+        "window": "7days",
+        "generation": "bda8bd20-dde7-47bc-93bc-c2cbf6d2279c",
+        "storage_version": "msgpack-gzip-v1",
+        "record_count": 48815,
+        "fetched_at": "2026-11-05T09:43:00.998110Z",
+        "compressed_bytes": 33858758,
+        "spatial_compressed_bytes": 1403339,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 100358970,
+        "identical_chunk_replay_added_bytes": 0,
+        "next_source_query_deduplication": "NOT_PREDICTED",
+        "requires_storage_migration": false,
+        "fully_changed_next_query_object_bytes": 218331754,
+        "fully_changed_next_query_fits_object_budget": true
+      },
+      {
+        "window": "30days",
+        "generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "storage_version": "msgpack-gzip-v1",
+        "record_count": 132962,
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "compressed_bytes": 112912694,
+        "spatial_compressed_bytes": 3824294,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 21305034,
+        "identical_chunk_replay_added_bytes": 0,
+        "next_source_query_deduplication": "NOT_PREDICTED",
+        "requires_storage_migration": false,
+        "fully_changed_next_query_object_bytes": 299806645,
+        "fully_changed_next_query_fits_object_budget": true
+      }
+    ]
+  },
+  "limitations": [
+    "No new GISTDA provider query during maintenance; source counts, retrieval clocks and query generations preserved.",
+    "The 30-day refresh at 2026-11-05T09:43:35.674295Z failed RESPONSE_TOO_LARGE during collection; retained complete 132962-record query remains active with original 01:45:25Z retrieval clock.",
+    "Numerical precipitation and nowcasting remain NOT_ACCEPTED; only a dated qualification status and official source links were added.",
+    "No map fit/mobile/layout changes."
+  ],
+  "production_api_verification": {
+    "verified_at": "2026-11-05T14:05:52.210286Z",
+    "windows": [
+      {
+        "window": "3days",
+        "http": 200,
+        "generation": "24e7901b-0fcf-4030-a522-ad16aff8ac99",
+        "fetched_at": "2026-11-05T09:39:48.752772Z",
+        "record_count": 0,
+        "viewport_status": "EMPTY",
+        "viewport_count": 0,
+        "bbox_matched": 0,
+        "index_chunks": 0,
+        "geometry_chunks": 0,
+        "viewport_protocol_before_reader_deployment": null,
+        "verified_viewport_protocol": "gistda-viewport-v1"
+      },
+      {
+        "window": "7days",
+        "http": 200,
+        "generation": "bda8bd20-dde7-47bc-93bc-c2cbf6d2279c",
+        "fetched_at": "2026-11-05T09:43:00.998110Z",
+        "record_count": 48815,
+        "viewport_status": "PARTIAL",
+        "viewport_count": 1836,
+        "bbox_matched": 3009,
+        "index_chunks": 70,
+        "geometry_chunks": 42,
+        "original_record_comparison": {
+          "district": "TH-D-1402",
+          "record_id": "018d86f38cd4348b75100902dd78e9113b5b958ca92549b00b71ba17ec8962cf",
+          "bbox": [
+            100.610417,
+            14.549395,
+            100.614333,
+            14.553225
+          ],
+          "returned_count": 5,
+          "status": "AVAILABLE",
+          "exact_record_equality": true,
+          "original_geometry_sha256": "0578a9c02bc9f2d9e0543a0afbc9991ef9a6b2d8453db5af19c6c134555663ce"
+        },
+        "viewport_protocol_before_reader_deployment": null,
+        "verified_viewport_protocol": "gistda-viewport-v1"
+      },
+      {
+        "window": "30days",
+        "http": 200,
+        "generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "record_count": 132962,
+        "viewport_status": "PARTIAL",
+        "viewport_count": 1330,
+        "bbox_matched": 11977,
+        "index_chunks": 287,
+        "geometry_chunks": 33,
+        "original_record_comparison": {
+          "district": "TH-D-6012",
+          "record_id": "7620881f1ba48f5470de6cf86f597a0497745357acfa6589d02fa5226f80a37f",
+          "bbox": [
+            100.441515,
+            15.497381,
+            100.442328,
+            15.498467
+          ],
+          "returned_count": 3,
+          "status": "AVAILABLE",
+          "exact_record_equality": true,
+          "original_geometry_sha256": "ba77bad138059505aafac7e6d64344b0fa7736cd37c1cbc3cf9c11d0c1fb2d0f"
+        },
+        "viewport_protocol_before_reader_deployment": null,
+        "verified_viewport_protocol": "gistda-viewport-v1"
+      }
+    ],
+    "cross_window_generation_rejected": true
+  },
+  "production_browser_verification": {
+    "console_errors": 0,
+    "movement_clears_previous_geometry": true,
+    "thirty_day_view_counts": [
+      [
+        1172,
+        13876
+      ],
+      [
+        1197,
+        2937
+      ],
+      [
+        1219,
+        2573
+      ],
+      [
+        135,
+        135
+      ]
+    ],
+    "seven_day_latest_view_count": 104,
+    "seven_day_retained_view_count": 101,
+    "retained_query_generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+    "retained_query_retrieved_ict": "2026-11-05 08:35 ICT",
+    "screenshots": [
+      "artifacts/flood-viewport-production.png",
+      "artifacts/precipitation-source-status-production.png"
+    ]
+  }
+}
