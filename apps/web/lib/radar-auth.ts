@@ -4,7 +4,7 @@ const keys=createRemoteJWKSet(new URL('https://token.actions.githubusercontent.c
 export function acceptedRadarClaims(payload:JWTPayload){
   return payload.repository_id==='1433731657'&&payload.repository==='tordave1150/hazard-intelligence'&&payload.ref==='refs/heads/main'&&
     payload.workflow_ref==='tordave1150/hazard-intelligence/.github/workflows/radar.yml@refs/heads/main'&&
-    ['schedule','workflow_dispatch','push'].includes(String(payload.event_name))&&payload.runner_environment==='github-hosted'&&
+    ['schedule','workflow_dispatch','push','workflow_run'].includes(String(payload.event_name))&&payload.runner_environment==='github-hosted'&&
     /^\d+$/.test(String(payload.run_id))&&/^\d+$/.test(String(payload.run_attempt))&&
     typeof payload.iat==='number'&&typeof payload.exp==='number'&&payload.exp-payload.iat<=600;
 }

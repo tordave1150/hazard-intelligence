@@ -107,6 +107,8 @@ describe('Scheduled publication authentication',()=>{
   const token=async(overrides:Record<string,unknown>={})=>new SignJWT({...claims,...overrides}).setProtectedHeader({alg:'RS256'}).setIssuer('https://token.actions.githubusercontent.com').setAudience('https://hazard-intelligence-lime.vercel.app/api/radar').setIssuedAt().setExpirationTime('5m').sign(pair.privateKey);
   it('accepts a signed short-lived token only for the exact main-branch radar workflow',async()=>{
     const run=await authorizeRadar('Bearer '+await token(),pair.publicKey);expect(run.run_id).toBe('1234');
+    expect((await authorizeRadar('Bearer '+await token({event_name:'workflow_run'}),pair.publicKey)).run_id).toBe('1234');
+    await expect(authorizeRadar('Bearer '+await token({event_name:'workflow_run',workflow_ref:'tordave1150/hazard-intelligence/.github/workflows/tmd.yml@refs/heads/main'}),pair.publicKey)).rejects.toThrow();
     await expect(authorizeRadar(null,pair.publicKey)).rejects.toThrow();
   });
   it.each([{repository_id:'another'},{ref:'refs/heads/fork'},{workflow_ref:'tordave1150/hazard-intelligence/.github/workflows/checks.yml@refs/heads/main'},{event_name:'pull_request'},{runner_environment:'self-hosted'}])('rejects untrusted claims %s',async override=>{

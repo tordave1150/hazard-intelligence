@@ -17,6 +17,30 @@ LIST='\n'.join(f'background_THA.png "2026-11-04 12:{minute:02}" overlay=zr/{i:02
 CONFIG=b"RADAR_COORDS: [[95,22.5],[108,22.5],[108,4],[95,4]], BASEMAP: ''; PCAPPI Z-R; mm/hr; new Date(date + 'T' + time + ':00Z')"
 
 
+def test_recovery_due_check_preserves_source_clocks_and_retries_only_after_cooldown():
+    from pipelines.radar.refresh import due_decision
+    now=datetime(2026,11,5,1,52,tzinfo=timezone.utc).timestamp()
+    state={'feed':{'frames':[{'observed_at':'2026-11-05T01:30:00Z'}]},'health':{'status':'SUCCESS','last_attempt':'2026-11-05T01:45:00Z'}}
+    before=deepcopy(state)
+    assert not due_decision(state,now)['due'] and state==before
+    state['feed']['frames'][0]['observed_at']='2026-11-05T01:00:00Z'
+    assert not due_decision(state,now)['due']
+    assert due_decision(state,now+181)['due']
+    state['health']['status']='FAILED'
+    assert due_decision(state,now+181)['due']
+    assert due_decision({'feed':None,'health':None},now)['due']
+
+
+def test_due_skip_never_calls_capture_or_publication(monkeypatch):
+    from pipelines.radar import run
+    monkeypatch.setattr('sys.argv',['radar','--publish','--if-due'])
+    monkeypatch.setattr(run,'wait_for_receiver',lambda:None)
+    monkeypatch.setattr(run,'check_due',lambda:{'due':False,'reason':'LATEST_SAMPLE_ALREADY_PUBLISHED'})
+    monkeypatch.setattr(run,'capture',lambda:pytest.fail('Unneeded provider call'))
+    monkeypatch.setattr(run,'publish',lambda _:pytest.fail('Freshness must not be rewritten by a due check'))
+    run.main()
+
+
 def test_compatible_receiver_survives_newer_documentation_commit_and_retries():
     class Ready:
         status_code=200

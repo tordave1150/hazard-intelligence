@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 import requests
 from .client import capture
+from .refresh import check_due
 
 PUBLISH_URL='https://hazard-intelligence-lime.vercel.app/api/radar'
 
@@ -17,7 +18,8 @@ def wait_for_receiver(get=None,sleep=None):
             response=get(PUBLISH_URL,timeout=10)
             if response.status_code==200:
                 capabilities=response.json()
-                if capabilities.get('ingestion_protocol')=='tmd-radar-v1' and capabilities.get('publication_sampling_minutes')==30:return
+                recovery_ready=os.getenv('GITHUB_EVENT_NAME')!='workflow_run' or capabilities.get('recovery_protocol')=='tmd-radar-recovery-v1'
+                if capabilities.get('ingestion_protocol')=='tmd-radar-v1' and capabilities.get('publication_sampling_minutes')==30 and recovery_ready:return
         except requests.RequestException:pass
         if attempt==29:raise RuntimeError('Compatible production receiver not ready')
         sleep(5)
@@ -34,13 +36,17 @@ def publish(payload):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--export',type=Path);parser.add_argument('--publish',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--export',type=Path);parser.add_argument('--publish',action='store_true');parser.add_argument('--if-due',action='store_true');args=parser.parse_args()
     if not args.export and not args.publish:parser.error('Select --export and/or --publish')
     capturing=False
     try:
         if args.publish:
             # Compatible queued jobs/retries remain valid after documentation-only deployments.
             wait_for_receiver()
+        if args.if_due:
+            decision=check_due()
+            print(json.dumps({'source_id':'tmd_radar','refresh_check':decision}))
+            if not decision['due']:return
         capturing=True
         payload=capture()
         capturing=False

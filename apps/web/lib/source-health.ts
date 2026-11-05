@@ -1,7 +1,7 @@
 import type {Freshness,Source} from './types';
 
 const policies:Record<string,{hours:number;grace:number;workflow:string;utcHours:number[];minute:number;pollMinutes?:number[];dueHours?:number}>={
-  tmd_radar:{hours:.5,grace:.5,workflow:'radar.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:22,pollMinutes:[22,52],dueHours:.5},
+  tmd_radar:{hours:.5,grace:.5,workflow:'radar.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:7,pollMinutes:[7,22,37,52],dueHours:.5},
   open_meteo:{hours:24,grace:6,workflow:'etl.yml',utcHours:[1],minute:0},rid:{hours:24,grace:6,workflow:'rid.yml',utcHours:[1],minute:15},
   tmd:{hours:1,grace:1,workflow:'tmd.yml',utcHours:Array.from({length:24},(_,i)=>i),minute:11,pollMinutes:[11,41],dueHours:1},
   gistda:{hours:24,grace:6,workflow:'gistda.yml',utcHours:[2],minute:27},
