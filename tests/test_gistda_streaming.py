@@ -107,7 +107,7 @@ def test_failed_object_write_never_changes_active_pointer(tmp_path,monkeypatch):
     publisher.publish(manifest,tmp_path,check_database=False);before=db.snapshot_control.find_one({'_id':'gistda:flood_3days_thailand'})
     other,_=collect(tmp_path/'other',200,window='7days')
     def fail(*args,**kwargs):raise RuntimeError('simulated database write failure')
-    monkeypatch.setattr(publisher.objects,'update_one',fail)
+    monkeypatch.setattr(publisher.objects,'insert_many',fail)
     with pytest.raises(RuntimeError):publisher.publish(other,tmp_path/'other',check_database=False)
     assert db.snapshot_control.find_one({'_id':'gistda:flood_3days_thailand'})==before
     assert db.snapshot_control.find_one({'_id':'gistda:flood_7days_thailand'}) is None
@@ -304,3 +304,19 @@ def test_repack_budget_failure_leaves_original_active_and_previous_untouched(tmp
     with pytest.raises(CandidateError):p.repack('3days',tmp_path/'new',check_database=False)
     assert db.snapshot_control.find_one({'_id':before['_id']})==before
     assert p.verify('3days')['active_records']==201
+
+
+def test_partial_object_batch_failure_removes_orphans_and_preserves_active(tmp_path,monkeypatch):
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db)
+    first,_=collect(tmp_path/'first',1);p.publish(first,tmp_path/'first',check_database=False)
+    before=db.snapshot_control.find_one({'_id':'gistda:flood_3days_thailand'})
+    original_insert=p.objects.insert_many
+    other,_=collect(tmp_path/'other',2501,storage_version='msgpack-gzip-v1')
+    def partial_then_fail(rows,**options):
+        original_insert(rows[:2],**options)
+        raise RuntimeError('simulated partial batch write')
+    monkeypatch.setattr(p.objects,'insert_many',partial_then_fail)
+    with pytest.raises(RuntimeError):p.publish(other,tmp_path/'other',check_database=False)
+    assert db.snapshot_control.find_one({'_id':before['_id']})==before
+    assert p.objects.count_documents({})==len(first['chunks'])
+    assert p.verify('3days')['active_records']==1

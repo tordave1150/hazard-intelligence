@@ -256,10 +256,14 @@ class WindowPublisher:
                 if stats.get('dataSize',0)+stats.get('indexSize',0)+sum(added.values())+len(added)*1024>DATABASE_CEILING_BYTES:raise CandidateError('DATABASE_STORAGE_BUDGET_EXCEEDED')
             generation=manifest['_id'];promoted=False
             try:
+                pending=[]
                 for descriptor in manifest['chunks']:
                     if descriptor['hash'] in known:continue
                     packed=(directory/(descriptor['hash']+'.gz')).read_bytes()
-                    self.objects.update_one({'_id':descriptor['hash']},{'$setOnInsert':{'payload':Binary(packed),'compressed_bytes':len(packed),'raw_bytes':descriptor['raw_bytes'],'created_at':utc_now()}},upsert=True)
+                    pending.append({'_id':descriptor['hash'],'payload':Binary(packed),'compressed_bytes':len(packed),'raw_bytes':descriptor['raw_bytes'],'created_at':utc_now()})
+                    # Immutable new identities only, under the shared lock; <=20 MiB per batch.
+                    if len(pending)==20:self.objects.insert_many(pending,ordered=True);pending=[]
+                if pending:self.objects.insert_many(pending,ordered=True)
                 required={c['hash'] for c in manifest['chunks']}
                 if self.objects.count_documents({'_id':{'$in':list(required)}})!=len(required):raise RuntimeError('Compressed object write incomplete')
                 self.manifests.insert_one({**manifest,'state':'STAGED','published_at':utc_now(),'archive_evicted_count':evicted})
