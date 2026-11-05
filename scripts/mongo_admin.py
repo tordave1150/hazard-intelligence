@@ -107,7 +107,8 @@ def main():
         elif args.command=='verify':
             print(json.dumps(verify_database(db,include_retired=args.include_retired,deep_flood=args.deep_flood),default=str,indent=2))
         elif args.command=='rollback':
-            if args.source=='gistda' and db.snapshot_control.find_one({'_id':'gistda:'+flood_limits.PRODUCT,'storage_version':'gzip-v1'}):
+            flood_pointer=db.snapshot_control.find_one({'_id':'gistda:'+flood_limits.PRODUCT}) if args.source=='gistda' else None
+            if flood_pointer and (flood_pointer.get('storage_version')=='gzip-v1' or (flood_pointer.get('previous') or {}).get('storage_version')=='gzip-v1'):
                 WindowPublisher(db).rollback();print('Retained compressed flood generation promoted.');return
             {'tmd_radar':RadarPublisher,'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'thaiwater':GaugePublisher,'thaiwater_rain':RainPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')

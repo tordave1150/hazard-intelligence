@@ -292,7 +292,8 @@ class WindowPublisher:
         with self.lock():
             key='gistda:'+product(window);active=self.control.find_one({'_id':key}) or {};previous=active.get('previous')
             if not previous:raise ValueError('No retained generation for rollback')
-            old={k:active[k] for k in ('storage_version','active_generation','record_count','feature_count')}
+            old={k:active[k] for k in ('storage_version','active_generation','record_count','feature_count')} if active.get('storage_version')=='gzip-v1' else {
+                k:active[k] for k in ('source_id','product_id','active_slot','active_run_id','record_count','feature_count','chunk_count','completeness','scope_area_id') if k in active}
             if previous.get('active_slot') in ('A','B'):
                 from .chunks import check_chunks
                 rows=list(self.db.satellite_flood_3days_latest.find({'slot':previous['active_slot'],'etl_run_id':previous['active_run_id']},{'_id':0,'slot':0,'etl_run_id':0}))
@@ -303,4 +304,4 @@ class WindowPublisher:
             manifest=self.manifests.find_one({'_id':previous['active_generation']})
             if not manifest or not manifest.get('geometry_available'):raise ValueError('Retained generation unavailable')
             validate_manifest(manifest);self._verify_objects(manifest,True)
-            self.control.update_one({'_id':key},{'$set':{**previous,'previous':old,'published_at':utc_now()},'$inc':{'revision':1}})
+            self.control.replace_one({'_id':key},{'_id':key,'source_id':'gistda','product_id':product(window),**previous,'previous':old,'published_at':utc_now(),'revision':int(active.get('revision',0))+1})

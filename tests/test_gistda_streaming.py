@@ -208,3 +208,19 @@ def test_compatible_reader_wait_requires_storage_protocol_and_is_bounded():
     wait_for_receiver(lambda *a,**k:Response('gistda-gzip-v1'),lambda _:pytest.fail('Ready reader must not wait'))
     with pytest.raises(RuntimeError):wait_for_receiver(lambda *a,**k:Response('old-reader'),sleeps.append)
     assert sleeps==[5]*71
+
+
+def test_migration_rollback_can_restore_legacy_and_return_to_compressed_generation(tmp_path):
+    import hashlib
+    from pipelines.gistda.chunks import ThreeDayPublisher,split_feed
+    manifest,_=collect(tmp_path,2);db=mongomock.MongoClient().db
+    original=deepcopy(manifest['feed']);original.update(schema_version='2.0',query={'limit':100,'offset':0},record_count=1)
+    geometry=feature()['geometry'];digest=hashlib.sha256(json.dumps(geometry,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    original['records']=[{'type':'Feature','id':digest[:24]+'-0','geometry':geometry,'properties':None,'area_ids':['TH-P-10','TH-D-1001']}]
+    chunks=split_feed(original);ThreeDayPublisher(db).publish(chunks,['0000'])
+    publisher=stream.WindowPublisher(db);publisher.publish(manifest,tmp_path,check_database=False)
+    publisher.rollback()
+    assert db.snapshot_control.find_one({'_id':'gistda:flood_3days_thailand'})['active_slot']=='A'
+    assert ThreeDayPublisher(db).read()[0]['feed']['record_count']==1
+    publisher.rollback();assert publisher.verify('3days')['active_records']==2
+    assert db.satellite_flood_3days_latest.count_documents({})==1

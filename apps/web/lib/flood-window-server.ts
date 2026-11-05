@@ -34,6 +34,7 @@ async function catalog(){
   const value=entries.filter((entry):entry is NonNullable<typeof entry>=>entry!==null);
   catalogCache={until:Date.now()+30000,value};return value;
 }
+export async function readFloodWindowCatalog(){if(!mongoUri())return [];try{return await catalog();}catch{return [];}}
 function children(area:Area,m:FloodManifest){
   const level=area.id==='TH'||area.level==='region'?'province':area.level==='province'?'district':null;
   return level?areas.filter(a=>a.level===level&&(area.id==='TH'||area.level==='region'&&a.region_id===area.id||area.level==='province'&&a.province_id===area.id))

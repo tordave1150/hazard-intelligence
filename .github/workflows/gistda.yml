@@ -25,8 +25,16 @@ jobs:
           python-version: '3.13'
       - run: pip install -r pipelines/requirements.txt
       - name: Validate fixed-scope reviewed request
+        id: request
         if: github.event_name == 'push'
-        run: python -c "from pipelines.gistda.run import check_request; check_request(three_day=True)"
+        run: |
+          python - <<'PY'
+          import os
+          from pipelines.gistda.run import check_request
+          request=check_request(three_day=True)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              print('operation='+request['operation'],file=output)
+          PY
       - name: Check ingestion configuration
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
@@ -43,6 +51,7 @@ jobs:
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
       - name: Publish separate complete 3/7/30-day products in compressed chunks
+        if: steps.request.outputs.operation != 'verify_thailand_windows'
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -52,4 +61,9 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
-        run: python -m scripts.mongo_admin verify
+        run: |
+          if [ '${{ steps.request.outputs.operation }}' = 'verify_thailand_windows' ]; then
+            python -m scripts.mongo_admin verify --deep-flood
+          else
+            python -m scripts.mongo_admin verify
+          fi

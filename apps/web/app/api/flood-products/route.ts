@@ -3,7 +3,7 @@ import {readFloodAreaSnapshot} from '@/lib/flood-area-snapshot';
 import {floodResponse} from '@/lib/floods';
 import {areaById} from '@/lib/geography';
 import {invalid} from '@/lib/http';
-import {readWindowSnapshot} from '@/lib/flood-window-server';
+import {readWindowSnapshot,readFloodWindowCatalog} from '@/lib/flood-window-server';
 import type {FloodWindow} from '@/lib/types';
 import {NextResponse} from 'next/server';
 export const dynamic='force-dynamic';
@@ -20,5 +20,6 @@ export async function GET(request:Request){
   if(view==='summary'&&Number(chunkText)!==0)return invalid('Summary has no geometry pages');
   const streamed=await readWindowSnapshot(window as FloodWindow,area,(view??'detail') as 'summary'|'detail',Number(chunkText),generation);
   const snapshot=streamed??(view?await readFloodAreaSnapshot(area,view as 'summary'|'detail',Number(chunkText),generation):await readFloodSnapshot(Number(chunkText),generation));
+  if(!streamed)snapshot.window_catalog=await readFloodWindowCatalog();
   return NextResponse.json({...floodResponse(snapshot,area),storage_protocol:'gistda-gzip-v1'},{status:snapshot.error?503:200,headers:{'Cache-Control':'no-store'}});
 }

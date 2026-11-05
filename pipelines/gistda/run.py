@@ -30,7 +30,7 @@ def check_request(path=None, *, three_day=True):
     request=json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(request,dict) or set(request)!={'request_id','source_id','operation'}:
         raise ValueError('Invalid publication request')
-    if not three_day or request['source_id']!='gistda' or request['operation'] not in ['publish_thailand_3days','publish_thailand_windows']:
+    if not three_day or request['source_id']!='gistda' or request['operation'] not in ['publish_thailand_3days','publish_thailand_windows','verify_thailand_windows']:
         raise ValueError('Invalid fixed publication scope')
     if not isinstance(request['request_id'],str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):
         raise ValueError('Invalid publication request ID')
