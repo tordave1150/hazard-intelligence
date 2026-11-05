@@ -18,6 +18,8 @@ import {gaugeInArea,gaugeQueryFreshness} from '@/lib/gauges';
 import WarningPanel from './warning-panel';
 import FloodPanel from './flood-panel';
 import {loadFloodSnapshot} from '@/lib/flood-client';
+import {useFloodViewport} from './use-flood-viewport';
+import {viewportStatusText,type FloodMapView} from '@/lib/flood-viewport';
 import HourlyPanel from './hourly-panel';
 import {remainingHours,hourlyValue,hourlyFreshness,hourLabel} from '@/lib/hourly';
 import {useTimeTheme} from './time-theme';
@@ -54,6 +56,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   const floodSnapshotRef=useRef<FloodSnapshot>(emptyFloods);
   const [floodWindow,setFloodWindow]=useState<import('@/lib/types').FloodWindow>('3days'),[floodGeneration,setFloodGeneration]=useState(''),[floodPage,setFloodPage]=useState(0);
   const [floodLoading,setFloodLoading]=useState(true);
+  const [floodDisplayMode,setFloodDisplayMode]=useState<'viewport'|'area'>('viewport'),[floodMapView,setFloodMapView]=useState<FloodMapView|null>(null);
   const [metric,setMetric]=useState<Metric>('rainfall_mm'),[selectedDate,setSelectedDate]=useState<string|null>(null),[todayMode,setTodayMode]=useState<DashboardMode>('situation'),[rainfall,setRainfall]=useState(true),[is3d,setIs3d]=useState(false),[terrain,setTerrain]=useState(true),[extrude,setExtrude]=useState(false),[opacity,setOpacity]=useState(74);
   const [activeEvidence,setActiveEvidence]=useState<'tmd'|'gistda'|'rid'|'thaiwater'|'thaiwater_rain'>('tmd');
   const [sourcesOpen,setSourcesOpen]=useState(false),[leftOpen,setLeftOpen]=useState(false),[rightOpen,setRightOpen]=useState(false),[refresh,setRefresh]=useState(0);
@@ -97,6 +100,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   },[refresh]);
   const radarStatus=radarFreshness(radarSnapshot.feed,clock),radarFrame=radarSnapshot.feed?.frames[radarIndex]??null;
   const area=lookup.get(selected)??lookup.get('TH')!;
+  const floodViewport=useFloodViewport(showFloods&&floodDisplayMode==='viewport'&&geographyMode!=='basin',floodWindow,area.id,floodSnapshot,floodMapView,refresh);
   useEffect(()=>{rightPanelRef.current?.scrollTo({top:0,behavior:'auto'});},[area.id,activeEvidence,selectedGauge,selectedRain,selectedDam]);
   useEffect(()=>{
     let active=true;setLoading(true);
@@ -121,7 +125,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   useEffect(()=>{
     if(geographyMode==='basin'){setFloodSnapshot(emptyFloods);setFloodLoading(false);return;}
     const controller=new AbortController();let active=true;
-    const mode=showFloods?'detail':'summary';
+    const mode=showFloods&&floodDisplayMode==='area'?'detail':'summary';
     if(floodSnapshotRef.current.scope?.area_id!==area.id||floodSnapshotRef.current.scope?.mode!==mode||floodSnapshotRef.current.feed?.product_window!==floodWindow||floodGeneration&&floodSnapshotRef.current.pagination?.generation!==floodGeneration)setFloodSnapshot(emptyFloods);
     const load=()=>{setFloodLoading(true);return loadFloodSnapshot(controller.signal,fetch,floodSnapshotRef.current,{areaId:area.id,mode,window:floodWindow,generation:floodGeneration||undefined,page:floodPage})
       .then(value=>{if(active){floodSnapshotRef.current=value;setFloodSnapshot(value);}}).catch(()=>{if(active){
@@ -130,7 +134,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
       }}).finally(()=>{if(active)setFloodLoading(false);});};
     void load();const timer=setInterval(load,300000);
     return()=>{active=false;controller.abort();clearInterval(timer);};
-  },[refresh,area.id,showFloods,geographyMode,floodWindow,floodGeneration,floodPage]);
+  },[refresh,area.id,showFloods,geographyMode,floodWindow,floodGeneration,floodPage,floodDisplayMode]);
   const hours=remainingHours(hourlySnapshot.records,clock,hourlySnapshot.available_hours),activeHour=hours.find(h=>h.valid_end===selectedHour)??hours[0];
   const requestedEnd=hours.some(h=>h.valid_end===selectedHour)?selectedHour:'',hourClock=Math.floor(clock/3600000);
   useEffect(()=>{
@@ -176,7 +180,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   const gistdaStatus=floodQueryFreshness(floodSnapshot.feed,clock,floodSnapshot.health?.status==='FAILED');
   const floodInScope=floodInArea(area,floodSnapshot.feed),floodScope=floodScopeLabel(floodSnapshot.feed);
   const floodsInScope=useMemo(()=>floodRecordsInArea(floodSnapshot,area),[floodSnapshot,area]);
-  const mapFloods=useMemo(()=>showFloods?floodsInScope:[],[showFloods,floodsInScope]);
+  const mapFloods=useMemo(()=>showFloods?(floodDisplayMode==='viewport'?floodViewport.records:floodsInScope):[],[showFloods,floodDisplayMode,floodViewport.records,floodsInScope]);
   const warningsInScope=useMemo(()=>warningSnapshot.records.filter(r=>warningInArea(r,area,areas)),[warningSnapshot.records,area,areas]);
   const validWarnings=warningsInScope.filter(r=>warningState(r,warningSnapshot.records,clock)==='CURRENT').length;
   const mapWarnings=useMemo(()=>showWarnings?warningMapRecords(warningSnapshot.records,selectedWarning,tmdStatus,clock).filter(r=>warningInArea(r,area,areas)):[],[showWarnings,warningSnapshot.records,selectedWarning,tmdStatus,clock,area,areas]);
@@ -213,7 +217,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
   if(showRain)mapEvidence.push({kind:'rain',detail:`HII / ThaiWater · checked ${bangkokTime(rainSnapshot.feed?.fetched_at)} · ${rainStatus} query · mm/24h และ mm/1h ตามสถานี ไม่ใช่ค่าเฉลี่ยพื้นที่ · observation timezone / age unknown`});
   if(showDams&&damSnapshot.records.length>0)mapEvidence.push({kind:'dam',detail:`RID daily storage · ${reportDate(damSnapshot.records[0].report_date)} · ${ridStatus} · วงแสดง % ปริมาตรเทียบความจุปกติ (+ คือเกิน 100%, ? คือไม่ระบุ) · สีเทาเมื่อเวลาไม่สด/ไม่ยืนยัน · ไม่ใช่ระดับน้ำหรือเกณฑ์อันตราย · เลือกจากรายการเพื่อซูมจุดที่อยู่ใกล้กัน`});
   if(showWarnings&&warningSnapshot.feed)mapEvidence.push({kind:'warning',detail:`TMD CAP · ${selectedWarning&&mapWarnings.some(r=>r.display_state!=='CURRENT')?'PREVIOUS / NON-CURRENT MESSAGE':`${validWarnings} within validity window · ${tmdStatus}`} · checked ${bangkokTime(warningSnapshot.feed.fetched_at)} · สีตามประกาศ สีเทาเป็นข้อมูลอ้างอิงที่ไม่ใช่คำเตือนปัจจุบัน`});
-  if(showFloods&&floodSnapshot.feed)mapEvidence.push({kind:'flood',detail:`GISTDA · ${floodWindowText(floodSnapshot.feed.product_window)} · ${floodScope} · ${floodInScope?`${floodResultCount(floodSnapshot,area)??'—'} returned features`:'outside selected area'} · displaying ${mapFloods.length} footprints · ${floodSnapshot.presentation==='page'?'one selected page · ':''}checked ${bangkokTime(floodSnapshot.feed.fetched_at)} · ${gistdaStatus} query · acquisition time/current flood state unknown`});
+  if(showFloods&&floodSnapshot.feed)mapEvidence.push({kind:'flood',detail:`GISTDA · ${floodWindowText(floodSnapshot.feed.product_window)} · ${floodScope} · ${floodInScope?`${floodResultCount(floodSnapshot,area)??'—'} returned features`:'outside selected area'} · displaying ${mapFloods.length} footprints · ${floodDisplayMode==='viewport'?viewportStatusText(floodViewport.status,mapFloods.length,floodViewport.matched_count)+' · ':floodSnapshot.presentation==='page'?'one selected page · ':''}checked ${bangkokTime(floodSnapshot.feed.fetched_at)} · ${gistdaStatus} query · acquisition time/current flood state unknown`});
   if(now===null)return <main className="dashboard"><p>Preparing Thailand situation view…</p></main>;
   return <main className="dashboard">
     <a href="#area-navigation" className="skip-link">Skip map to area navigation</a>
@@ -259,7 +263,7 @@ export default function Dashboard({areas}:{areas:Area[]}){
           </div>
           <div className="left-footer"><Link href="/health"><Activity size={13}/> Data health <ArrowUpRight size={12}/></Link><a href="/methodology"><Info size={13}/> Data & methodology <ArrowUpRight size={12}/></a></div>
         </aside>
-        <div className="map-column"><MapView radarFrame={showRadar&&radarVisible(radarStatus)?radarFrame:null} radarOpacity={radarOpacity} onRadarLoad={setRadarLoad} geographyMode={geographyMode} area={area} areas={areas} records={snapshot.records} gauges={mapStationRows} showGauges={showGauges||showRain} selectedGauge={selectedRain??selectedGauge} onSelectGauge={id=>id.startsWith('THR-')?selectRain(id):selectGauge(id)} dams={damsInScope} showDams={showDams} damFreshness={ridStatus} selectedDam={selectedDam} onSelectDam={selectDam} warnings={mapWarnings} onSelectWarning={selectWarning} floods={mapFloods} floodFreshness={gistdaStatus} floodWindow={floodWindow} floodHistorical={floodWindow!=='3days'||!!floodSnapshot.historical_query} selectedFlood={selectedFlood} onSelectFlood={selectFlood} date={date} metric={metric} is3d={is3d} terrain={terrain} theme={theme} hourly={mode==='hourly'?{records:hourlySnapshot.records,validEnd:activeHour?.valid_end??''}:null} validTimeLabel={mode==='hourly'?(activeHour?hourLabel(activeHour):'No hourly interval available'):`${date} · ICT 00:00–24:00`} rainfall={forecastVisible} extrude={extrude} opacity={opacity} freshness={displayStatus} onSelect={select}/>
+        <div className="map-column"><MapView onViewportChange={setFloodMapView} radarFrame={showRadar&&radarVisible(radarStatus)?radarFrame:null} radarOpacity={radarOpacity} onRadarLoad={setRadarLoad} geographyMode={geographyMode} area={area} areas={areas} records={snapshot.records} gauges={mapStationRows} showGauges={showGauges||showRain} selectedGauge={selectedRain??selectedGauge} onSelectGauge={id=>id.startsWith('THR-')?selectRain(id):selectGauge(id)} dams={damsInScope} showDams={showDams} damFreshness={ridStatus} selectedDam={selectedDam} onSelectDam={selectDam} warnings={mapWarnings} onSelectWarning={selectWarning} floods={mapFloods} floodFreshness={gistdaStatus} floodWindow={floodWindow} floodHistorical={floodWindow!=='3days'||!!floodSnapshot.historical_query} selectedFlood={selectedFlood} onSelectFlood={selectFlood} date={date} metric={metric} is3d={is3d} terrain={terrain} theme={theme} hourly={mode==='hourly'?{records:hourlySnapshot.records,validEnd:activeHour?.valid_end??''}:null} validTimeLabel={mode==='hourly'?(activeHour?hourLabel(activeHour):'No hourly interval available'):`${date} · ICT 00:00–24:00`} rainfall={forecastVisible} extrude={extrude} opacity={opacity} freshness={displayStatus} onSelect={select}/>
           {forecastVisible&&<div className="legend"><div><b>{metricLabel(metric)}</b><span>{metricUnit(metric,mode==='hourly'?'hourly':'daily')} · representative point</span></div><div className="legend-scale">{(metric==='rainfall_mm'?(mode==='hourly'?[0,.2,1,5,10]:[0,1,10,25,50]):[0,20,40,60,80]).map(v=><span key={v}><i style={{background:`rgba(${metricColor(v,metric,mode==='hourly'?'hourly':'daily').slice(0,3).join(',')},1)`}}/>{v}{v===(metric==='rainfall_mm'?(mode==='hourly'?10:50):80)?'+':''}</span>)}<span><i className="no-data"/>No data / stale</span></div></div>}
         </div>
         <aside ref={rightPanelRef} className={`right-panel ${rightOpen?'mobile-open':''}`} aria-label="Area intelligence"><div className="panel-heading"><h2>Area intelligence</h2><button className="mobile-close" aria-label="Close area intelligence" onClick={()=>setRightOpen(false)}><X size={16}/></button></div>
@@ -270,7 +274,8 @@ export default function Dashboard({areas}:{areas:Area[]}){
               :id==='gistda'?<FloodPanel key={`${id}:${area.id}:${floodWindow}:${floodGeneration}`} area={area} snapshot={floodSnapshot} queryFreshness={gistdaStatus} selectedId={selectedFlood} onSelect={selectFlood} onArea={select}
                 window={floodWindow} onWindow={value=>{setFloodWindow(value);setFloodGeneration('');setFloodPage(0);setSelectedFlood(null);setFloodSnapshot({...emptyFloods,window_catalog:floodSnapshot.window_catalog});}}
                 generation={floodGeneration} onGeneration={value=>{setFloodGeneration(value);setFloodPage(0);setSelectedFlood(null);setFloodSnapshot({...emptyFloods,window_catalog:floodSnapshot.window_catalog,query_history:floodSnapshot.query_history});}}
-                onPage={value=>{setFloodPage(value);setSelectedFlood(null);}}/>
+                onPage={value=>{setFloodPage(value);setSelectedFlood(null);}} displayMode={floodDisplayMode} viewport={floodViewport}
+                onDisplayMode={value=>{setFloodDisplayMode(value);setFloodPage(0);setSelectedFlood(null);}}/>
               :id==='thaiwater_rain'?<RainPanel key={`${id}:${area.id}`} area={area} snapshot={rainSnapshot} freshness={rainStatus} selectedId={selectedRain} onSelect={selectRain}/>:id==='thaiwater'?<GaugePanel key={`${id}:${area.id}`} area={area} snapshot={gaugeSnapshot} queryFreshness={gaugeStatus} selectedId={selectedGauge} loading={gaugeLoading} onSelect={selectGauge}/>:<DamPanel key={id} area={area} snapshot={damSnapshot} freshness={ridStatus} selectedId={selectedDam} onSelect={selectDam} onClose={()=>setSelectedDam(null)}/>)}
           {mode==='situation'&&<section className="situation-evidence" aria-label="Situation source clocks"><h3>Latest available situation</h3><p>Each source keeps its own date and coverage.</p><button disabled={!rainSnapshot.feed} onClick={()=>selectRain(null)}>HII observed rain stations · {rainSnapshot.feed?.record_count??"—"}<small>{rainStatus} query · observation timezone unknown</small></button><button disabled={!gaugeSnapshot.feed} onClick={()=>selectGauge(null)}>HII river level stations · {gaugeSnapshot.feed?.record_count??"—"}<small>{gaugeStatus} query · observation timezone unknown</small></button><button disabled={geographyMode==='basin'} onClick={()=>{setShowWarnings(true);setActiveEvidence('tmd');}}>TMD official warnings · {tmdStatus}<small>Checked {bangkokTime(warningSnapshot.feed?.fetched_at)}</small></button><button onClick={()=>{setShowDams(true);setActiveEvidence('rid');}}>RID reported storage · {ridStatus}<small>Report {damSnapshot.records[0]?.report_date??'unavailable'}</small></button><button disabled={geographyMode==='basin'} onClick={()=>{setShowFloods(true);setActiveEvidence('gistda');}}>GISTDA latest retrieved product<small>{floodSnapshot.feed?`${gistdaStatus} query · acquisition unknown`:'UNAVAILABLE'}</small></button></section>}
           {area.level==='national'?<div className="area-empty"><span className="empty-icon"><MapPin size={26}/></span><h3>A closer look, in context.</h3><p>Select a region, province or district to bring its weather and water evidence together.</p><div className="journey">Thailand <ChevronRight size={12}/> Region <ChevronRight size={12}/> Local</div></div>:<>

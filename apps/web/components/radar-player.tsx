@@ -37,6 +37,6 @@ export default function RadarPlayer({snapshot,index,onIndex,opacity,onOpacity,lo
       <p>ค่าประมาณจาก PCAPPI ระดับ 2 km และสมการ Z–R ตาม TMD · ใช้เวลาและสีของแต่ละภาพ แยกจากพยากรณ์และฝนสะสมสถานี</p>
       <ul className="radar-scale-detail">{scale.map(([color,label],i)=><li key={i}><i style={{background:color}}/>{label} mm/hour</li>)}</ul>
     </details>
-    <p className="radar-attribution">กรมอุตุนิยมวิทยา (TMD) · <a href="https://weather.tmd.go.th/composite/index_composite.html" target="_blank" rel="noreferrer">ดูต้นทาง</a> · <a href="https://www.tmd.go.th/content/copyright" target="_blank" rel="noreferrer">เงื่อนไขการใช้</a></p>
+    <p className="radar-attribution">กรมอุตุนิยมวิทยา (TMD) · <a href="https://weather.tmd.go.th/composite/index_composite.html" target="_blank" rel="noreferrer">ดูต้นทาง</a> · <a href="https://www.tmd.go.th/content/copyright" target="_blank" rel="noreferrer">เงื่อนไขการใช้</a> · <a href="/sources#precipitation-review">สถานะ Nowcasting / QPE</a></p>
   </section>;
 }

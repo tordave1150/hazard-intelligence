@@ -10,6 +10,7 @@ import {areaById,areas} from './geography';
 import {floodQueryFreshness} from './floods';
 import {checkedWindowManifest,checkedWindowRows,floodBrowserLimit,floodWindows,floodStorageVersions,type FloodStorageVersion,type FloodDescriptor,type FloodManifest} from './flood-window-contract';
 import type {Area,FloodSnapshot,FloodWindow} from './types';
+import {boundsIntersect,unionBounds,validFloodBounds,floodFeatureBounds,viewportFeatureLimit,viewportByteLimit,type FloodBounds,type FloodViewport} from './flood-viewport';
 
 export function decodedFloodObject(value:unknown,descriptor:FloodDescriptor,version:FloodStorageVersion='gzip-v1'){
   const row=value as {payload?:unknown;compressed_bytes?:number;raw_bytes?:number};
@@ -20,6 +21,78 @@ export function decodedFloodObject(value:unknown,descriptor:FloodDescriptor,vers
   if(!floodStorageVersions.includes(version))throw Error('Unsupported flood encoding');
   const rows=version==='gzip-v1'?JSON.parse(raw.toString('utf8')):decode(raw,{maxStrLength:256,maxBinLength:0,maxExtLength:0,maxArrayLength:131072,maxMapLength:8});
   return checkedWindowRows(rows,descriptor);
+}
+
+const spatialCache=new Map<string,{until:number;boxes:FloodBounds[];charge:number}>();let spatialCacheBytes=0;
+export function decodedSpatialObject(value:unknown,c:FloodDescriptor):FloodBounds[]{
+  const row=value as {payload?:unknown;hash?:string;raw_bytes?:number;compressed_bytes?:number};
+  const bytes=row?.payload instanceof Binary?Buffer.from(row.payload.value()):Buffer.isBuffer(row?.payload)?row.payload:null;
+  if(!bytes||row.hash!==c.spatial_hash||row.raw_bytes!==c.spatial_raw_bytes||row.compressed_bytes!==c.spatial_compressed_bytes||bytes.length!==c.spatial_compressed_bytes)throw Error('Invalid spatial object');
+  const raw=gunzipSync(bytes,{maxOutputLength:8192});
+  if(raw.length!==c.spatial_raw_bytes||createHash('sha256').update(raw).digest('hex')!==c.spatial_hash)throw Error('Spatial identity mismatch');
+  const boxes=decode(raw,{maxArrayLength:100,maxMapLength:0,maxStrLength:0,maxBinLength:0,maxExtLength:0}) as FloodBounds[];
+  if(!Array.isArray(boxes)||boxes.length!==c.count||boxes.some(b=>!validFloodBounds(b))||JSON.stringify(unionBounds(boxes))!==JSON.stringify(c.bbox))throw Error('Spatial accounting mismatch');
+  return boxes;
+}
+export async function readFloodViewport(window:FloodWindow,area:Area,bbox:FloodBounds,generation:string):Promise<FloodViewport>{
+  type LocalData={manifests:FloodManifest[];objects:Record<string,string>;spatial_objects?:Record<string,{payload:string;hash:string;raw_bytes:number;compressed_bytes:number}>};
+  let manifest:FloodManifest,local:LocalData|null=null;
+  if(mongoUri()){
+    const hit=manifestCache.get(generation);
+    if(hit&&hit.until>Date.now())manifest=hit.value;
+    else{
+      const db=await mongoDatabase(),row=await db.collection('gistda_flood_manifests').findOne({_id:generation as never,product_window:window,state:'PUBLISHED'},{maxTimeMS:5000});
+      manifest=checkedWindowManifest(row);if(manifestCache.size>=12)manifestCache.clear();manifestCache.set(generation,{until:Date.now()+30000,value:manifest});
+    }
+  }else if(process.env.NODE_ENV!=='production'&&process.env.HAZARD_LOCAL_SNAPSHOT==='1'){
+    local=JSON.parse(await readFile(path.join(process.cwd(),'data/local/flood-windows.json'),'utf8'));
+    manifest=checkedWindowManifest(local!.manifests.find((m:FloodManifest)=>m._id===generation&&m.product_window===window));
+  }else throw Error('Flood storage unavailable');
+  if(manifest.product_window!==window||manifest._id!==generation)throw Error('Cross-window generation');
+  const result:FloodViewport={generation,window,area_id:area.id,bbox,fetched_at:manifest.feed.fetched_at,source_record_count:manifest.feed.record_count,
+    status:'EMPTY',records:[],matched_count:null,complete:false,reason:'',index_chunks:0,geometry_chunks:0};
+  if(!manifest.geometry_available)return {...result,status:'GEOMETRY_UNAVAILABLE'};
+  if(manifest.spatial_index_version!==1)return {...result,status:'INDEX_UNAVAILABLE'};
+  if(bbox[2]-bbox[0]>4||bbox[3]-bbox[1]>4)return {...result,status:'ZOOM_REQUIRED',reason:'VIEW_TOO_WIDE'};
+  const candidates=(manifest.areas[area.id]?.chunks??[]).map(i=>manifest.chunks[i]).filter(c=>boundsIntersect(c.bbox!,bbox));
+  if(candidates.length>512)return {...result,status:'ZOOM_REQUIRED',reason:'INDEX_SCAN_LIMIT'};
+  result.index_chunks=candidates.length;
+  const boxes=new Map<string,FloodBounds[]>(),missing:FloodDescriptor[]=[];
+  for(const c of candidates){const cached=spatialCache.get(c.hash+':'+c.spatial_hash);if(cached&&cached.until>Date.now())boxes.set(c.hash,cached.boxes);else missing.push(c);}
+  const byHash=new Map(missing.map(c=>[c.hash,c]));
+  const remember=(row:Record<string,unknown>)=>{
+    const c=byHash.get(String(row._id));if(!c)throw Error('Unexpected spatial object');
+    const data=decodedSpatialObject(row,c),charge=c.count*128+512,key=c.hash+':'+c.spatial_hash;
+    while(spatialCacheBytes+charge>8*1024*1024&&spatialCache.size){const first=spatialCache.keys().next().value!;spatialCacheBytes-=spatialCache.get(first)!.charge;spatialCache.delete(first);}
+    const prior=spatialCache.get(key);if(prior)spatialCacheBytes-=prior.charge;
+    spatialCache.set(key,{until:Date.now()+300000,boxes:data,charge});spatialCacheBytes+=charge;boxes.set(c.hash,data);
+  };
+  const db=local?null:await mongoDatabase();
+  if(local){for(const c of missing){const row=local.spatial_objects?.[c.hash];if(row)remember({...row,_id:c.hash,payload:Buffer.from(row.payload,'base64')});}}
+  else if(missing.length){for await(const row of db!.collection('gistda_flood_spatial').find({_id:{$in:missing.map(c=>c.hash) as never}},{maxTimeMS:5000}).batchSize(64))remember(row);}
+  if(boxes.size!==candidates.length)throw Error('Incomplete spatial index');
+  const matches=new Map<string,Set<number>>();let total=0;
+  for(const c of candidates){const selected=new Set<number>();boxes.get(c.hash)!.forEach((b,i)=>{if(boundsIntersect(b,bbox))selected.add(i);});if(selected.size){matches.set(c.hash,selected);total+=selected.size;}}
+  result.matched_count=total;
+  const ids=[...matches.keys()].sort().slice(0,64),descriptors=new Map(candidates.map(c=>[c.hash,c]));
+  let bytes=2;const unique=new Set<string>();let stopped=false;
+  const consume=(row:Record<string,unknown>)=>{
+    const c=descriptors.get(String(row._id));if(!c||!matches.has(c.hash))throw Error('Unexpected geometry object');
+    const rows=decodedFloodObject(row,c,manifest.storage_version);result.geometry_chunks++;
+    for(const index of matches.get(c.hash)!){
+      const feature=rows[index];
+      if(JSON.stringify(floodFeatureBounds(feature))!==JSON.stringify(boxes.get(c.hash)![index]))throw Error('Geometry differs from spatial index');
+      const length=Buffer.byteLength(JSON.stringify(feature))+1;
+      if(result.records.length>=viewportFeatureLimit||bytes+length>viewportByteLimit){stopped=true;break;}
+      if(unique.has(feature.id))throw Error('Duplicate viewport record');unique.add(feature.id);bytes+=length;result.records.push(feature);
+    }
+  };
+  if(local){for(const id of ids){const c=descriptors.get(id)!,value=local.objects[id];if(!value)throw Error('Missing geometry');consume({_id:id,payload:Buffer.from(value,'base64'),raw_bytes:c.raw_bytes,compressed_bytes:c.compressed_bytes});if(stopped)break;}}
+  else if(ids.length){const cursor=db!.collection('gistda_flood_objects').find({_id:{$in:ids as never}},{maxTimeMS:10000}).sort({_id:1}).batchSize(4);try{for await(const row of cursor){consume(row);if(stopped)break;}}finally{await cursor.close();}}
+  if(!stopped&&result.geometry_chunks!==ids.length)throw Error('Missing viewport geometry');
+  result.complete=result.records.length===total;result.status=result.complete?(total?'AVAILABLE':'EMPTY'):'PARTIAL';
+  result.reason=result.complete?'BBOX_INTERSECTIONS_ORIGINAL_GEOMETRY':'BOUNDED_DISPLAY_LIMIT';
+  return result;
 }
 const healthKeys=['status','last_attempt','last_success','completed_at','record_count','provider_number_matched','completeness','scope_area_id','error_summary','failure_stage',
   'last_failure_at','last_failure_reason','last_nonempty_query_at','last_nonempty_count','consecutive_empty_queries','run_url','compressed_bytes','archive_evicted_count'];

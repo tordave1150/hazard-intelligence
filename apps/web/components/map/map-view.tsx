@@ -17,8 +17,9 @@ import {applyTimeTheme,mapPalettes,contextShadeOpacity,type CountryFocus,type Ti
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {stationColors,stationClusterProperties,stationClusterLabel,stationClusterColor,stationClusterSummary} from '@/lib/map-stations';
 import {LocateFixed,Plus,Minus,Map as MapIcon} from 'lucide-react';
+import type {FloodMapView} from '@/lib/flood-viewport';
 
-type Props={radarFrame:RadarFrame|null;radarOpacity:number;onRadarLoad:(state:RadarLoad)=>void;geographyMode:'administrative'|'basin';area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;theme:TimeTheme;
+type Props={onViewportChange?:(view:FloodMapView)=>void;radarFrame:RadarFrame|null;radarOpacity:number;onRadarLoad:(state:RadarLoad)=>void;geographyMode:'administrative'|'basin';area:Area;areas:Area[];records:Forecast[];date:string;metric:Metric;is3d:boolean;terrain:boolean;theme:TimeTheme;
   hourly:{records:HourlyForecast[];validEnd:string}|null;validTimeLabel:string;
   rainfall:boolean;extrude:boolean;opacity:number;freshness:Freshness;onSelect:(id:string)=>void;
   gauges:(GaugeStation|RainStation)[];showGauges:boolean;selectedGauge:string|null;onSelectGauge:(id:string)=>void;
@@ -51,6 +52,8 @@ export default function MapView(props:Props){
         center:[101.05,13.1],zoom:4.65,minZoom:3,maxZoom:16,maxPitch:70,
         attributionControl:false,bounds:[[97.1,5.4],[105.8,20.7]],fitBoundsOptions:{padding:35}});
       map.current=instance;
+      const notifyViewport=(settled:boolean)=>{const b=instance.getBounds();latest.current.onViewportChange?.({bbox:[Math.max(-180,b.getWest()),Math.max(-90,b.getSouth()),Math.min(180,b.getEast()),Math.min(90,b.getNorth())],zoom:instance.getZoom(),settled});};
+      instance.on('movestart',()=>notifyViewport(false));instance.on('moveend',()=>notifyViewport(true));instance.on('resize',()=>notifyViewport(true));
       instance.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:
         '<a href="https://github.com/chingchai/OpenGISData-Thailand">Boundaries: OpenGISData-Thailand</a> · CC BY 4.0 (simplified) | <a href="https://gis-portal.disaster.go.th/arcgis/rest/services/MapDX/DPM_TH_Hydrology/MapServer/6">Basins: DDPM GIS</a>'}),'bottom-right');
       const fallback=setTimeout(()=>{
@@ -156,6 +159,7 @@ export default function MapView(props:Props){
           if(feature?.properties)latest.current.onSelect(latest.current.geographyMode==='administrative'&&latest.current.area.level==='national'?feature.properties.region_id:feature.properties.id);
         });
         setReady(true);
+        notifyViewport(true);
       });
       instance.on('error',event=>{
         const message=event.error?.message??'';

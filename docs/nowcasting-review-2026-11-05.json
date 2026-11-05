@@ -1,17 +1,17 @@
 {
-  "reviewed_at": "2026-11-05T01:30:45.779804Z",
+  "reviewed_at": "2026-11-05T13:36:50.384928Z",
   "state": "NOT_ACCEPTED",
   "publishes_images": false,
   "evidence": {
     "south_viewer": {
       "url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/south_nowcast.php",
       "bytes": 111947,
-      "sha256": "2e25fcae68b34ce9a603ecf9550b5eecc4f039723aee4c3684ad0b047d3047d6"
+      "sha256": "6c47acaa8ba884acb64664c77033cd6ed02e55f2b35f5fc984329c66be18c043"
     },
     "south_manifest": {
       "url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/leaflet_layers/layers.json",
       "bytes": 6075,
-      "sha256": "a022ee1741334f57d37772b6a2463338305dc88428690766db1bdec519168368"
+      "sha256": "0fd154dc387c4f3fb1594f4c4a19535122bd380bf231f34d468df3352f6ad60e"
     },
     "bangkok_manifest": {
       "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/bkk/bangkok_frames/manifest.json",
@@ -21,7 +21,7 @@
     "khon_kaen_viewer": {
       "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/kkn/khon_kaen.php",
       "bytes": 22826,
-      "sha256": "67eb40bfd379c63d29f5a29507dedceda3972a4e87a2ae8f6050aee5d96a11eb"
+      "sha256": "5f66907add621dd96773c6b325125107d3ed783d1abeb6bd4d09a3cf24d02461"
     }
   },
   "south": {
@@ -29,9 +29,9 @@
     "source_url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/leaflet_layers/layers.json",
     "viewer_url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/south_nowcast.php",
     "valid_time_convention": "UTC_FROM_SOURCE_FILENAME_PARSER",
-    "base_observation_utc": "2026-11-05T00:15:00Z",
+    "base_observation_utc": "2026-11-05T12:15:00Z",
     "issued_at_utc": null,
-    "generated_at_raw": "2026-11-05T08:24:45",
+    "generated_at_raw": "2026-11-05T20:24:37",
     "display_units": "dBZ",
     "coverage_scope": "REGIONAL",
     "frame_count": 18,

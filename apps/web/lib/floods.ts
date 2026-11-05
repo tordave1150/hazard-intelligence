@@ -12,6 +12,7 @@ export function floodRefreshFailure(health:FloodSnapshot['health']):string|null{
   switch(health.error_summary){
     case 'NATIONAL_FEATURE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh exceeded the supported number of flood footprints.';
     case 'COMPRESSED_STORAGE_BUDGET_EXCEEDED':
+    case 'SPATIAL_STORAGE_BUDGET_EXCEEDED':
     case 'DATABASE_STORAGE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh exceeded the reserved storage budget; the last complete query is retained.';
     case 'SOURCE_REQUEST_BUDGET_EXCEEDED':return 'Latest GISTDA refresh reached its bounded source request allowance.';
     case 'RESPONSE_TOO_LARGE':

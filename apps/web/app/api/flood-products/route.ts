@@ -22,5 +22,5 @@ export async function GET(request:Request){
   const streamed=await readWindowSnapshot(window as FloodWindow,area,(view??'detail') as 'summary'|'detail',Number(chunkText),generation);
   const snapshot=streamed??(view?await readFloodAreaSnapshot(area,view as 'summary'|'detail',Number(chunkText),generation):await readFloodSnapshot(Number(chunkText),generation));
   if(!streamed)snapshot.window_catalog=await readFloodWindowCatalog();
-  return NextResponse.json({...floodResponse(snapshot,area),storage_protocol:'gistda-gzip-v1',storage_versions:floodStorageVersions},{status:snapshot.error?503:200,headers:{'Cache-Control':'no-store'}});
+  return NextResponse.json({...floodResponse(snapshot,area),storage_protocol:'gistda-gzip-v1',storage_versions:floodStorageVersions,viewport_protocol:'gistda-viewport-v1'},{status:snapshot.error?503:200,headers:{'Cache-Control':'no-store'}});
 }

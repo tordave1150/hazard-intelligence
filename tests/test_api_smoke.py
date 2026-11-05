@@ -239,3 +239,24 @@ def test_radar_does_not_accept_external_targets_or_area_aggregation(query):
 def test_radar_publication_requires_scoped_workflow_authentication():
     response=requests.post(BASE+'/api/radar',json={'capture_failed':True},timeout=15)
     assert response.status_code in [401,403]
+
+
+def test_flood_viewport_is_pinned_and_wide_views_do_not_download_geometry():
+    for window in ['3days','7days','30days']:
+        summary=requests.get(BASE+'/api/flood-products',params={'window':window,'view':'summary'},timeout=25).json()
+        assert summary['viewport_protocol']=='gistda-viewport-v1' and not summary['records']
+        if not summary['feed']:continue
+        generation=summary['pagination']['generation']
+        response=requests.get(BASE+'/api/flood-products/viewport',params={'window':window,'generation':generation,'bbox':'97,5,106,21'},timeout=25)
+        assert response.status_code==200 and 'no-store' in response.headers.get('Cache-Control','')
+        value=response.json()
+        assert value['generation']==generation and value['window']==window
+        assert value['fetched_at']==summary['feed']['fetched_at']
+        assert value['status']=='ZOOM_REQUIRED' and not value['records'] and not value['complete']
+        assert value['geometry_chunks']==0
+
+
+def test_flood_viewport_rejects_unpinned_duplicate_and_external_queries():
+    for query in ['?bbox=100,13,101,14','?window=3days&window=30days','?url=https://example.com','?generation=latest']:
+        response=requests.get(BASE+'/api/flood-products/viewport'+query,timeout=15)
+        assert response.status_code==400 and 'no-store' in response.headers.get('Cache-Control','')

@@ -9,8 +9,9 @@ def capacity_report(db,measure=False):
     try:stats=db.command('dbStats',scale=1,freeStorage=1)
     except OperationFailure:stats=db.command('dbStats',scale=1)
     sizes={r['_id']:r['compressed_bytes'] for r in publisher.objects.find({},{'compressed_bytes':1})}
-    used=sum(sizes.values());logical=int(stats.get('dataSize',0))+int(stats.get('indexSize',0))
-    report={'object_bytes':used,'object_limit_bytes':OBJECT_BUDGET_BYTES,'object_headroom_bytes':max(0,OBJECT_BUDGET_BYTES-used),
+    spatial=sum(r['compressed_bytes'] for r in publisher.spatial.find({},{'compressed_bytes':1}))
+    used=sum(sizes.values())+spatial;logical=int(stats.get('dataSize',0))+int(stats.get('indexSize',0))
+    report={'object_bytes':used,'geometry_object_bytes':sum(sizes.values()),'spatial_object_bytes':spatial,'object_limit_bytes':OBJECT_BUDGET_BYTES,'object_headroom_bytes':max(0,OBJECT_BUDGET_BYTES-used),
             'database_data_bytes':int(stats.get('dataSize',0)),'database_index_bytes':int(stats.get('indexSize',0)),
             'database_storage_bytes':int(stats.get('storageSize',0)),'database_operational_ceiling_bytes':DATABASE_CEILING_BYTES,
             'database_reusable_storage_bytes':stats.get('freeStorageSize'),
@@ -24,14 +25,15 @@ def capacity_report(db,measure=False):
         manifest=publisher.manifests.find_one({'_id':pointer['active_generation']})
         if not manifest:raise ValueError('Missing active flood manifest')
         count=manifest['compressed_bytes']
+        window_spatial=sum(c.get('spatial_compressed_bytes',0) for c in manifest['chunks']) if manifest.get('spatial_index_version')==1 else 0
         entry={'window':window,'generation':manifest['_id'],'storage_version':manifest['storage_version'],
                'record_count':manifest['feed']['record_count'],'fetched_at':manifest['feed']['fetched_at'],
-               'compressed_bytes':count,'product_limit_bytes':MAX_PRODUCT_GZIP_BYTES,
+               'compressed_bytes':count,'spatial_compressed_bytes':window_spatial,'product_limit_bytes':MAX_PRODUCT_GZIP_BYTES,
                'product_headroom_bytes':max(0,MAX_PRODUCT_GZIP_BYTES-count),
                'identical_chunk_replay_added_bytes':0,'next_source_query_deduplication':'NOT_PREDICTED',
                'requires_storage_migration':manifest['storage_version']!=CURRENT_VERSION,
-               'fully_changed_next_query_object_bytes':used+count,
-               'fully_changed_next_query_fits_object_budget':used+count<=OBJECT_BUDGET_BYTES}
+               'fully_changed_next_query_object_bytes':used+count+window_spatial,
+               'fully_changed_next_query_fits_object_budget':used+count+window_spatial<=OBJECT_BUDGET_BYTES}
         if measure:
             measured=0;objects={c['hash']:c for c in manifest['chunks']}
             for row in publisher.objects.find({'_id':{'$in':list(objects)}}).batch_size(20):

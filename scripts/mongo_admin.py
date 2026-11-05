@@ -88,7 +88,7 @@ def verify_database(db, include_retired=False,deep_flood=False):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('command',choices=['audit','verify','rollback','unlock','repack-flood','prune-flood'])
+    parser.add_argument('command',choices=['audit','verify','rollback','unlock','repack-flood','prune-flood','index-flood'])
     parser.add_argument('--source',choices=['tmd_radar','open_meteo','hourly','rid','tmd','gistda','thaiwater','thaiwater_rain','gistda_1day','gistda_pilot'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
@@ -113,6 +113,18 @@ def main():
             if args.flood_capacity or args.measure_flood:
                 from pipelines.gistda.capacity import capacity_report
                 print(json.dumps({'flood_capacity':capacity_report(db,measure=args.measure_flood)},indent=2))
+        elif args.command=='index-flood':
+            import requests,time
+            for attempt in range(72):
+                try:
+                    response=requests.get('https://hazard-intelligence-lime.vercel.app/api/flood-products?view=summary',timeout=10)
+                    if response.status_code==200 and response.json().get('viewport_protocol')=='gistda-viewport-v1':break
+                except (requests.RequestException,ValueError):pass
+                if attempt==71:raise RuntimeError('Viewport reader not ready')
+                time.sleep(5)
+            from pipelines.gistda.spatial_index import index_query
+            for row in db.gistda_flood_manifests.find({'state':'PUBLISHED','geometry_available':True},{'_id':1}):
+                print(json.dumps(index_query(db,row['_id'])),flush=True)
         elif args.command=='prune-flood':
             publisher=WindowPublisher(db,create_indexes=False)
             with publisher.lock():publisher._gc()

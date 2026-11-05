@@ -6,11 +6,14 @@ import {encode} from '@msgpack/msgpack';
 import {areaById} from '../lib/geography';
 import {checkedWindowFeed,checkedWindowManifest,type FloodManifest} from '../lib/flood-window-contract';
 import {loadFloodSnapshot} from '../lib/flood-client';
+import {loadFloodViewport} from '../lib/flood-viewport-client';
+import {floodFeatureBounds,unionBounds,type FloodBounds} from '../lib/flood-viewport';
+import {GET as viewportGet} from '../app/api/flood-products/viewport/route';
 import type {FloodWindow,FloodFeature} from '../lib/types';
 const mocks=vi.hoisted(()=>({readFile:vi.fn(),database:vi.fn(),uri:null as string|null}));
 vi.mock('../lib/mongo',()=>({mongoUri:()=>mocks.uri,mongoDatabase:mocks.database}));
 vi.mock('node:fs/promises',()=>({readFile:mocks.readFile}));
-import {decodedFloodObject,readWindowSnapshot} from '../lib/flood-window-server';
+import {decodedFloodObject,readWindowSnapshot,readFloodViewport} from '../lib/flood-window-server';
 
 function fixture(count:number,window:FloodWindow='30days'){
   const province='TH-P-10',district='TH-D-1001',region=areaById.get(province)!.region_id!,chunks:FloodManifest['chunks']=[],objects:Record<string,string>={};
@@ -28,6 +31,68 @@ function fixture(count:number,window:FloodWindow='30days'){
   return {manifest,objects,local:{manifests:[manifest],objects}};
 }
 beforeEach(()=>{vi.clearAllMocks();mocks.uri=null;process.env.HAZARD_LOCAL_SNAPSHOT='1';});
+
+function spatialFixture(count:number,spread=true){
+  const base=fixture(count),objects:Record<string,string>={},spatial_objects:Record<string,unknown>={};let number=0;
+  base.manifest.spatial_index_version=1;base.manifest.compressed_bytes=0;
+  for(const c of base.manifest.chunks){
+    const rows=decodedFloodObject({payload:Buffer.from(base.objects[c.hash],'base64'),raw_bytes:c.raw_bytes,compressed_bytes:c.compressed_bytes},c);
+    for(const row of rows){const x=100.5+(spread?number%100:0)*.002,y=13.7+(spread?Math.floor(number/100):0)*.002;number++;
+      row.geometry={type:'Polygon',coordinates:[[[x,y],[x+.0005,y],[x+.0005,y+.0005],[x,y]]]};}
+    const raw=Buffer.from(JSON.stringify(rows)),packed=gzipSync(raw),bounds=rows.map(floodFeatureBounds),index=Buffer.from(encode(bounds)),spatial=gzipSync(index);
+    Object.assign(c,{hash:createHash('sha256').update(raw).digest('hex'),raw_bytes:raw.length,compressed_bytes:packed.length,bbox:unionBounds(bounds),
+      spatial_hash:createHash('sha256').update(index).digest('hex'),spatial_raw_bytes:index.length,spatial_compressed_bytes:spatial.length});
+    objects[c.hash]=packed.toString('base64');spatial_objects[c.hash]={payload:spatial.toString('base64'),hash:c.spatial_hash,raw_bytes:index.length,compressed_bytes:spatial.length};
+    base.manifest.compressed_bytes+=packed.length;
+  }
+  return {manifest:base.manifest,objects,spatial_objects,local:{manifests:[base.manifest],objects,spatial_objects}};
+}
+
+describe('Viewport-only historical flood geometry',()=>{
+  const box:FloodBounds=[100.499,13.699,100.509,13.701];
+  it('returns only source shapes whose exact bounding boxes meet the view, with the pinned original clock',async()=>{
+    const f=spatialFixture(101);mocks.readFile.mockResolvedValue(JSON.stringify(f.local));
+    const value=await readFloodViewport('30days',areaById.get('TH')!,box,f.manifest._id);
+    expect(value.records).toHaveLength(5);expect(value.matched_count).toBe(5);expect(value.complete).toBe(true);
+    expect(value.geometry_chunks).toBe(1);expect(value.fetched_at).toBe(f.manifest.feed.fetched_at);
+    expect(value.records[0].geometry).toEqual({type:'Polygon',coordinates:[[[100.5,13.7],[100.5005,13.7],[100.5005,13.7005],[100.5,13.7]]]});
+  });
+  it('keeps dense overlapping source records separate and labels a bounded view as partial',async()=>{
+    const f=spatialFixture(2501,false);mocks.readFile.mockResolvedValue(JSON.stringify(f.local));
+    const value=await readFloodViewport('30days',areaById.get('TH')!,box,f.manifest._id);
+    expect(value.matched_count).toBe(2501);expect(value.records).toHaveLength(2000);expect(value.status).toBe('PARTIAL');expect(value.complete).toBe(false);
+  });
+  it('never replaces an old unindexed query with a different window or source generation',async()=>{
+    const f=fixture(2);mocks.readFile.mockResolvedValue(JSON.stringify(f.local));
+    expect((await readFloodViewport('30days',areaById.get('TH')!,box,f.manifest._id)).status).toBe('INDEX_UNAVAILABLE');
+    await expect(readFloodViewport('7days',areaById.get('TH')!,box,f.manifest._id)).rejects.toThrow();
+  });
+  it('rejects missing/corrupt geometry instead of returning an apparently complete result',async()=>{
+    const f=spatialFixture(17);f.objects[f.manifest.chunks[0].hash]='Y29ycnVwdA==';mocks.readFile.mockResolvedValue(JSON.stringify(f.local));
+    await expect(readFloodViewport('30days',areaById.get('TH')!,box,f.manifest._id)).rejects.toThrow();
+  });
+  it('requests a closer zoom without reading national geometry and respects selected administrative membership',async()=>{
+    const f=spatialFixture(10);mocks.readFile.mockResolvedValue(JSON.stringify(f.local));
+    expect((await readFloodViewport('30days',areaById.get('TH')!,[95,5,108,22],f.manifest._id)).status).toBe('ZOOM_REQUIRED');
+    const outside=await readFloodViewport('30days',areaById.get('TH-P-11')!,box,f.manifest._id);
+    expect(outside.status).toBe('EMPTY');expect(outside.geometry_chunks).toBe(0);
+  });
+  it('rejects invalid and duplicate query parameters before accessing stored data',async()=>{
+    for(const query of ['','window=3days&generation=bad&bbox=1,2,3,4','window=3days&window=30days','window=30days&bbox=NaN,0,1,2']){
+      expect((await viewportGet(new Request('http://test/api/flood-products/viewport?'+query))).status).toBe(400);
+    }
+    expect(mocks.readFile).not.toHaveBeenCalled();
+  });
+  it('binds the browser response to the selected viewport, window, generation and retrieval clock',async()=>{
+    const f=spatialFixture(13);mocks.readFile.mockResolvedValue(JSON.stringify(f.local));
+    const value=await readFloodViewport('30days',areaById.get('TH')!,box,f.manifest._id);
+    const options={window:'30days' as const,areaId:'TH',generation:f.manifest._id,bbox:box,fetchedAt:f.manifest.feed.fetched_at,sourceCount:13};
+    const fetcher=((async()=>({ok:true,json:async()=>value})) as unknown) as typeof fetch;
+    expect((await loadFloodViewport(new AbortController().signal,options,fetcher)).records).toHaveLength(5);
+    await expect(loadFloodViewport(new AbortController().signal,{...options,window:'7days'},fetcher)).rejects.toThrow('contract');
+    const controller=new AbortController();controller.abort();await expect(loadFloodViewport(controller.signal,options,fetcher)).rejects.toThrow('cancelled');
+  });
+});
 describe('Large GISTDA products and truthful area presentation',()=>{
   it('decodes a Python-produced golden chunk without changing double bits or signed zero',()=>{
     const fixture=JSON.parse(readFileSync(new URL('../../../tests/fixtures/flood/msgpack-double-chunk.json',import.meta.url),'utf8'));

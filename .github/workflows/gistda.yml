@@ -51,7 +51,7 @@ jobs:
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
       - name: Publish separate complete 3/7/30-day products in compressed chunks
-        if: steps.request.outputs.operation != 'verify_thailand_windows' && steps.request.outputs.operation != 'repack_thailand_windows' && steps.request.outputs.operation != 'capacity_thailand_windows'
+        if: steps.request.outputs.operation != 'verify_thailand_windows' && steps.request.outputs.operation != 'repack_thailand_windows' && steps.request.outputs.operation != 'capacity_thailand_windows' && steps.request.outputs.operation != 'index_thailand_windows'
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -63,6 +63,12 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin repack-flood
+      - name: Index retained original footprints without provider requests
+        if: steps.request.outputs.operation == 'index_thailand_windows'
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m scripts.mongo_admin index-flood
       - name: Reclaim expired representations after reader cache grace
         if: steps.request.outputs.operation == 'repack_thailand_windows'
         env:
@@ -78,6 +84,8 @@ jobs:
         run: |
           if [ '${{ steps.request.outputs.operation }}' = 'capacity_thailand_windows' ]; then
             python -m scripts.mongo_admin verify --flood-capacity
+          elif [ '${{ steps.request.outputs.operation }}' = 'index_thailand_windows' ]; then
+            python -m scripts.mongo_admin verify --deep-flood --flood-capacity
           elif [ '${{ steps.request.outputs.operation }}' = 'verify_thailand_windows' ] || [ '${{ steps.request.outputs.operation }}' = 'repack_thailand_windows' ]; then
             python -m scripts.mongo_admin verify --deep-flood --flood-capacity --measure-flood
           else

@@ -34,9 +34,9 @@ def getter(total=1,mutate=None):
     return get,calls
 
 
-def collect(path,total=1,window='3days',mutate=None,storage_version='gzip-v1'):
+def collect(path,total=1,window='3days',mutate=None,storage_version='gzip-v1',with_spatial=False):
     get,calls=getter(total,mutate)
-    result=stream.collect_window(KEY,window,path,get=get,now=lambda:NOW,storage_version=storage_version)
+    result=stream.collect_window(KEY,window,path,get=get,now=lambda:NOW,storage_version=storage_version,with_spatial=with_spatial)
     return result,calls
 
 
@@ -336,3 +336,57 @@ def test_capacity_distinguishes_reusable_allocated_storage_and_unknown_plan_limi
         return {'dataSize':1000,'indexSize':20,'storageSize':9000}
     monkeypatch.setattr(db,'command',restricted)
     assert capacity_report(db)['database_reusable_storage_bytes'] is None
+
+
+def test_collector_spatial_index_matches_original_geometry_and_corruption_is_rejected(tmp_path):
+    from pipelines.gistda.spatial import checked_spatial
+    m,_=collect(tmp_path,201,storage_version='msgpack-gzip-v1',with_spatial=True)
+    assert m['spatial_index_version']==1
+    for c in m['chunks']:
+        rows=stream.checked_payload(c,(tmp_path/(c['hash']+'.gz')).read_bytes(),m['storage_version'])
+        data=(tmp_path/(c['hash']+'.spatial.gz')).read_bytes()
+        assert checked_spatial(c,data,rows)==[[100.5,13.7,100.51,13.71]]*c['count']
+        with pytest.raises(ValueError):checked_spatial(c,data[:-1])
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db);p.publish(m,tmp_path,check_database=False)
+    assert p.verify('3days')['active_records']==201 and p.spatial.count_documents({})==3
+    p.spatial.delete_one({'_id':m['chunks'][0]['hash']})
+    with pytest.raises(ValueError,match='Incomplete'):p.verify('3days')
+
+
+def test_index_backfill_keeps_generation_query_clocks_geometry_and_control_unchanged(tmp_path):
+    from pipelines.gistda.spatial_index import index_query
+    m,_=collect(tmp_path,201,window='30days',storage_version='msgpack-gzip-v1')
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db);p.publish(m,tmp_path,check_database=False)
+    pointer=deepcopy(db.snapshot_control.find_one({'_id':'gistda:flood_30days_thailand'}));before=list(p.objects.find({}))
+    report=index_query(db,m['_id'],check_database=False)
+    indexed=p.manifests.find_one({'_id':m['_id']})
+    assert indexed['feed']==m['feed'] and report['fetched_at']==m['feed']['fetched_at']
+    assert list(p.objects.find({}))==before and db.snapshot_control.find_one({'_id':pointer['_id']})==pointer
+    assert p.verify('30days')['active_records']==201
+    assert index_query(db,m['_id'],check_database=False)['status']=='ALREADY_INDEXED'
+
+
+def test_failed_index_promotion_cleans_auxiliary_data_without_touching_source(tmp_path,monkeypatch):
+    from pipelines.gistda.spatial_index import index_query
+    m,_=collect(tmp_path,101);db=mongomock.MongoClient().db;p=stream.WindowPublisher(db);p.publish(m,tmp_path,check_database=False)
+    def fail(*a,**k):raise RuntimeError('simulated metadata failure')
+    monkeypatch.setattr(p.manifests,'update_one',fail)
+    with pytest.raises(RuntimeError):index_query(db,m['_id'],check_database=False)
+    assert p.spatial.count_documents({})==0
+    assert p.verify('3days')['active_records']==101
+    assert p.manifests.find_one({'_id':m['_id']}).get('spatial_index_version') is None
+
+
+def test_index_storage_budget_failure_never_promotes_incomplete_index(tmp_path,monkeypatch):
+    from pipelines.gistda import spatial_index
+    m,_=collect(tmp_path,101);db=mongomock.MongoClient().db;p=stream.WindowPublisher(db);p.publish(m,tmp_path,check_database=False)
+    monkeypatch.setattr(spatial_index,'SPATIAL_BUDGET_BYTES',0)
+    with pytest.raises(CandidateError):spatial_index.index_query(db,m['_id'],check_database=False)
+    assert p.spatial.count_documents({})==0 and p.verify('3days')['active_records']==101
+
+
+def test_spatial_index_for_empty_query_is_complete_and_does_not_fabricate_geometry(tmp_path):
+    m,_=collect(tmp_path,0,with_spatial=True);db=mongomock.MongoClient().db;p=stream.WindowPublisher(db)
+    p.publish(m,tmp_path,check_database=False)
+    assert m['spatial_index_version']==1 and not m['chunks'] and p.spatial.count_documents({})==0
+    assert p.verify('3days')['active_records']==0

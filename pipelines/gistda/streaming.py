@@ -24,6 +24,7 @@ from scripts.gistda_common import CandidateError,_strict_object
 from scripts.gistda_sample_quality import administrative_quality,geometry_quality
 from scripts.probe_gistda_features import page_metadata
 from .encoding import VERSIONS,CURRENT_VERSION,checked_raw,unpacked,binary_rows,pack_rows
+from .spatial import build_spatial,checked_spatial,validate_spatial_descriptor,SPATIAL_BUDGET_BYTES
 
 WINDOWS=('3days','7days','30days')
 PAGE_SIZE=1000
@@ -54,12 +55,14 @@ def product(window):
 
 
 def validate_manifest(manifest):
+    if manifest.get('spatial_index_version') not in (None,1):raise ValueError('Unsupported spatial index')
     feed=manifest['feed'];VALIDATE.validate(feed);window=manifest['product_window']
     if manifest.get('storage_version') not in VERSIONS or window not in WINDOWS or feed['product_window']!=window or feed['product_id']!=product(window) or feed['source_url']!='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/'+window:raise ValueError('Invalid flood provenance')
     if instant(feed['response_at'])>instant(feed['fetched_at'])+timedelta(minutes=5) or instant(feed['fetched_at'])>instant(feed['ingested_at']):raise ValueError('Invalid flood clocks')
     if len(manifest['chunks'])>MAX_CHUNKS:raise ValueError('Flood chunk budget exceeded')
     index={};total=0;hashes=set()
     for i,c in enumerate(manifest['chunks']):
+        if manifest.get('spatial_index_version')==1:validate_spatial_descriptor(c)
         if c['hash'] in hashes or len(c['hash'])!=64 or any(ch not in '0123456789abcdef' for ch in c['hash']) or not 1<=c['count']<=CHUNK_ROWS or not 1<=c['compressed_bytes']<=CHUNK_RAW_BYTES or not 1<=c['raw_bytes']<=CHUNK_RAW_BYTES:raise ValueError('Invalid flood descriptor')
         hashes.add(c['hash']);total+=c['count'];district=AREAS.get(c['area_ids'][-1])
         if not district or district['level']!='district':raise ValueError('Invalid flood district')
@@ -87,7 +90,7 @@ def normalized_feature(feature,secret):
     return identity,row,quality['positions_checked']
 
 
-def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=None,page_budget=None,storage_version=CURRENT_VERSION):
+def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=None,page_budget=None,storage_version=CURRENT_VERSION,with_spatial=True):
     """At most one bounded source page and one output chunk reside in memory."""
     if window not in WINDOWS:raise CandidateError('INVALID_PRODUCT_WINDOW')
     if storage_version not in VERSIONS:raise ValueError('Unsupported flood storage encoding')
@@ -156,6 +159,9 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
             (directory/(digest+'.gz')).write_bytes(packed)
             member=AREAS[district];province=member['province_id'];region=AREAS[province]['region_id']
             descriptor={'hash':digest,'count':len(batch),'raw_bytes':len(raw),'compressed_bytes':len(packed),'area_ids':['TH',region,province,district]}
+            if with_spatial:
+                fields,spatial=build_spatial(unpacked(raw,storage_version));descriptor.update(fields)
+                (directory/(digest+'.spatial.gz')).write_bytes(spatial)
             for area_id in descriptor['area_ids']:
                 entry=index.setdefault(area_id,{'count':0,'chunks':[]});entry['count']+=len(batch);entry['chunks'].append(len(chunks))
             chunks.append(descriptor);batch=[];batch_bytes=2
@@ -173,6 +179,7 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
               'area_metrics':'NOT_USED_UNITS_UNVERIFIED','interpretation':'Retrospective footprints; current flood state unknown. Empty is not an all-clear.'}
         manifest={'_id':str(uuid4()),'storage_version':storage_version,'source_id':'gistda','product_window':window,'feed':feed,'chunks':chunks,'areas':index,
                   'geometry_available':True,'compressed_bytes':compressed_bytes,'source_bytes':source_bytes,'normalized_bytes':raw_bytes,'positions':positions}
+        if with_spatial:manifest['spatial_index_version']=1
         if len(BSON.encode(manifest))>1024*1024:raise CandidateError('MANIFEST_SIZE_EXCEEDED')
         validate_manifest(manifest);return manifest
     except CandidateError as error:
@@ -191,6 +198,7 @@ def checked_payload(descriptor,data,version='gzip-v1'):
 class WindowPublisher:
     def __init__(self,db,create_indexes=True):
         self.db=db;self.objects=db.gistda_flood_objects;self.manifests=db.gistda_flood_manifests;self.control=db.snapshot_control
+        self.spatial=db.gistda_flood_spatial
         if create_indexes:self.manifests.create_index([('product_window',1),('state',1),('feed.fetched_at',-1)])
 
     @contextmanager
@@ -227,12 +235,17 @@ class WindowPublisher:
         references=set(extra or [])
         for row in self.manifests.find({'geometry_available':True},{'chunks.hash':1}):references.update(c['hash'] for c in row['chunks'])
         self.objects.delete_many({'_id':{'$nin':list(references)}})
+        spatial_refs=set()
+        for row in self.manifests.find({'geometry_available':True,'spatial_index_version':1},{'chunks.hash':1}):spatial_refs.update(c['hash'] for c in row['chunks'])
+        self.spatial.delete_many({'_id':{'$nin':list(spatial_refs)}})
 
     def publish(self,manifest,directory,check_database=True,replaces_generation=None):
         directory=Path(directory);window=manifest['product_window'];key='gistda:'+product(window)
         validate_manifest(manifest)
         if manifest['compressed_bytes']>MAX_PRODUCT_GZIP_BYTES:raise CandidateError('COMPRESSED_STORAGE_BUDGET_EXCEEDED')
         for descriptor in manifest['chunks']:checked_payload(descriptor,(directory/(descriptor['hash']+'.gz')).read_bytes(),manifest['storage_version'])
+        if manifest.get('spatial_index_version')==1:
+            for c in manifest['chunks']:checked_spatial(c,(directory/(c['hash']+'.spatial.gz')).read_bytes(),checked_payload(c,(directory/(c['hash']+'.gz')).read_bytes(),manifest['storage_version']))
         with self.lock():
             self._gc();active=self.control.find_one({'_id':key})
             old=self.manifests.find_one({'_id':active.get('active_generation')}) if active and active.get('storage_version') in VERSIONS else None
@@ -240,7 +253,12 @@ class WindowPublisher:
             if old and instant(manifest['feed']['fetched_at'])<instant(old['feed']['fetched_at']):raise ValueError('Older flood query cannot replace active generation')
             known={row['_id']:row['compressed_bytes'] for row in self.objects.find({}, {'compressed_bytes':1})}
             added={c['hash']:c['compressed_bytes'] for c in manifest['chunks'] if c['hash'] not in known}
-            projected=sum(known.values())+sum(added.values())
+            def spatial_sizes():
+                existing={r['_id']:r['compressed_bytes'] for r in self.spatial.find({},{'compressed_bytes':1})}
+                new={c['hash']:c['spatial_compressed_bytes'] for c in manifest['chunks'] if manifest.get('spatial_index_version')==1 and c['hash'] not in existing}
+                return existing,new
+            known_spatial,added_spatial=spatial_sizes()
+            projected=sum(known.values())+sum(added.values())+sum(known_spatial.values())+sum(added_spatial.values())
             evicted=0;protected=self._retained()
             for archive in self.manifests.find({'state':'PUBLISHED','geometry_available':True}).sort('feed.fetched_at',1):
                 if projected<=OBJECT_BUDGET_BYTES:break
@@ -249,11 +267,13 @@ class WindowPublisher:
                 self._gc(extra=added)
                 known={row['_id']:row['compressed_bytes'] for row in self.objects.find({}, {'compressed_bytes':1})}
                 added={c['hash']:c['compressed_bytes'] for c in manifest['chunks'] if c['hash'] not in known}
-                projected=sum(known.values())+sum(added.values())
+                known_spatial,added_spatial=spatial_sizes()
+                projected=sum(known.values())+sum(added.values())+sum(known_spatial.values())+sum(added_spatial.values())
             if projected>OBJECT_BUDGET_BYTES:raise CandidateError('COMPRESSED_STORAGE_BUDGET_EXCEEDED')
+            if sum(known_spatial.values())+sum(added_spatial.values())>SPATIAL_BUDGET_BYTES:raise CandidateError('SPATIAL_STORAGE_BUDGET_EXCEEDED')
             if check_database:
                 stats=self.db.command('dbStats',scale=1)
-                if stats.get('dataSize',0)+stats.get('indexSize',0)+sum(added.values())+len(added)*1024>DATABASE_CEILING_BYTES:raise CandidateError('DATABASE_STORAGE_BUDGET_EXCEEDED')
+                if stats.get('dataSize',0)+stats.get('indexSize',0)+sum(added.values())+sum(added_spatial.values())+(len(added)+len(added_spatial))*1024>DATABASE_CEILING_BYTES:raise CandidateError('DATABASE_STORAGE_BUDGET_EXCEEDED')
             generation=manifest['_id'];promoted=False
             try:
                 pending=[]
@@ -264,6 +284,9 @@ class WindowPublisher:
                     # Immutable new identities only, under the shared lock; <=20 MiB per batch.
                     if len(pending)==20:self.objects.insert_many(pending,ordered=True);pending=[]
                 if pending:self.objects.insert_many(pending,ordered=True)
+                spatial_rows=[{'_id':c['hash'],'payload':Binary((directory/(c['hash']+'.spatial.gz')).read_bytes()),
+                    'raw_bytes':c['spatial_raw_bytes'],'compressed_bytes':c['spatial_compressed_bytes'],'hash':c['spatial_hash']} for c in manifest['chunks'] if c['hash'] in added_spatial]
+                for start in range(0,len(spatial_rows),100):self.spatial.insert_many(spatial_rows[start:start+100],ordered=True)
                 required={c['hash'] for c in manifest['chunks']}
                 if self.objects.count_documents({'_id':{'$in':list(required)}})!=len(required):raise RuntimeError('Compressed object write incomplete')
                 self.manifests.insert_one({**manifest,'state':'STAGED','published_at':utc_now(),'archive_evicted_count':evicted})
@@ -288,11 +311,20 @@ class WindowPublisher:
 
     def _verify_objects(self,manifest,deep=True):
         descriptors={c['hash']:c for c in manifest['chunks']};seen=set()
+        indexed={}
+        if manifest.get('spatial_index_version')==1:
+            indexed={r['_id']:r for r in self.spatial.find({'_id':{'$in':list(descriptors)}},None if deep else {'payload':0})}
+            if len(indexed)!=len(descriptors):raise ValueError('Incomplete flood spatial index')
         query={'_id':{'$in':list(descriptors)}}
         for row in self.objects.find(query,None if deep else {'payload':0}).batch_size(20 if deep else 500):
             descriptor=descriptors[row['_id']]
             if row.get('compressed_bytes')!=descriptor['compressed_bytes'] or row.get('raw_bytes')!=descriptor['raw_bytes']:raise ValueError('Stored flood size mismatch')
-            if deep:checked_payload(descriptor,bytes(row['payload']),manifest['storage_version'])
+            if deep:
+                rows=checked_payload(descriptor,bytes(row['payload']),manifest['storage_version'])
+                if manifest.get('spatial_index_version')==1:checked_spatial(descriptor,bytes(indexed[row['_id']]['payload']),rows)
+            if manifest.get('spatial_index_version')==1:
+                entry=indexed[row['_id']]
+                if entry.get('hash')!=descriptor['spatial_hash'] or entry.get('raw_bytes')!=descriptor['spatial_raw_bytes'] or entry.get('compressed_bytes')!=descriptor['spatial_compressed_bytes']:raise ValueError('Spatial metadata mismatch')
             seen.add(row['_id'])
         if len(seen)!=len(descriptors):raise ValueError('Missing compressed flood object')
 
@@ -323,6 +355,9 @@ class WindowPublisher:
             if encoded(unpacked(raw,CURRENT_VERSION))!=encoded(rows):raise ValueError('Repack changed original normalized values')
             digest=hashlib.sha256(raw).hexdigest();(directory/(digest+'.gz')).write_bytes(packed)
             rewritten[row['_id']]={**descriptor,'hash':digest,'raw_bytes':len(raw),'compressed_bytes':len(packed)}
+            if candidate.get('spatial_index_version')==1:
+                fields,spatial=build_spatial(rows);rewritten[row['_id']].update(fields)
+                (directory/(digest+'.spatial.gz')).write_bytes(spatial)
         if len(rewritten)!=len(descriptors):raise ValueError('Missing repack source object')
         chunks=[rewritten[c['hash']] for c in original['chunks']]
         candidate.update(chunks=chunks,compressed_bytes=sum(c['compressed_bytes'] for c in chunks))
