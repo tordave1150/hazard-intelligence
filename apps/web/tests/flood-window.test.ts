@@ -5,8 +5,8 @@ import {areaById} from '../lib/geography';
 import {checkedWindowFeed,checkedWindowManifest,type FloodManifest} from '../lib/flood-window-contract';
 import {loadFloodSnapshot} from '../lib/flood-client';
 import type {FloodWindow,FloodFeature} from '../lib/types';
-const mocks=vi.hoisted(()=>({readFile:vi.fn()}));
-vi.mock('../lib/mongo',()=>({mongoUri:()=>null,mongoDatabase:vi.fn()}));
+const mocks=vi.hoisted(()=>({readFile:vi.fn(),database:vi.fn(),uri:null as string|null}));
+vi.mock('../lib/mongo',()=>({mongoUri:()=>mocks.uri,mongoDatabase:mocks.database}));
 vi.mock('node:fs/promises',()=>({readFile:mocks.readFile}));
 import {decodedFloodObject,readWindowSnapshot} from '../lib/flood-window-server';
 
@@ -25,7 +25,7 @@ function fixture(count:number,window:FloodWindow='30days'){
   if(count)for(const id of ['TH',region,province,district])manifest.areas[id]={count,chunks:chunks.map((_,i)=>i)};
   return {manifest,objects,local:{manifests:[manifest],objects}};
 }
-beforeEach(()=>{vi.clearAllMocks();process.env.HAZARD_LOCAL_SNAPSHOT='1';});
+beforeEach(()=>{vi.clearAllMocks();mocks.uri=null;process.env.HAZARD_LOCAL_SNAPSHOT='1';});
 describe('Large GISTDA products and truthful area presentation',()=>{
   it('accepts independent historical metadata and rejects substituted dates/units/provenance',()=>{
     const {manifest}=fixture(25001);
@@ -76,5 +76,19 @@ describe('Large GISTDA products and truthful area presentation',()=>{
     const fetcher=(async(url:string)=>{const p=new URL(url,'http://test').searchParams;const value=await readWindowSnapshot('30days',areaById.get('TH-D-1001')!,'detail',Number(p.get('chunk')??0),p.get('generation')??undefined);
       if(p.has('chunk'))value!.pagination!.generation='different-generation';return {ok:true,json:async()=>value};}) as typeof fetch;
     await expect(loadFloodSnapshot(new AbortController().signal,fetcher,undefined,{areaId:'TH-D-1001',mode:'detail',window:'30days'})).rejects.toThrow('changed');
+  });
+  it('never reuses a cached historical generation for another product window',async()=>{
+    const {manifest,objects}=fixture(3);mocks.uri='mongodb://fixture-only';
+    const pointer={storage_version:'gzip-v1',active_generation:manifest._id,feature_count:3,record_count:1};
+    const cursor=(rows:unknown[])=>({sort:()=>({limit:()=>({toArray:async()=>rows})}),toArray:async()=>rows});
+    mocks.database.mockResolvedValue({collection:(name:string)=>({
+      findOne:async(q:Record<string,unknown>)=>name==='snapshot_control'?pointer:name==='source_status'?{status:'SUCCESS'}:
+        name==='gistda_flood_manifests'?q.product_window&&q.product_window!=='30days'?null:manifest:
+        name==='gistda_flood_objects'?{payload:Buffer.from(objects[String(q._id)],'base64'),raw_bytes:manifest.chunks[0].raw_bytes,compressed_bytes:manifest.chunks[0].compressed_bytes}:null,
+      find:()=>cursor(name==='snapshot_control'?[pointer]:name==='gistda_flood_manifests'?[manifest]:[])
+    })});
+    const first=await readWindowSnapshot('30days',areaById.get('TH')!,'detail');expect(first?.records).toHaveLength(3);
+    const invalid=await readWindowSnapshot('7days',areaById.get('TH')!,'detail',0,manifest._id);
+    expect(invalid?.feed).toBeNull();expect(invalid?.error).toBeTruthy();
   });
 });

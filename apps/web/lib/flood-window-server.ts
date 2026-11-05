@@ -26,13 +26,12 @@ const manifestCache=new Map<string,{until:number;value:FloodManifest}>();
 async function catalog(){
   if(catalogCache&&catalogCache.until>Date.now())return catalogCache.value;
   const db=await mongoDatabase(),pointers=await db.collection('snapshot_control').find({_id:{$in:floodWindows.map(w=>'gistda:flood_'+w+'_thailand') as never}}).toArray();
-  const value:NonNullable<FloodSnapshot['window_catalog']>=[];
-  for(const pointer of pointers){
-    if(pointer.storage_version!=='gzip-v1')continue;
+  const entries=await Promise.all(pointers.filter(p=>p.storage_version==='gzip-v1').map(async pointer=>{
     const m=await db.collection('gistda_flood_manifests').findOne({_id:pointer.active_generation},{projection:{product_window:1,'feed.record_count':1,'feed.fetched_at':1,geometry_available:1},maxTimeMS:5000});
-    if(!m||!floodWindows.includes(m.product_window)||!Number.isInteger(m.feed?.record_count)||m.feed.record_count!==pointer.feature_count)continue;
-    value.push({window:m.product_window,record_count:m.feed.record_count,fetched_at:m.feed.fetched_at,generation:String(m._id),status:'AVAILABLE',geometry_available:m.geometry_available===true});
-  }
+    return !m||!floodWindows.includes(m.product_window)||!Number.isInteger(m.feed?.record_count)||m.feed.record_count!==pointer.feature_count?null:
+      {window:m.product_window as FloodWindow,record_count:m.feed.record_count as number,fetched_at:m.feed.fetched_at as string,generation:String(m._id),status:'AVAILABLE',geometry_available:m.geometry_available===true};
+  }));
+  const value=entries.filter((entry):entry is NonNullable<typeof entry>=>entry!==null);
   catalogCache={until:Date.now()+30000,value};return value;
 }
 function children(area:Area,m:FloodManifest){
@@ -49,12 +48,15 @@ export async function readWindowSnapshot(window:FloodWindow,area:Area,mode:'summ
     if(mongoUri()){
       const db=await mongoDatabase(),key='gistda:flood_'+window+'_thailand';
       const [pointer,status]=await Promise.all([db.collection('snapshot_control').findOne({_id:key as never},{maxTimeMS:5000}),db.collection('source_status').findOne({_id:key as never},{maxTimeMS:5000})]);
-      if(!pointer||pointer.storage_version!=='gzip-v1')return window==='3days'?null:{...result,window_catalog:await catalog()};
+      if(!pointer||pointer.storage_version!=='gzip-v1')return window==='3days'?null:{...result,health:status?Object.fromEntries(healthKeys.map(k=>[k,status[k]??null])):null,window_catalog:await catalog()};
       result.storage='mongo';activeGeneration=pointer.active_generation;
       const id=generation??activeGeneration!;
       if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id))throw Error('Invalid flood generation');
       const cached=manifestCache.get(id);
-      if(cached&&cached.until>Date.now())manifest=cached.value;
+      if(cached&&cached.until>Date.now()){
+        if(cached.value.product_window!==window)throw Error('Flood generation belongs to another product window');
+        manifest=cached.value;
+      }
       else{
         const row=await db.collection('gistda_flood_manifests').findOne({_id:id as never,product_window:window},{maxTimeMS:5000});
         if(!row||id!==activeGeneration&&row.state!=='PUBLISHED')throw Error('Flood query history unavailable');
@@ -63,10 +65,12 @@ export async function readWindowSnapshot(window:FloodWindow,area:Area,mode:'summ
       }
       if(id===activeGeneration&&(pointer.feature_count!==manifest.feed.record_count||pointer.record_count!==manifest.chunks.length))throw Error('Incomplete flood pointer');
       if(status)health=Object.fromEntries(healthKeys.map(k=>[k,status[k]??null]));
-      const rows=await db.collection('gistda_flood_manifests').find({product_window:window,state:'PUBLISHED'},{projection:{'feed.fetched_at':1,'feed.record_count':1,geometry_available:1},maxTimeMS:5000}).sort('feed.fetched_at',-1).limit(33).toArray();
+      const [rows,runs,windowsValue]=await Promise.all([
+        db.collection('gistda_flood_manifests').find({product_window:window,state:'PUBLISHED'},{projection:{'feed.fetched_at':1,'feed.record_count':1,geometry_available:1},maxTimeMS:5000}).sort('feed.fetched_at',-1).limit(33).toArray(),
+        db.collection('gistda_flood_runs').find({product_id:'flood_'+window+'_thailand'},{projection:{_id:0,status:1,completed_at:1,record_count:1,provider_number_matched:1,error_summary:1,run_url:1},maxTimeMS:5000}).sort('completed_at',-1).limit(5).toArray(),
+        catalog()]);
       history=rows.map(row=>({generation:String(row._id),fetched_at:row.feed.fetched_at,record_count:row.feed.record_count,geometry_available:row.geometry_available===true}));
-      const runs=await db.collection('gistda_flood_runs').find({product_id:'flood_'+window+'_thailand'},{projection:{_id:0,status:1,completed_at:1,record_count:1,provider_number_matched:1,error_summary:1,run_url:1},maxTimeMS:5000}).sort('completed_at',-1).limit(5).toArray();
-      recent=runs as unknown as typeof recent;windows=await catalog();
+      recent=runs as unknown as typeof recent;windows=windowsValue;
       object=c=>db.collection('gistda_flood_objects').findOne({_id:c.hash as never},{maxTimeMS:5000});
     }else if(process.env.NODE_ENV!=='production'&&process.env.HAZARD_LOCAL_SNAPSHOT==='1'){
       try{
