@@ -75,7 +75,7 @@ def main():
                 failed=True;reason=error.reason if isinstance(error,CandidateError) else type(error).__name__;completed=utc_now()
                 count=getattr(error,'provider_count',None)
                 if type(count) is not int or not 0<=count<=2**53-1:count=None
-                status.update(status='FAILED',completed_at=completed,error_summary=reason,failure_stage=stage,last_failure_at=completed,last_failure_reason=reason,provider_number_matched=count)
+                status.update(status='FAILED',completed_at=completed,error_summary=reason,failure_stage=stage,last_failure_at=completed,last_failure_reason=reason,provider_number_matched=count,consecutive_empty_queries=0)
                 db.source_status.update_one({'_id':key,'etl_run_id':run},{'$set':status})
                 print(json.dumps({'source_id':'gistda','product_window':window,'status':'FAILED','stage':stage,'reason':reason,'provider_number_matched':count}),flush=True)
             event={k:status[k] for k in ['source_id','product_id','etl_run_id','last_attempt','completed_at','status','record_count','provider_number_matched','error_summary','failure_stage','run_url'] if k in status}

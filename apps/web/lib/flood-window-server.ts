@@ -93,7 +93,7 @@ export async function readWindowSnapshot(window:FloodWindow,area:Area,mode:'summ
     result={...result,feed,records,health,freshness:'UNKNOWN',query_freshness:floodQueryFreshness(feed,Date.now(),health?.status==='FAILED'),
       scope:{area_id:area.id,record_count:entry.count,mode},presentation,child_areas:children(area,manifest),
       area_counts:Object.fromEntries(Object.entries(manifest.areas).filter(([id])=>id.startsWith('TH-P-')).map(([id,v])=>[id,v.count])),
-      window_catalog:windows,query_history:history,recent_runs:recent,historical_query:manifest._id!==activeGeneration,geometry_available:manifest.geometry_available,history_target_days:30,
+      window_catalog:windows,query_history:history,recent_runs:recent,historical_query:manifest._id!==activeGeneration,geometry_available:manifest.geometry_available,history_target_days:window==='3days'?30:0,
       pagination:{generation:manifest._id,chunk,chunk_count:count,next_chunk:!summary&&chunk+1<count?chunk+1:null,complete:!summary&&count===1}};
     return result;
   }catch{return {...result,error:'GISTDA product or query history is temporarily unavailable; no incomplete geometry is displayed'};}

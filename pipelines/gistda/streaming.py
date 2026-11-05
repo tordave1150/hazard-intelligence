@@ -268,18 +268,23 @@ class WindowPublisher:
                 if not promoted:self.manifests.delete_one({'_id':generation});self._gc()
                 raise
 
+    def _verify_objects(self,manifest,deep=True):
+        descriptors={c['hash']:c for c in manifest['chunks']};seen=set()
+        query={'_id':{'$in':list(descriptors)}}
+        for row in self.objects.find(query,None if deep else {'payload':0}).batch_size(20 if deep else 500):
+            descriptor=descriptors[row['_id']]
+            if row.get('compressed_bytes')!=descriptor['compressed_bytes'] or row.get('raw_bytes')!=descriptor['raw_bytes']:raise ValueError('Stored flood size mismatch')
+            if deep:checked_payload(descriptor,bytes(row['payload']))
+            seen.add(row['_id'])
+        if len(seen)!=len(descriptors):raise ValueError('Missing compressed flood object')
+
     def verify(self,window,deep=True):
         pointer=self.control.find_one({'_id':'gistda:'+product(window)})
         if not pointer or pointer.get('storage_version')!='gzip-v1':return None
         manifest=self.manifests.find_one({'_id':pointer['active_generation']})
         if not manifest or not manifest.get('geometry_available') or manifest['feed']['record_count']!=pointer['feature_count'] or len(manifest['chunks'])!=pointer['record_count']:raise ValueError('Invalid compressed flood pointer')
-        validate_manifest(manifest);count=0
-        for descriptor in manifest['chunks']:
-            row=self.objects.find_one({'_id':descriptor['hash']},None if deep else {'payload':0})
-            if not row:raise ValueError('Missing compressed flood object')
-            if row.get('compressed_bytes')!=descriptor['compressed_bytes'] or row.get('raw_bytes')!=descriptor['raw_bytes']:raise ValueError('Stored flood size mismatch')
-            if deep:checked_payload(descriptor,bytes(row['payload']))
-            count+=descriptor['count']
+        validate_manifest(manifest);self._verify_objects(manifest,deep)
+        count=sum(c['count'] for c in manifest['chunks'])
         if count!=pointer['feature_count']:raise ValueError('Incomplete compressed flood generation')
         return {'source_id':'gistda','product_id':product(window),'status':'VERIFIED','active_records':count,'stored_chunks':len(manifest['chunks']),'storage_version':'gzip-v1'}
 
@@ -297,8 +302,5 @@ class WindowPublisher:
             # Check all old objects before an atomic pointer change.
             manifest=self.manifests.find_one({'_id':previous['active_generation']})
             if not manifest or not manifest.get('geometry_available'):raise ValueError('Retained generation unavailable')
-            for c in manifest['chunks']:
-                row=self.objects.find_one({'_id':c['hash']})
-                if not row:raise ValueError('Missing retained flood object')
-                checked_payload(c,bytes(row['payload']))
+            validate_manifest(manifest);self._verify_objects(manifest,True)
             self.control.update_one({'_id':key},{'$set':{**previous,'previous':old,'published_at':utc_now()},'$inc':{'revision':1}})

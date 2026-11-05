@@ -158,12 +158,14 @@ def test_old_query_metadata_survives_geometry_eviction_without_touching_current_
 def test_later_empty_success_does_not_erase_failure_history(monkeypatch,capsys):
     from pipelines.gistda import run
     client=mongomock.MongoClient();db=client.weather_db;calls=[]
+    db.source_status.insert_one({'_id':'gistda:flood_3days_thailand','consecutive_empty_queries':2})
     monkeypatch.setenv('MONGODB_URI','mongodb://fixture-only');monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
     monkeypatch.setattr(run,'MongoClient',lambda *a,**k:client)
     monkeypatch.setattr('sys.argv',['gistda','--publish'])
     def failed(*a,**k):raise CandidateError('PROVIDER_COUNT_CHANGED_DURING_PAGINATION')
     monkeypatch.setattr(run,'collect_window',failed)
     with pytest.raises(RuntimeError):run.main()
+    assert db.source_status.find_one({'_id':'gistda:flood_3days_thailand'})['consecutive_empty_queries']==0
     reason=db.source_status.find_one({'_id':'gistda:flood_3days_thailand'})['last_failure_reason']
     class Publisher:
         def __init__(self,db):pass
@@ -175,3 +177,34 @@ def test_later_empty_success_does_not_erase_failure_history(monkeypatch,capsys):
     assert status['status']=='SUCCESS' and status['last_failure_reason']==reason and status['consecutive_empty_queries']==1
     assert db.gistda_flood_runs.count_documents({})==2 and calls==['3days']
     assert KEY not in capsys.readouterr().out
+
+
+def test_window_failures_are_independent_and_never_substitute_another_product(monkeypatch):
+    from pipelines.gistda import run
+    client=mongomock.MongoClient();db=client.weather_db;calls=[]
+    monkeypatch.setenv('MONGODB_URI','mongodb://fixture-only');monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
+    monkeypatch.setattr(run,'MongoClient',lambda *a,**k:client);monkeypatch.setattr('sys.argv',['gistda','--publish','--all-windows'])
+    def collect(key,window,directory,**options):
+        calls.append(window)
+        if window=='7days':raise CandidateError('TRANSPORT_FAILURE')
+        return {'feed':{'record_count':1 if window=='3days' else 0,'page_count':1,'fetched_at':NOW}}
+    class Publisher:
+        def __init__(self,db):pass
+        def publish(self,*a):return {'active_generation':'fixture','record_count':1,'compressed_bytes':0,'archive_evicted_count':0}
+    monkeypatch.setattr(run,'collect_window',collect);monkeypatch.setattr(run,'WindowPublisher',Publisher)
+    with pytest.raises(RuntimeError):run.main()
+    assert calls==['3days','7days','30days']
+    assert [db.source_status.find_one({'_id':'gistda:'+stream.product(w)})['status'] for w in calls]==['SUCCESS','FAILED','SUCCESS']
+    assert db.source_status.find_one({'_id':'gistda:flood_3days_thailand'})['record_count']==1
+
+
+def test_compatible_reader_wait_requires_storage_protocol_and_is_bounded():
+    from pipelines.gistda.run import wait_for_receiver
+    class Response:
+        status_code=200
+        def __init__(self,protocol):self.protocol=protocol
+        def json(self):return {'storage_protocol':self.protocol}
+    sleeps=[]
+    wait_for_receiver(lambda *a,**k:Response('gistda-gzip-v1'),lambda _:pytest.fail('Ready reader must not wait'))
+    with pytest.raises(RuntimeError):wait_for_receiver(lambda *a,**k:Response('old-reader'),sleeps.append)
+    assert sleeps==[5]*71

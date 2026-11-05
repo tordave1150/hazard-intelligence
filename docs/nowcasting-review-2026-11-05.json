@@ -1,0 +1,97 @@
+{
+  "reviewed_at": "2026-11-05T01:30:45.779804Z",
+  "state": "NOT_ACCEPTED",
+  "publishes_images": false,
+  "evidence": {
+    "south_viewer": {
+      "url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/south_nowcast.php",
+      "bytes": 111947,
+      "sha256": "2e25fcae68b34ce9a603ecf9550b5eecc4f039723aee4c3684ad0b047d3047d6"
+    },
+    "south_manifest": {
+      "url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/leaflet_layers/layers.json",
+      "bytes": 6075,
+      "sha256": "a022ee1741334f57d37772b6a2463338305dc88428690766db1bdec519168368"
+    },
+    "bangkok_manifest": {
+      "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/bkk/bangkok_frames/manifest.json",
+      "bytes": 3566,
+      "sha256": "eb6c37c231dda258ee907e402db27c570df339681479b300078d364214bab08b"
+    },
+    "khon_kaen_viewer": {
+      "url": "https://satda.tmd.go.th/wp-content/uploads/nowcasting/kkn/khon_kaen.php",
+      "bytes": 22826,
+      "sha256": "67eb40bfd379c63d29f5a29507dedceda3972a4e87a2ae8f6050aee5d96a11eb"
+    }
+  },
+  "south": {
+    "state": "NOT_ACCEPTED",
+    "source_url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/leaflet_layers/layers.json",
+    "viewer_url": "https://satda.tmd.go.th/wp-content/uploads/data/dashboard/radar_map/south_nowcast.php",
+    "valid_time_convention": "UTC_FROM_SOURCE_FILENAME_PARSER",
+    "base_observation_utc": "2026-11-05T00:15:00Z",
+    "issued_at_utc": null,
+    "generated_at_raw": "2026-11-05T08:24:45",
+    "display_units": "dBZ",
+    "coverage_scope": "REGIONAL",
+    "frame_count": 18,
+    "observation_count": 5,
+    "forecast_count": 13,
+    "forecast_leads_minutes": [
+      15,
+      30,
+      45,
+      60,
+      75,
+      90,
+      105,
+      120,
+      135,
+      150,
+      165,
+      180,
+      195
+    ],
+    "duplicate_frame_names": [],
+    "image_bounds_raw": [
+      [
+        4.276425443867133,
+        96.15530793124935
+      ],
+      [
+        22.108846334768337,
+        107.08729610836926
+      ]
+    ],
+    "issues": [
+      "FORECAST_OUTSIDE_ADVERTISED_180_MINUTES",
+      "ISSUE_TIME_NOT_QUALIFIED",
+      "VALID_COVERAGE_AND_NO_DATA_NOT_QUALIFIED",
+      "IMAGE_REUSE_AND_FORECAST_STORAGE_BUDGET_NOT_ACCEPTED"
+    ]
+  },
+  "bangkok": {
+    "state": "NOT_ACCEPTED",
+    "generated_at_raw": "2026-06-24T11:11:26Z",
+    "stale": true,
+    "field": "precipitationIntensity",
+    "coverage_scope": "REGIONAL",
+    "issues": [
+      "THIRD_PARTY_REUSE_NOT_ACCEPTED"
+    ]
+  },
+  "khon_kaen": {
+    "state": "NOT_ACCEPTED",
+    "frame_times_raw": [
+      "20260217_235000",
+      "20260218_000000",
+      "20260218_001000",
+      "20260218_002000"
+    ],
+    "timezone": "UNKNOWN",
+    "coverage_scope": "REGIONAL",
+    "issues": [
+      "TIMEZONE_AND_ISSUE_TIME_NOT_QUALIFIED"
+    ]
+  }
+}

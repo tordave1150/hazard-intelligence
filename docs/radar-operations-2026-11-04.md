@@ -35,3 +35,7 @@ Downloadable CI job logs confirm 300 Python tests, 116 web tests, TypeScript and
 The pre-change GitHub run sample contains two successful **push** events (41840881308 and 41844595345) and no radar `schedule` event among the latest 50 repository runs. This does not establish recurring delivery or schedule drift. Retain that uncertainty until real schedule-event runs are observed. Missing runs and stale images remain visible through source health.
 
 Workflow-state inspection confirms radar and the other eight workflow definitions are `active`; a separate sample of 30 schedule-event runs includes other collectors but no radar run. This still does not prove recurring radar execution. The follow-up publication above was triggered by a code push.
+
+## 5 November schedule recheck
+
+The [radar run 41920530553](https://github.com/tordave1150/hazard-intelligence/actions/runs/41920530553) is a completed successful **schedule** event, created 4 November 21:55:12 UTC / 5 November 04:55:12 ICT. This establishes that automatic scheduling has executed. At approximately 5 November 08:34 ICT, production still referenced that run and its latest image at 21:30 UTC / 04:30 ICT, correctly reporting STALE and hiding it. Therefore a continuous 30-minute delivery guarantee is not established. The code retains the configured best-effort schedule and quota/age protections; no paid scheduler or new external credential was activated.
