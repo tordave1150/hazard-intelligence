@@ -142,7 +142,7 @@ def test_failed_refresh_retains_previous_complete_three_day_generation(monkeypat
     chunks=split_feed(feed(1));publisher.publish(chunks,['0000'])
     before=db.snapshot_control.find_one({'_id':'gistda:'+limits.PRODUCT})
     def failure(*args,**kwargs):raise CandidateError('PROVIDER_COUNT_CHANGED_DURING_PAGINATION')
-    monkeypatch.setattr(run,'collect_national_candidate',failure)
+    monkeypatch.setattr(run,'collect_window',failure)
     monkeypatch.setattr(run,'MongoClient',lambda *args,**kwargs:client)
     monkeypatch.setenv('MONGODB_URI','mongodb://unused-test')
     monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
@@ -159,7 +159,14 @@ def test_default_publication_succeeds_for_thailand_and_clears_previous_failure(m
     candidate=feed(1)
     candidate['schema_version']='gistda-candidate/1'
     for key in ('snapshot_id','data_state','ingested_at'):candidate.pop(key)
-    monkeypatch.setattr(run,'collect_national_candidate',lambda key,**options:candidate)
+    def collect(key,window,directory,**options):
+        assert window=='3days'
+        return {'feed':{**candidate,'schema_version':'3.0','record_count':1},'chunks':[]}
+    class Publisher:
+        def __init__(self,db):pass
+        def publish(self,manifest,directory):return {'active_generation':'fixture','record_count':1,'compressed_bytes':100,'archive_evicted_count':0}
+    monkeypatch.setattr(run,'collect_window',collect)
+    monkeypatch.setattr(run,'WindowPublisher',Publisher)
     monkeypatch.setattr(run,'MongoClient',lambda *args,**kwargs:client)
     monkeypatch.setenv('MONGODB_URI','mongodb://unused-test')
     monkeypatch.setenv('MONGODB_DB_NAME','weather_db')

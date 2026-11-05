@@ -6,6 +6,7 @@ import {readFloodSnapshot} from './flood-snapshot';
 import {floodRecordsInArea} from './floods';
 import {buildFloodAreaIndex,type AreaIndex} from './flood-area-index';
 import type {Area,FloodSnapshot} from './types';
+import {readWindowSnapshot} from './flood-window-server';
 
 let cached:{generation:string;index:AreaIndex}|null=null;
 let pending:{generation:string;value:Promise<AreaIndex>}|null=null;
@@ -35,6 +36,7 @@ async function areaIndex(first:FloodSnapshot):Promise<AreaIndex>{
 export async function readFloodProvinceCounts(){
   const first=await readFloodSnapshot(0);
   if(!first.feed)return {available:false,counts:{} as Record<string,number>,fetched_at:null,query_freshness:first.query_freshness,generation:null};
+  if(first.feed.schema_version==='3.0')return {available:true,counts:first.area_counts??{},fetched_at:first.feed.fetched_at,query_freshness:first.query_freshness,generation:first.pagination?.generation??null};
   try{
     const index=await areaIndex(first);
     return {available:true,counts:Object.fromEntries([...index].filter(([id])=>id.startsWith('TH-P-')).map(([id,value])=>[id,value.count])),
@@ -43,6 +45,8 @@ export async function readFloodProvinceCounts(){
 }
 
 export async function readFloodAreaSnapshot(area:Area,mode:'summary'|'detail',chunk=0,generation?:string):Promise<FloodSnapshot>{
+  const streamed=await readWindowSnapshot('3days',area,mode,chunk,generation);
+  if(streamed)return streamed;
   const first=await readFloodSnapshot(0);
   if(!first.feed)return first;
   try{

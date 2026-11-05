@@ -4,10 +4,16 @@ import {contains} from './semantics';
 
 export const floodSourceUrl='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/3days';
 export const floodWindowLabel='Previous 3-day window · ย้อนหลัง 3 วัน';
+export function floodWindowText(window: FloodFeed['product_window']='3days'){
+  return window==='3days'?floodWindowLabel:window==='7days'?'Historical 7-day product · ย้อนหลัง 7 วัน':window==='30days'?'Historical 30-day product · ย้อนหลัง 30 วัน':'Previous 1-day product';
+}
 export function floodRefreshFailure(health:FloodSnapshot['health']):string|null{
   if(health?.status!=='FAILED')return null;
   switch(health.error_summary){
     case 'NATIONAL_FEATURE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh exceeded the supported number of flood footprints.';
+    case 'COMPRESSED_STORAGE_BUDGET_EXCEEDED':
+    case 'DATABASE_STORAGE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh exceeded the reserved storage budget; the last complete query is retained.';
+    case 'SOURCE_REQUEST_BUDGET_EXCEEDED':return 'Latest GISTDA refresh reached its bounded source request allowance.';
     case 'RESPONSE_TOO_LARGE':
     case 'CANDIDATE_GEOMETRY_LIMIT':return 'Latest GISTDA refresh exceeded the supported map data size.';
     case 'DEADLINE_EXCEEDED':return 'Latest GISTDA refresh could not finish within the collection time limit.';
@@ -44,6 +50,6 @@ export function floodResponse(snapshot:FloodSnapshot,area:Area){
   const inScope=floodInArea(area,snapshot.feed),records=floodRecordsInArea(snapshot,area);
   return {...snapshot,records,source_id:'gistda',integration_status:'national_query',
     scope_area_id:snapshot.feed?.area_id??null,selected_area_id:area.id,in_scope:inScope,
-    status:!snapshot.feed?'UNAVAILABLE':!inScope?'OUT_OF_SCOPE':snapshot.scope?.mode==='summary'?'SUMMARY_ONLY':snapshot.pagination&&!snapshot.pagination.complete?'PARTIAL_RESULT':records.length?'AVAILABLE':'EMPTY_RESULT',
+    status:!snapshot.feed?'UNAVAILABLE':!inScope?'OUT_OF_SCOPE':snapshot.scope?.mode==='summary'||snapshot.presentation==='summary'||snapshot.presentation==='metadata_only'?'SUMMARY_ONLY':snapshot.pagination&&!snapshot.pagination.complete?'PARTIAL_RESULT':records.length?'AVAILABLE':'EMPTY_RESULT',
     observation_freshness:snapshot.freshness};
 }

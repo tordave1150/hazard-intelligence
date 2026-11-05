@@ -15,8 +15,11 @@ def complete_flood_query(area_id='TH'):
     assert first.status_code==200
     value=first.json();records=list(value['records']);cursor=value.get('pagination')
     if not value['feed']:return value
+    if value.get('presentation') in ['summary','metadata_only','page']:
+        assert len(records)<=100
+        return value
     generation=cursor['generation'];chunk_count=cursor['chunk_count']
-    assert 1<=chunk_count<=512
+    assert 1<=chunk_count<=5000
     while cursor['next_chunk'] is not None:
         response=requests.get(BASE+'/api/flood-products',params={'area_id':area_id,'chunk':cursor['next_chunk'],'generation':generation},timeout=25)
         assert response.status_code==200 and len(response.content)<2*1024*1024
@@ -71,6 +74,9 @@ def test_gistda_scoped_summary_and_detail_agree_without_national_geometry():
     assert summary['status']=='SUMMARY_ONLY' and summary['records']==[]
     assert summary['scope']['area_id']=='TH-P-26' and summary['scope']['mode']=='summary'
     detail=requests.get(BASE+'/api/flood-products',params={'area_id':'TH-P-26','view':'detail'},timeout=25).json()
+    if detail.get('presentation') in ['summary','metadata_only']:
+        assert detail['scope']['record_count']==summary['scope']['record_count'] and detail['records']==[]
+        return
     records=list(detail['records']);page=detail['pagination']
     while page['next_chunk'] is not None:
         value=requests.get(BASE+'/api/flood-products',params={'area_id':'TH-P-26','view':'detail','chunk':page['next_chunk'],'generation':page['generation']},timeout=25).json()
@@ -87,9 +93,10 @@ def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknow
     assert value['source_id']=='gistda' and value['integration_status']=='national_query'
     if value['feed']:
         assert value['scope_area_id']=='TH' and value['in_scope'] is True
-        assert value['status'] in ['AVAILABLE','EMPTY_RESULT'] and value['freshness']=='UNKNOWN'
+        assert value['status'] in ['AVAILABLE','EMPTY_RESULT','SUMMARY_ONLY','PARTIAL_RESULT'] and value['freshness']=='UNKNOWN'
         assert value['feed']['observed_at'] is None and value['feed']['complete_provider_query'] is True
-        assert value['feed']['record_count']==len(value['records'])<=20000
+        if value.get('presentation') in ['summary','metadata_only','page']:assert len(value['records'])<=100<=value['feed']['record_count']<=250000
+        else:assert value['feed']['record_count']==len(value['records'])<=20000
         assert value['feed']['product_window']=='3days'
         assert 'ap_idn' not in value['feed']['query']
         assert all(row['area_ids'] for row in value['records'])
@@ -100,12 +107,15 @@ def test_gistda_empty_is_distinct_from_unavailable_and_observation_age_is_unknow
 def test_gistda_rejects_other_windows_and_never_turns_outside_scope_into_no_flood():
     value=complete_flood_query('TH-D-5709')
     if value['feed'] and value['feed']['area_id']=='TH':
-        assert value['in_scope'] is True and value['status'] in ['AVAILABLE','EMPTY_RESULT']
+        assert value['in_scope'] is True and value['status'] in ['AVAILABLE','EMPTY_RESULT','SUMMARY_ONLY','PARTIAL_RESULT']
         assert all('TH-D-5709' in row['area_ids'] for row in value['records'])
     else:
         assert value['in_scope'] is False and value['records']==[]
         assert value['status']==('OUT_OF_SCOPE' if value['feed'] else 'UNAVAILABLE')
-    assert requests.get(BASE+'/api/flood-products?window=30days',timeout=15).status_code==400
+    historical=requests.get(BASE+'/api/flood-products?window=30days&view=summary',timeout=25)
+    assert historical.status_code==200
+    if historical.json()['feed']:assert historical.json()['feed']['product_window']=='30days' and historical.json()['feed']['observed_at'] is None
+    assert requests.get(BASE+'/api/flood-products?window=2days',timeout=15).status_code==400
     assert requests.get(BASE+'/api/flood-products?area_id=TH-P-99',timeout=15).status_code==404
     assert requests.post(BASE+'/api/flood-products',timeout=15).status_code==405
     for query in ['chunk=1','chunk=512','chunk=-1','generation=invalid','chunk=0&chunk=1']:

@@ -24,16 +24,16 @@ def test_candidate_cli_requests_three_day_thailand_without_a_district(monkeypatc
 
 def test_publisher_without_optional_flags_uses_current_country_product(monkeypatch,capsys):
     client=mongomock.MongoClient();calls=[]
-    def stop(key,**options):
-        calls.append(options)
+    def stop(key,window,directory,**options):
+        calls.append(window)
         raise ValueError('test stop before publication')
-    monkeypatch.setattr(run,'collect_national_candidate',stop)
+    monkeypatch.setattr(run,'collect_window',stop)
     monkeypatch.setattr(run,'MongoClient',lambda *a,**k:client)
     monkeypatch.setenv('MONGODB_URI','mongodb://unused-test')
     monkeypatch.setenv('MONGODB_DB_NAME','weather_db')
     monkeypatch.setattr(sys,'argv',['gistda','--publish'])
     with pytest.raises(RuntimeError):run.main()
-    assert calls==[{'three_day':True}]
+    assert calls==['3days']
     status=client.weather_db.source_status.find_one({'_id':'gistda:'+limits.PRODUCT})
     assert status['status']=='FAILED'
     assert client.weather_db.source_status.count_documents({})==1

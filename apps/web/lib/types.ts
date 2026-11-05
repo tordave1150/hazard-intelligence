@@ -69,8 +69,9 @@ export type WarningSnapshot={feed:Omit<WarningFeed,'records'>|null;records:Agenc
 export type WarningState='CURRENT'|'UPCOMING'|'EXPIRED'|'SUPERSEDED'|'CANCELLED'|'TIME_UNKNOWN';
 export type WarningDisplay=AgencyWarning & {display_state:WarningState;archived:boolean};
 export type FloodFeature={type:'Feature';id:string;geometry:import('geojson').Polygon|import('geojson').MultiPolygon;properties:null;area_ids?:string[]};
-export type FloodFeed={schema_version:'2.0';source_id:'gistda';product_id:'flood_1day_thailand'|'flood_3days_thailand';data_state:'satellite_observation';
-  snapshot_id:'latest';product_window:'1day'|'3days';area_id:'TH';query:{limit:100;offset:0};
+export type FloodWindow='3days'|'7days'|'30days';
+export type FloodFeed={schema_version:'2.0'|'3.0';source_id:'gistda';product_id:'flood_1day_thailand'|'flood_3days_thailand'|'flood_7days_thailand'|'flood_30days_thailand';data_state:'satellite_observation';
+  snapshot_id:'latest';product_window:'1day'|FloodWindow;area_id:'TH';query:{limit:100|1000;offset:0};
   page_count?:number;pagination_consistency?:'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN';
   source_url:string;attribution:'GISTDA Disaster Platform';response_at:string;fetched_at:string;ingested_at:string;
   observed_at:null;observation_time_status:'NOT_SUPPLIED';complete_provider_query:true;record_count:number;
@@ -78,6 +79,12 @@ export type FloodFeed={schema_version:'2.0';source_id:'gistda';product_id:'flood
 export type FloodSnapshot={feed:Omit<FloodFeed,'records'>|null;records:FloodFeature[];health:Record<string,unknown>|null;
   freshness:Freshness;query_freshness:Freshness;storage:'mongo'|'local'|'unconfigured';error:string|null;
   scope?:{area_id:string;record_count:number;mode:'summary'|'detail'};
+  presentation?:'all'|'summary'|'page'|'metadata_only';
+  child_areas?:{area_id:string;record_count:number}[];area_counts?:Record<string,number>;
+  window_catalog?:{window:FloodWindow;record_count:number;fetched_at:string;generation:string;status:string;geometry_available:boolean}[];
+  query_history?:{generation:string;fetched_at:string;record_count:number;geometry_available:boolean}[];
+  recent_runs?:{status:string;completed_at:string;record_count?:number;provider_number_matched?:number;error_summary?:string;run_url?:string}[];
+  historical_query?:boolean;geometry_available?:boolean;history_target_days?:number;
   pagination?:{generation:string;chunk:number;chunk_count:number;next_chunk:number|null;complete:boolean}};
 export type FloodChunk={source_id:'gistda';product_id:'flood_3days_thailand';chunk_id:string;chunk_count:number;
   feed:Omit<FloodFeed,'records'>;records:FloodFeature[]};

@@ -1,4 +1,4 @@
-name: Latest GISTDA Thailand 3-day flood product
+name: Latest GISTDA Thailand flood products
 on:
   push:
     branches: [main]
@@ -15,7 +15,7 @@ jobs:
   ingest:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,13 +42,13 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
-      - name: Publish the complete three-day Thailand query in bounded chunks
+      - name: Publish separate complete 3/7/30-day products in compressed chunks
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
-        run: python -m pipelines.gistda.run --publish --three-day
-      - name: Verify unique indexes and A/B retention after publication
+        run: python -m pipelines.gistda.run --publish --all-windows --wait-for-receiver
+      - name: Verify active products and retained compressed objects
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}

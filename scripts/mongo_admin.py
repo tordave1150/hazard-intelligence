@@ -17,11 +17,12 @@ from pipelines.shared.geography_migrations import canonical_stored_forecast
 from pipelines.open_meteo.hourly import HourlyPublisher, check_hourly_batch
 from pipelines.gistda.chunks import ThreeDayPublisher, check_chunks
 from pipelines.gistda import limits as flood_limits
+from pipelines.gistda.streaming import WindowPublisher,WINDOWS as FLOOD_WINDOWS,LOCK as FLOOD_LOCK
 from pipelines.thaiwater.publication import GaugePublisher,check_envelope as check_gauge_envelope
 from pipelines.thaiwater.rain_publication import RainPublisher,check_envelope as check_rain_envelope
 
 
-def verify_database(db, include_retired=False):
+def verify_database(db, include_retired=False,deep_flood=False):
     """Read-only active-generation, index and retention audit; no index creation."""
     specs=[('open_meteo','daily_forecast','weather_latest','location_id','Forecast',
             [a['id'] for a in weather_locations('all')],check_weather),
@@ -37,6 +38,13 @@ def verify_database(db, include_retired=False):
                   ('gistda','flood_1day_thailand','satellite_flood_national_latest','snapshot_id','GistdaNationalFloodFeed',['latest'],check_national_envelope)]
     result=[]
     for source,product,collection,identity,kind,expected,check in specs:
+        compressed=db.snapshot_control.find_one({'_id':f'{source}:{product}','storage_version':'gzip-v1'}) if source=='gistda' else None
+        if compressed:
+            # Existing legacy collections remain intact for explicit historical auditing.
+            for window in FLOOD_WINDOWS:
+                verified=WindowPublisher(db,create_indexes=False).verify(window,deep=deep_flood)
+                if verified:result.append(verified)
+            continue
         store=db[collection]
         total=store.count_documents({})
         document_limit=2*(flood_limits.MAX_CHUNKS if expected is None else len(expected))
@@ -83,6 +91,7 @@ def main():
     parser.add_argument('--source',choices=['tmd_radar','open_meteo','hourly','rid','tmd','gistda','thaiwater','thaiwater_rain','gistda_1day','gistda_pilot'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
+    parser.add_argument('--deep-flood',action='store_true',help='Also download/decompress every active compressed flood object')
     args=parser.parse_args()
     with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
         db=client[os.getenv('MONGODB_DB_NAME','weather_db')]
@@ -96,13 +105,16 @@ def main():
                               'index_bytes':collstats.get('totalIndexSize'),'indexes':list(c.list_indexes())})
             print(json.dumps(stats,default=str,indent=2))
         elif args.command=='verify':
-            print(json.dumps(verify_database(db,include_retired=args.include_retired),default=str,indent=2))
+            print(json.dumps(verify_database(db,include_retired=args.include_retired,deep_flood=args.deep_flood),default=str,indent=2))
         elif args.command=='rollback':
+            if args.source=='gistda' and db.snapshot_control.find_one({'_id':'gistda:'+flood_limits.PRODUCT,'storage_version':'gzip-v1'}):
+                WindowPublisher(db).rollback();print('Retained compressed flood generation promoted.');return
             {'tmd_radar':RadarPublisher,'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'thaiwater':GaugePublisher,'thaiwater_rain':RainPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')
         else:
             if not args.stopped_run_token:parser.error('Recovery requires exact --stopped-run-token after the worker is confirmed stopped')
             key={'tmd_radar':'tmd_radar:composite_rain_rate','rid':f'rid:{PRODUCT}','tmd':'tmd:cap_warnings','open_meteo':'open_meteo:daily_forecast','hourly':'open_meteo:today_hourly','gistda':'gistda:'+flood_limits.PRODUCT,'thaiwater':'thaiwater:national_waterlevel','thaiwater_rain':'thaiwater:national_rain_24h','gistda_1day':'gistda:flood_1day_thailand','gistda_pilot':'gistda:flood_1day_ongkharak'}[args.source]
+            if args.source=='gistda' and db.etl_locks.find_one({'_id':FLOOD_LOCK,'token':args.stopped_run_token}):key=FLOOD_LOCK
             result=db.etl_locks.delete_one({'_id':key,'token':args.stopped_run_token})
             print(json.dumps({'recovered_locks':result.deleted_count}))
 

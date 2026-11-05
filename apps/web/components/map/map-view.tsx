@@ -12,7 +12,7 @@ import {gaugeName,gaugeValue,gaugeWallTime} from '@/lib/gauges';
 import {damMarkerSvg,damStorageSymbol} from '@/lib/map-dams';
 import {mapLayerAnchors,orderMapLayers} from '@/lib/map-layer-order';
 import {warningColor} from '@/lib/warnings';
-import {floodColor,floodWindowLabel} from '@/lib/floods';
+import {floodColor,floodWindowText} from '@/lib/floods';
 import {applyTimeTheme,mapPalettes,contextShadeOpacity,type CountryFocus,type TimeTheme} from '@/lib/map-theme';
 import {metricColor,metricValue,metricUnit} from '@/lib/semantics';
 import {stationColors,stationClusterProperties,stationClusterLabel,stationClusterColor,stationClusterSummary} from '@/lib/map-stations';
@@ -24,7 +24,7 @@ type Props={radarFrame:RadarFrame|null;radarOpacity:number;onRadarLoad:(state:Ra
   gauges:(GaugeStation|RainStation)[];showGauges:boolean;selectedGauge:string|null;onSelectGauge:(id:string)=>void;
   dams:DamObservation[];showDams:boolean;damFreshness:Freshness;selectedDam:string|null;onSelectDam:(id:string)=>void;
   warnings:WarningDisplay[];onSelectWarning:(id:string)=>void;
-  floods:FloodFeature[];floodFreshness:Freshness;selectedFlood:string|null;onSelectFlood:(id:string)=>void};
+  floods:FloodFeature[];floodFreshness:Freshness;floodWindow?:import('@/lib/types').FloodWindow;floodHistorical?:boolean;selectedFlood:string|null;onSelectFlood:(id:string)=>void};
 export default function MapView(props:Props){
   const stale=['STALE','UNKNOWN','UNAVAILABLE'].includes(props.freshness);
   const container=useRef<HTMLDivElement>(null),map=useRef<MapType|null>(null),overlay=useRef<MapboxOverlay|null>(null);
@@ -40,8 +40,8 @@ export default function MapView(props:Props){
   }))}),[props.warnings]);
   const floodGeometry=useMemo<FeatureCollection>(()=>({type:'FeatureCollection',features:props.floods.map((row,index)=>({
     ...row,properties:{source_id:'gistda',feature_id:row.id,label:`Provider footprint ${index+1}`,selected:props.selectedFlood===row.id,
-      color:floodColor(props.floodFreshness),query_freshness:props.floodFreshness}
-  }))}),[props.floods,props.selectedFlood,props.floodFreshness]);
+      color:floodColor(props.floodHistorical?'UNKNOWN':props.floodFreshness),query_freshness:props.floodFreshness,window_label:floodWindowText(props.floodWindow),historical:!!props.floodHistorical}
+  }))}),[props.floods,props.selectedFlood,props.floodFreshness,props.floodWindow,props.floodHistorical]);
   useEffect(()=>{
     if(!container.current)return;
     setReady(false);
@@ -127,7 +127,7 @@ export default function MapView(props:Props){
             popup.setLngLat(event.lngLat).setText(`TMD CAP · ${p.state} · ${p.headline} · issued ${p.issued_at} · expires ${p.expires_at??'not supplied'}`).addTo(instance);return;}
           const flood=instance.queryRenderedFeatures(event.point,{layers:['gistda-flood-fill']})[0];
           if(flood?.properties){instance.getCanvas().style.cursor='pointer';popup.setLngLat(event.lngLat)
-            .setText(`GISTDA · ${flood.properties.label} · ${floodWindowLabel} · acquisition time not supplied`).addTo(instance);return;}
+            .setText(`GISTDA · ${flood.properties.label} · ${flood.properties.window_label} · acquisition time not supplied`).addTo(instance);return;}
           const feature=instance.queryRenderedFeatures(event.point,{layers:['weather-native-fill','weather-native-extrusion']})[0];
           instance.getCanvas().style.cursor=feature?'pointer':'';
           if(feature?.properties){const p=feature.properties;
@@ -329,7 +329,7 @@ export default function MapView(props:Props){
       getFillColor:(f:Feature)=>{const color=warningRgb(f);color[3]=f.properties?.archived?12:40;return color;},
       getLineColor:warningRgb,getLineWidth:2,lineWidthUnits:'pixels',lineWidthMinPixels:2,
       onClick:({object,x,y})=>{if(gaugeHit(x,y))return true;if(object)latest.current.onSelectWarning(object.properties.warning_id);return true;}
-    })],getTooltip:({object,x,y})=>gaugeHit(x,y)?null:object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n${floodWindowLabel}\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:String(object.properties.id??'').startsWith('TH-B-')?`${object.properties.name_th} · DDPM 22 river basins\nConservative station/dam context; border matches stay unconfirmed`:!props.rainfall?`${object.properties.name}\n${object.properties.name_th}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric,props.hourly?'hourly':'daily')} · forecast`}\nOpen-Meteo · ${props.validTimeLabel}\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
+    })],getTooltip:({object,x,y})=>gaugeHit(x,y)?null:object?{text:object.properties.source_id==='gistda'?`GISTDA · ${object.properties.label}\n${object.properties.window_label}\nAcquisition time not supplied · age unknown\nNo area or water-depth metric`:object.properties.source_id==='tmd'?`TMD CAP · ${object.properties.state}\n${object.properties.headline}\nAgency severity: ${object.properties.severity}\nIssued: ${object.properties.issued_at}\nExpires: ${object.properties.expires_at??'not supplied'}`:String(object.properties.id??'').startsWith('TH-B-')?`${object.properties.name_th} · DDPM 22 river basins\nConservative station/dam context; border matches stay unconfirmed`:!props.rainfall?`${object.properties.name}\n${object.properties.name_th}`:`${object.properties.name}\n${object.properties.name_th}\n${object.properties.value==null?'No current display value':`${Number(object.properties.value).toFixed(1)} ${metricUnit(props.metric,props.hourly?'hourly':'daily')} · forecast`}\nOpen-Meteo · ${props.validTimeLabel}\nRepresentative point, not an area average`,style:{background:'#153f48',color:'#fff',fontSize:'12px',borderRadius:'8px',padding:'10px'}}:null});
   },[ready,geometry,warningGeometry,floodGeometry,props.records,props.date,props.metric,props.area,props.is3d,props.rainfall,props.extrude,props.opacity,props.hourly,props.validTimeLabel,props.geographyMode,stale]);
   return <div className="map-shell" aria-label="Thailand situation map">
     <div ref={container} className="map-canvas"/>

@@ -5,11 +5,15 @@ import {mongoDatabase,mongoUri} from './mongo';
 import {validatedFloodFeed,validatedFloodChunk} from './contracts';
 import {floodQueryFreshness} from './floods';
 import type {FloodFeed,FloodSnapshot} from './types';
+import {readWindowSnapshot} from './flood-window-server';
+import {national} from './geography';
 
 const product='flood_3days_thailand',collection='satellite_flood_3days_latest',key='gistda:'+product;
 let cache:{until:number;value:FloodSnapshot}|null=null;
 function metadata(feed:FloodFeed){const {records,...value}=feed;return value;}
 export async function readFloodSnapshot(chunk=0,generation?:string):Promise<FloodSnapshot>{
+  const streamed=await readWindowSnapshot('3days',national,'detail',chunk,generation);
+  if(streamed)return streamed;
   if(chunk===0&&!generation&&cache&&cache.until>Date.now())return cache.value;
   let result:FloodSnapshot={feed:null,records:[],health:null,freshness:'UNAVAILABLE',query_freshness:'UNAVAILABLE',storage:'unconfigured',error:null};
   try{
