@@ -1,0 +1,17 @@
+{
+  "python_msgpack_version": "1.1.2",
+  "storage_version": "msgpack-gzip-v1",
+  "descriptor": {
+    "hash": "d7051c0722e437528aa76174f85794246272997bf00159d3cb87be263375ce3a",
+    "count": 1,
+    "raw_bytes": 237,
+    "compressed_bytes": 154,
+    "area_ids": [
+      "TH",
+      "TH-R-CENTRAL",
+      "TH-P-10",
+      "TH-D-1001"
+    ]
+  },
+  "payload": "H4sIAAAAAAAC/5vYuqSksiB1uVtqYklpUeqizJSbDoYUghXpqfm5qSVFlU0QswPycyrT8/NWJ+fnF6Vk5iWWpBZPnDLptEMk+7Ptvh88TjcwQABISGHxdS7bwtMO2mlggCKU3Sq3I/ANFo2rCoryC1KLSjJTiw+sSCxKTYzPTCmetDzEQzdA19BgJZB2AdIGhgDmnY687QAAAA=="
+}

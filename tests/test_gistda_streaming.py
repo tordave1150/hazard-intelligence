@@ -40,14 +40,15 @@ def collect(path,total=1,window='3days',mutate=None,storage_version='gzip-v1'):
     return result,calls
 
 
-def test_streams_more_than_old_twenty_thousand_limit_into_bounded_chunks(tmp_path):
-    manifest,calls=collect(tmp_path,20001)
+@pytest.mark.parametrize('storage_version',stream.VERSIONS)
+def test_streams_more_than_old_twenty_thousand_limit_into_bounded_chunks(tmp_path,storage_version):
+    manifest,calls=collect(tmp_path,20001,storage_version=storage_version)
     assert manifest['feed']['record_count']==20001 and len(calls)==21
     assert manifest['areas']['TH']['count']==20001
     assert len(manifest['chunks'])==201
     assert all(c['raw_bytes']<=1048576 and c['count']<=100 for c in manifest['chunks'])
     assert all(c[1]['params']['limit']==1000 and c[1]['allow_redirects'] is False for c in calls)
-    row=stream.checked_payload(manifest['chunks'][0],(tmp_path/(manifest['chunks'][0]['hash']+'.gz')).read_bytes())[0]
+    row=stream.checked_payload(manifest['chunks'][0],(tmp_path/(manifest['chunks'][0]['hash']+'.gz')).read_bytes(),storage_version)[0]
     assert row['properties'] is None and KEY not in json.dumps(manifest) and KEY not in json.dumps(row)
     assert len(row['id'])==64 and manifest['feed']['observed_at'] is None
 

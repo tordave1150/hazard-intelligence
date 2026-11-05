@@ -1,6 +1,7 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import {createHash} from 'node:crypto';
 import {gzipSync} from 'node:zlib';
+import {readFileSync} from 'node:fs';
 import {encode} from '@msgpack/msgpack';
 import {areaById} from '../lib/geography';
 import {checkedWindowFeed,checkedWindowManifest,type FloodManifest} from '../lib/flood-window-contract';
@@ -28,6 +29,12 @@ function fixture(count:number,window:FloodWindow='30days'){
 }
 beforeEach(()=>{vi.clearAllMocks();mocks.uri=null;process.env.HAZARD_LOCAL_SNAPSHOT='1';});
 describe('Large GISTDA products and truthful area presentation',()=>{
+  it('decodes a Python-produced golden chunk without changing double bits or signed zero',()=>{
+    const fixture=JSON.parse(readFileSync(new URL('../../../tests/fixtures/flood/msgpack-double-chunk.json',import.meta.url),'utf8'));
+    const rows=decodedFloodObject({payload:Buffer.from(fixture.payload,'base64'),raw_bytes:fixture.descriptor.raw_bytes,compressed_bytes:fixture.descriptor.compressed_bytes},fixture.descriptor,fixture.storage_version);
+    const coordinate=(rows[0].geometry.coordinates as number[][][])[0][0];
+    expect(coordinate[0]).toBe(100.12345678912345);expect(Object.is(coordinate[1],-0)).toBe(true);
+  });
   it('reads binary doubles exactly and rejects truncated or mixed-codec objects',()=>{
     const {manifest,objects}=fixture(1),original=manifest.chunks[0];
     const rows=decodedFloodObject({payload:Buffer.from(objects[original.hash],'base64'),raw_bytes:original.raw_bytes,compressed_bytes:original.compressed_bytes},original);
