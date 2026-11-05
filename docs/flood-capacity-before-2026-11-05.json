@@ -1,0 +1,59 @@
+{
+  "object_bytes": 162865856,
+  "object_limit_bytes": 335544320,
+  "object_headroom_bytes": 172678464,
+  "database_data_bytes": 186130035,
+  "database_index_bytes": 2490368,
+  "database_storage_bytes": 208089088,
+  "database_operational_ceiling_bytes": 419430400,
+  "database_headroom_bytes": 230809997,
+  "billing_plan_limit": "NOT_DISCOVERED",
+  "measurement_encoding": "msgpack-gzip-v1",
+  "windows": [
+    {
+      "window": "3days",
+      "generation": "aac2a413-82a0-479b-8956-433cbbebb0e3",
+      "storage_version": "gzip-v1",
+      "record_count": 0,
+      "fetched_at": "2026-11-05T01:31:50.305892Z",
+      "compressed_bytes": 0,
+      "product_limit_bytes": 134217728,
+      "product_headroom_bytes": 134217728,
+      "unchanged_next_query_added_bytes": 0,
+      "fully_changed_next_query_object_bytes": 162865856,
+      "fully_changed_next_query_fits_object_budget": true,
+      "measured_compressed_bytes": 0,
+      "measured_saved_bytes": 0
+    },
+    {
+      "window": "7days",
+      "generation": "4ffbe760-e533-4674-a93e-af07d0ba9a35",
+      "storage_version": "gzip-v1",
+      "record_count": 50219,
+      "fetched_at": "2026-11-05T01:35:07.260626Z",
+      "compressed_bytes": 33298089,
+      "product_limit_bytes": 134217728,
+      "product_headroom_bytes": 100919639,
+      "unchanged_next_query_added_bytes": 0,
+      "fully_changed_next_query_object_bytes": 196163945,
+      "fully_changed_next_query_fits_object_budget": true,
+      "measured_compressed_bytes": 29627835,
+      "measured_saved_bytes": 3670254
+    },
+    {
+      "window": "30days",
+      "generation": "6cbe8fb8-cb95-4daf-aea4-56bf6af425ec",
+      "storage_version": "gzip-v1",
+      "record_count": 132962,
+      "fetched_at": "2026-11-05T01:45:25.752550Z",
+      "compressed_bytes": 129567767,
+      "product_limit_bytes": 134217728,
+      "product_headroom_bytes": 4649961,
+      "unchanged_next_query_added_bytes": 0,
+      "fully_changed_next_query_object_bytes": 292433623,
+      "fully_changed_next_query_fits_object_budget": true,
+      "measured_compressed_bytes": 112912694,
+      "measured_saved_bytes": 16655073
+    }
+  ]
+}

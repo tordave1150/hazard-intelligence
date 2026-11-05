@@ -2,6 +2,8 @@
 
 5 November 2026, Asia/Bangkok. This increment addresses the [20,000-feature failure](gistda-availability-2026-11-04.md). Separate national 3/7/30-day products are deployed and verified in production; the [production receipt](gistda-window-production-2026-11-05.json) records the real run, counts and integrity audit. Map fit, viewport and mobile/CSS adjustments remain deferred.
 
+The later [capacity/recovery follow-up](data-continuity-capacity-release-2026-11-05.md) supersedes this initial JSON/gzip representation with lossless double-precision MessagePack/gzip. Its measurements and maintenance preserve the source query clocks and observation meaning below.
+
 ## Product and observation meaning
 
 The default remains the national **3days** product. Independent **7days/30days** selectors are historical references. They never substitute for an empty 3-day query automatically. Query response, retrieval and ingestion clocks remain separate from unknown satellite acquisition time and valid/clear image coverage. An empty successful query does not establish no flood, a missed satellite pass or a receded flood. New imagery elsewhere cannot refresh an unobserved location. Historical windows and archived queries use neutral reference styling.

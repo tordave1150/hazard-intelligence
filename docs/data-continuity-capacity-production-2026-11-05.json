@@ -1,0 +1,582 @@
+{
+  "reviewed_at": "2026-11-05T02:54:00Z",
+  "timezone": "Asia/Bangkok",
+  "public_url": "https://hazard-intelligence-lime.vercel.app/",
+  "verified_code_commit": "041d078841ccf758fa9c899670ef1724968bf4ac",
+  "storage_implementation_commit": "51e634939206d3efd98ff5a61f2acd8b3313c567",
+  "batch_implementation_commit": "0e057d1d99e2975a6bc2f3125b7ccd114e00cb8d",
+  "deployment": {
+    "commit": "041d078841ccf758fa9c899670ef1724968bf4ac",
+    "state": "success",
+    "statuses": [
+      {
+        "state": "success",
+        "context": "Vercel",
+        "target_url": "https://vercel.com/jedsadaporn231043-6773s-projects/hazard-intelligence/9z1vMuQmyBWv6wQZjwhnShUv1Ynz"
+      }
+    ]
+  },
+  "maintenance": {
+    "run_id": 41955814865,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41955814865",
+    "job_id": 127010320724,
+    "conclusion": "success",
+    "collector_step": "skipped",
+    "provider_requests": 0,
+    "operation": "repack_thailand_windows",
+    "repacked_windows": [
+      {
+        "active_generation": "0a658308-fc87-4c2e-a23a-43f935da0291",
+        "feature_count": 0,
+        "record_count": 0,
+        "compressed_bytes": 0,
+        "archive_evicted_count": 0,
+        "window": "3days",
+        "status": "REPACKED",
+        "old_bytes": 0,
+        "new_bytes": 0,
+        "stored_chunks": 0,
+        "fetched_at": "2026-11-05T01:31:50.305892Z"
+      },
+      {
+        "active_generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+        "feature_count": 50219,
+        "record_count": 50219,
+        "compressed_bytes": 29627835,
+        "archive_evicted_count": 0,
+        "window": "7days",
+        "status": "REPACKED",
+        "old_bytes": 33298089,
+        "new_bytes": 29627835,
+        "stored_chunks": 555,
+        "fetched_at": "2026-11-05T01:35:07.260626Z"
+      },
+      {
+        "active_generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "feature_count": 132962,
+        "record_count": 132962,
+        "compressed_bytes": 112912694,
+        "archive_evicted_count": 0,
+        "window": "30days",
+        "status": "REPACKED",
+        "old_bytes": 129567767,
+        "new_bytes": 112912694,
+        "stored_chunks": 1455,
+        "fetched_at": "2026-11-05T01:45:25.752550Z"
+      }
+    ],
+    "grace_seconds": 120,
+    "prune_step": "success",
+    "deep_audit": "success",
+    "verified_products": [
+      {
+        "source_id": "open_meteo",
+        "product_id": "daily_forecast",
+        "status": "VERIFIED",
+        "active_records": 1005,
+        "total_documents": 2010,
+        "document_limit": 2010,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "rid",
+        "product_id": "daily_dam_storage",
+        "status": "VERIFIED",
+        "active_records": 35,
+        "total_documents": 70,
+        "document_limit": 70,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "tmd",
+        "product_id": "cap_warnings",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "gistda",
+        "product_id": "flood_3days_thailand",
+        "status": "VERIFIED",
+        "active_records": 0,
+        "stored_chunks": 0,
+        "storage_version": "msgpack-gzip-v1"
+      },
+      {
+        "source_id": "gistda",
+        "product_id": "flood_7days_thailand",
+        "status": "VERIFIED",
+        "active_records": 50219,
+        "stored_chunks": 555,
+        "storage_version": "msgpack-gzip-v1"
+      },
+      {
+        "source_id": "gistda",
+        "product_id": "flood_30days_thailand",
+        "status": "VERIFIED",
+        "active_records": 132962,
+        "stored_chunks": 1455,
+        "storage_version": "msgpack-gzip-v1"
+      },
+      {
+        "source_id": "thaiwater",
+        "product_id": "national_waterlevel",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "thaiwater",
+        "product_id": "national_rain_24h",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "open_meteo",
+        "product_id": "today_hourly",
+        "status": "VERIFIED",
+        "active_records": 1005,
+        "total_documents": 2010,
+        "document_limit": 2010,
+        "unique_index_verified": true
+      },
+      {
+        "source_id": "tmd_radar",
+        "product_id": "composite_rain_rate",
+        "status": "VERIFIED",
+        "active_records": 1,
+        "total_documents": 2,
+        "document_limit": 2,
+        "unique_index_verified": true
+      }
+    ]
+  },
+  "capacity_before": {
+    "object_bytes": 162865856,
+    "object_limit_bytes": 335544320,
+    "object_headroom_bytes": 172678464,
+    "database_data_bytes": 186130035,
+    "database_index_bytes": 2490368,
+    "database_storage_bytes": 208089088,
+    "database_operational_ceiling_bytes": 419430400,
+    "database_headroom_bytes": 230809997,
+    "billing_plan_limit": "NOT_DISCOVERED",
+    "measurement_encoding": "msgpack-gzip-v1",
+    "windows": [
+      {
+        "window": "3days",
+        "generation": "aac2a413-82a0-479b-8956-433cbbebb0e3",
+        "storage_version": "gzip-v1",
+        "record_count": 0,
+        "fetched_at": "2026-11-05T01:31:50.305892Z",
+        "compressed_bytes": 0,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 134217728,
+        "unchanged_next_query_added_bytes": 0,
+        "fully_changed_next_query_object_bytes": 162865856,
+        "fully_changed_next_query_fits_object_budget": true,
+        "measured_compressed_bytes": 0,
+        "measured_saved_bytes": 0
+      },
+      {
+        "window": "7days",
+        "generation": "4ffbe760-e533-4674-a93e-af07d0ba9a35",
+        "storage_version": "gzip-v1",
+        "record_count": 50219,
+        "fetched_at": "2026-11-05T01:35:07.260626Z",
+        "compressed_bytes": 33298089,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 100919639,
+        "unchanged_next_query_added_bytes": 0,
+        "fully_changed_next_query_object_bytes": 196163945,
+        "fully_changed_next_query_fits_object_budget": true,
+        "measured_compressed_bytes": 29627835,
+        "measured_saved_bytes": 3670254
+      },
+      {
+        "window": "30days",
+        "generation": "6cbe8fb8-cb95-4daf-aea4-56bf6af425ec",
+        "storage_version": "gzip-v1",
+        "record_count": 132962,
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "compressed_bytes": 129567767,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 4649961,
+        "unchanged_next_query_added_bytes": 0,
+        "fully_changed_next_query_object_bytes": 292433623,
+        "fully_changed_next_query_fits_object_budget": true,
+        "measured_compressed_bytes": 112912694,
+        "measured_saved_bytes": 16655073
+      }
+    ]
+  },
+  "capacity_after_repack": {
+    "object_bytes": 142540529,
+    "object_limit_bytes": 335544320,
+    "object_headroom_bytes": 193003791,
+    "database_data_bytes": 165805461,
+    "database_index_bytes": 2904064,
+    "database_storage_bytes": 475987968,
+    "database_operational_ceiling_bytes": 419430400,
+    "database_headroom_bytes": 250720875,
+    "billing_plan_limit": "NOT_DISCOVERED",
+    "measurement_encoding": "msgpack-gzip-v1",
+    "windows": [
+      {
+        "window": "3days",
+        "generation": "0a658308-fc87-4c2e-a23a-43f935da0291",
+        "storage_version": "msgpack-gzip-v1",
+        "record_count": 0,
+        "fetched_at": "2026-11-05T01:31:50.305892Z",
+        "compressed_bytes": 0,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 134217728,
+        "unchanged_same_encoding_query_added_bytes": 0,
+        "requires_storage_migration": false,
+        "fully_changed_next_query_object_bytes": 142540529,
+        "fully_changed_next_query_fits_object_budget": true,
+        "measured_compressed_bytes": 0,
+        "measured_saved_bytes": 0
+      },
+      {
+        "window": "7days",
+        "generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+        "storage_version": "msgpack-gzip-v1",
+        "record_count": 50219,
+        "fetched_at": "2026-11-05T01:35:07.260626Z",
+        "compressed_bytes": 29627835,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 104589893,
+        "unchanged_same_encoding_query_added_bytes": 0,
+        "requires_storage_migration": false,
+        "fully_changed_next_query_object_bytes": 172168364,
+        "fully_changed_next_query_fits_object_budget": true,
+        "measured_compressed_bytes": 29627835,
+        "measured_saved_bytes": 0
+      },
+      {
+        "window": "30days",
+        "generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "storage_version": "msgpack-gzip-v1",
+        "record_count": 132962,
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "compressed_bytes": 112912694,
+        "product_limit_bytes": 134217728,
+        "product_headroom_bytes": 21305034,
+        "unchanged_same_encoding_query_added_bytes": 0,
+        "requires_storage_migration": false,
+        "fully_changed_next_query_object_bytes": 255453223,
+        "fully_changed_next_query_fits_object_budget": true,
+        "measured_compressed_bytes": 112912694,
+        "measured_saved_bytes": 0
+      }
+    ]
+  },
+  "capacity_recheck": {
+    "run_id": 41957779160,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41957779160",
+    "conclusion": "success",
+    "provider_requests": 0,
+    "mutation": false,
+    "report": {
+      "object_bytes": 142540529,
+      "object_limit_bytes": 335544320,
+      "object_headroom_bytes": 193003791,
+      "database_data_bytes": 165823062,
+      "database_index_bytes": 2895872,
+      "database_storage_bytes": 475820032,
+      "database_operational_ceiling_bytes": 419430400,
+      "database_reusable_storage_bytes": null,
+      "database_reusable_index_bytes": 0,
+      "headroom_basis": "DATA_PLUS_INDEX_OPERATIONAL_GUARD_NOT_DISK_OR_BILLING_QUOTA",
+      "database_headroom_bytes": 250711466,
+      "billing_plan_limit": "NOT_DISCOVERED",
+      "measurement_encoding": null,
+      "windows": [
+        {
+          "window": "3days",
+          "generation": "0a658308-fc87-4c2e-a23a-43f935da0291",
+          "storage_version": "msgpack-gzip-v1",
+          "record_count": 0,
+          "fetched_at": "2026-11-05T01:31:50.305892Z",
+          "compressed_bytes": 0,
+          "product_limit_bytes": 134217728,
+          "product_headroom_bytes": 134217728,
+          "unchanged_same_encoding_query_added_bytes": 0,
+          "requires_storage_migration": false,
+          "fully_changed_next_query_object_bytes": 142540529,
+          "fully_changed_next_query_fits_object_budget": true
+        },
+        {
+          "window": "7days",
+          "generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+          "storage_version": "msgpack-gzip-v1",
+          "record_count": 50219,
+          "fetched_at": "2026-11-05T01:35:07.260626Z",
+          "compressed_bytes": 29627835,
+          "product_limit_bytes": 134217728,
+          "product_headroom_bytes": 104589893,
+          "unchanged_same_encoding_query_added_bytes": 0,
+          "requires_storage_migration": false,
+          "fully_changed_next_query_object_bytes": 172168364,
+          "fully_changed_next_query_fits_object_budget": true
+        },
+        {
+          "window": "30days",
+          "generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+          "storage_version": "msgpack-gzip-v1",
+          "record_count": 132962,
+          "fetched_at": "2026-11-05T01:45:25.752550Z",
+          "compressed_bytes": 112912694,
+          "product_limit_bytes": 134217728,
+          "product_headroom_bytes": 21305034,
+          "unchanged_same_encoding_query_added_bytes": 0,
+          "requires_storage_migration": false,
+          "fully_changed_next_query_object_bytes": 255453223,
+          "fully_changed_next_query_fits_object_budget": true
+        }
+      ]
+    }
+  },
+  "logical_savings_bytes": 20325327,
+  "fully_changed_same_size_next_run_object_bytes": 285081058,
+  "public_api_verification": {
+    "reviewed_at": "2026-11-05T02:43:46.422787+00:00",
+    "public_url": "https://hazard-intelligence-lime.vercel.app",
+    "windows": [
+      {
+        "window": "3days",
+        "count": 0,
+        "province_sum": 0,
+        "generation": "0a658308-fc87-4c2e-a23a-43f935da0291",
+        "fetched_at": "2026-11-05T01:31:50.305892Z",
+        "response_at": "2026-11-05T01:31:50.145Z",
+        "compressed_bytes": 0,
+        "observed_at": null,
+        "status": "SUCCESS"
+      },
+      {
+        "window": "7days",
+        "count": 50219,
+        "province_sum": 50219,
+        "generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+        "fetched_at": "2026-11-05T01:35:07.260626Z",
+        "response_at": "2026-11-05T01:31:56.095Z",
+        "compressed_bytes": 29627835,
+        "observed_at": null,
+        "status": "SUCCESS"
+      },
+      {
+        "window": "30days",
+        "count": 132962,
+        "province_sum": 132962,
+        "generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "response_at": "2026-11-05T01:37:04.049Z",
+        "compressed_bytes": 112912694,
+        "observed_at": null,
+        "status": "SUCCESS"
+      }
+    ],
+    "geometry_comparisons": [
+      {
+        "window": "7days",
+        "area": "TH-D-1412",
+        "count": 100,
+        "records_sha256": "f15fd98edc42fd1f090cc74a42992f648cdb4fc0829c83958ef4a660ce9bc438",
+        "generation": "4ffbe760-e533-4674-a93e-af07d0ba9a35",
+        "fetched_at": "2026-11-05T01:35:07.260626Z",
+        "new_generation": "097a7934-56f7-4df3-9c35-9455fc48269e",
+        "records_identical": true,
+        "retrieval_time_unchanged": true
+      },
+      {
+        "window": "30days",
+        "area": "TH-D-6003",
+        "count": 100,
+        "records_sha256": "83710d495cdadb894ec78fc5c173c7ab718c5c29dcbb6c6c807d14190f0f17e5",
+        "generation": "6cbe8fb8-cb95-4daf-aea4-56bf6af425ec",
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "new_generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "records_identical": true,
+        "retrieval_time_unchanged": true
+      },
+      {
+        "window": "30days",
+        "area": "TH-D-6012",
+        "count": 3,
+        "records_sha256": "05e4535ffd571d2bc16519fec37333e11dc70f3107bcb26d40738b5c45a075b9",
+        "generation": "6cbe8fb8-cb95-4daf-aea4-56bf6af425ec",
+        "fetched_at": "2026-11-05T01:45:25.752550Z",
+        "new_generation": "8f60877e-7f50-4b59-989c-272f8cd047ab",
+        "records_identical": true,
+        "retrieval_time_unchanged": true
+      }
+    ],
+    "radar": {
+      "freshness": "FRESH",
+      "fetched_at": "2026-11-05T02:24:18Z",
+      "frames": [
+        {
+          "observed_at": "2026-11-04T23:00:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "7bc1723c8b963086730fa03e6c1aa21567d6d4db6dbb7a237808d482b23db4cf",
+          "byte_length": 90528
+        },
+        {
+          "observed_at": "2026-11-04T23:30:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "b28857c42edcc211658c112fcd43215d3fa7c9a624755ff6c4159bbfacfe551e",
+          "byte_length": 84627
+        },
+        {
+          "observed_at": "2026-11-05T00:00:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "360a2a89fe62c7289fcd69204595871da246cc6413947b19a60936f23ca42806",
+          "byte_length": 82758
+        },
+        {
+          "observed_at": "2026-11-05T00:30:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "52c916d27d9669529b524a7def43f399f7e31f9748c7f257862cffe423c5d9f9",
+          "byte_length": 82004
+        },
+        {
+          "observed_at": "2026-11-05T01:00:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "1635b41ccfa3a66a96d29f6ed0b62b772c9456a8788f7516f428f73245271208",
+          "byte_length": 76562
+        },
+        {
+          "observed_at": "2026-11-05T01:30:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "5b17a8562733c8ab8780415b9559bc26db9929e816ba5201e19e337a66a36978",
+          "byte_length": 77489
+        },
+        {
+          "observed_at": "2026-11-05T02:00:00Z",
+          "width": 1800,
+          "height": 2644,
+          "sha256": "a671d64330ad1aeffb49661717f0465d2e2f49a3c2f191d897b93e624fa6ca4d",
+          "byte_length": 75378
+        }
+      ],
+      "health": {
+        "last_attempt": "2026-11-05T02:24:19.849Z",
+        "last_success": "2026-11-05T02:24:19.849Z",
+        "completed_at": "2026-11-05T02:24:32.138Z",
+        "status": "SUCCESS",
+        "last_result": "PUBLISHED",
+        "frame_count": 7,
+        "latest_observed_at": "2026-11-05T02:00:00Z",
+        "quality_issue_count": 0,
+        "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41954892226",
+        "failure_stage": null,
+        "error_type": null,
+        "blob_upload_reserved": 118,
+        "blob_upload_remaining": 1682,
+        "blob_upload_limit": 1800
+      },
+      "deployment_commit": "0e057d1d99e2975a6bc2f3125b7ccd114e00cb8d",
+      "recovery_protocol": "tmd-radar-recovery-v1"
+    }
+  },
+  "automatic_radar": {
+    "automatic_run": {
+      "id": 41957477978,
+      "event": "workflow_run",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-05T02:47:34Z",
+      "head_sha": "0e057d1d99e2975a6bc2f3125b7ccd114e00cb8d",
+      "html_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41957477978",
+      "path": ".github/workflows/radar.yml"
+    },
+    "freshness": "FRESH",
+    "latest_observed_at": "2026-11-05T02:30:00Z",
+    "fetched_at": "2026-11-05T02:48:21Z",
+    "health": {
+      "last_attempt": "2026-11-05T02:48:22.646Z",
+      "last_success": "2026-11-05T02:48:22.646Z",
+      "completed_at": "2026-11-05T02:48:27.110Z",
+      "status": "SUCCESS",
+      "last_result": "PUBLISHED",
+      "frame_count": 7,
+      "latest_observed_at": "2026-11-05T02:30:00Z",
+      "quality_issue_count": 0,
+      "run_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41957477978",
+      "failure_stage": null,
+      "error_type": null,
+      "blob_upload_reserved": 119,
+      "blob_upload_remaining": 1681,
+      "blob_upload_limit": 1800
+    },
+    "newly_verified_images": [
+      {
+        "observed_at": "2026-11-05T02:30:00Z",
+        "width": 1800,
+        "height": 2644,
+        "sha256": "1072b445a53fe84b2e924e613218f573f0a642b8b9d4e83b128fbe0c9a1bbc65",
+        "byte_length": 66297
+      }
+    ],
+    "previously_verified_images": 6
+  },
+  "recovery_skip": {
+    "run_id": 41957891893,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41957891893",
+    "job_id": 127017069509,
+    "conclusion": "success",
+    "due": false,
+    "reason": "LATEST_SAMPLE_ALREADY_PUBLISHED",
+    "source_capture_skipped": true,
+    "no_clock_or_quota_refresh": true
+  },
+  "tests": {
+    "ci_run_id": 41957779200,
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/41957779200",
+    "conclusion": "success",
+    "python_passed": 336,
+    "python_opt_in_http_skipped": 29,
+    "web_passed": 126,
+    "typecheck": "passed",
+    "build": "passed",
+    "production_http_passed": 29,
+    "production_http_seconds": 50.1
+  },
+  "browser": {
+    "default_window": "3days",
+    "default_count": 0,
+    "radar_image_loaded": true,
+    "radar_observed_at_at_screenshot": "2026-11-05T02:00:00Z",
+    "seven_day_national_count": 50219,
+    "seven_day_complete_area_count": 592,
+    "seven_day_retrieval_label": "05 Nov, 08:35 ICT",
+    "thirty_day_national_count": 132962,
+    "thirty_day_retrieval_label": "05 Nov, 08:45 ICT",
+    "console_errors": 0,
+    "screenshot": "artifacts/continuity-capacity-production-2026-11-05.png",
+    "map_fit_mobile_layout_changed": false
+  },
+  "limitations": [
+    "GitHub wakeups remain best effort; successful automatic recovery is not a long-term delivery SLA.",
+    "Mongo allocated collection storage remains high after temporary duplicate representations; reusable allocated storage was unavailable and remains null.",
+    "Application headroom uses data+index bytes; the actual database billing plan/disk quota has not been discovered.",
+    "A future larger or substantially changed set can exceed protected-generation budgets and must retain the last complete product.",
+    "Source satellite acquisition/current flood state and valid/clear coverage remain unknown.",
+    "Numerical QPE, nowcasting, two unused Blob-store deletions and viewport-based flood rendering remain separate work."
+  ]
+}
