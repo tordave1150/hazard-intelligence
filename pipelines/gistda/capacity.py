@@ -23,7 +23,8 @@ def capacity_report(db,measure=False):
                'record_count':manifest['feed']['record_count'],'fetched_at':manifest['feed']['fetched_at'],
                'compressed_bytes':count,'product_limit_bytes':MAX_PRODUCT_GZIP_BYTES,
                'product_headroom_bytes':max(0,MAX_PRODUCT_GZIP_BYTES-count),
-               'unchanged_next_query_added_bytes':0,'fully_changed_next_query_object_bytes':used+count,
+               'unchanged_same_encoding_query_added_bytes':0,'requires_storage_migration':manifest['storage_version']!=CURRENT_VERSION,
+               'fully_changed_next_query_object_bytes':used+count,
                'fully_changed_next_query_fits_object_budget':used+count<=OBJECT_BUDGET_BYTES}
         if measure:
             measured=0;objects={c['hash']:c for c in manifest['chunks']}

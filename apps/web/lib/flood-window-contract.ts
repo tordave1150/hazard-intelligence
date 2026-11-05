@@ -7,8 +7,10 @@ const ajv=new Ajv({strict:false});addFormats(ajv);ajv.addSchema(schema);
 const metadata=ajv.compile({$ref:schema.$id+'#/$defs/Metadata'}),payload=ajv.compile({$ref:schema.$id+'#/$defs/ChunkPayload'});
 export const floodWindows:FloodWindow[]=['3days','7days','30days'];
 export const floodBrowserLimit=2000;
+export const floodStorageVersions=['gzip-v1','msgpack-gzip-v1'] as const;
+export type FloodStorageVersion=typeof floodStorageVersions[number];
 export type FloodDescriptor={hash:string;count:number;raw_bytes:number;compressed_bytes:number;area_ids:string[]};
-export type FloodManifest={_id:string;storage_version:'gzip-v1';product_window:FloodWindow;feed:Omit<FloodFeed,'records'>;
+export type FloodManifest={_id:string;storage_version:FloodStorageVersion;product_window:FloodWindow;feed:Omit<FloodFeed,'records'>;
   chunks:FloodDescriptor[];areas:Record<string,{count:number;chunks:number[]}>;geometry_available:boolean;compressed_bytes:number};
 export function checkedWindowFeed(value:unknown){
   if(!metadata(value))throw Error('Invalid flood window metadata');
@@ -20,7 +22,7 @@ export function checkedWindowFeed(value:unknown){
 export function checkedWindowManifest(value:unknown):FloodManifest{
   if(!value||typeof value!=='object')throw Error('Missing flood manifest');
   const m=value as FloodManifest,feed=checkedWindowFeed(m.feed);
-  if(m.storage_version!=='gzip-v1'||m.product_window!==feed.product_window||!Array.isArray(m.chunks)||m.chunks.length>5000||!m.areas||typeof m.geometry_available!=='boolean')throw Error('Invalid flood storage contract');
+  if(!floodStorageVersions.includes(m.storage_version)||m.product_window!==feed.product_window||!Array.isArray(m.chunks)||m.chunks.length>5000||!m.areas||typeof m.geometry_available!=='boolean')throw Error('Invalid flood storage contract');
   const rebuilt:typeof m.areas={},hashes=new Set<string>();let count=0,bytes=0;
   for(const [index,c] of m.chunks.entries()){
     if(!c||!Array.isArray(c.area_ids)||c.area_ids.length!==4||!/^[a-f0-9]{64}$/.test(c.hash)||hashes.has(c.hash)||!Number.isInteger(c.count)||c.count<1||c.count>100||

@@ -11,6 +11,7 @@ from tempfile import TemporaryDirectory
 from scripts.gistda_common import CandidateError
 from pipelines.shared.time_units import utc_now
 from .streaming import collect_window,WindowPublisher,WINDOWS,product
+from .encoding import CURRENT_VERSION
 
 
 def wait_for_receiver(get=None,sleep=None):
@@ -18,7 +19,7 @@ def wait_for_receiver(get=None,sleep=None):
     for attempt in range(72):
         try:
             response=get('https://hazard-intelligence-lime.vercel.app/api/flood-products?view=summary',timeout=10)
-            if response.status_code==200 and response.json().get('storage_protocol')=='gistda-gzip-v1':return
+            if response.status_code==200 and CURRENT_VERSION in response.json().get('storage_versions',[]):return
         except (requests.RequestException,ValueError):pass
         if attempt==71:raise RuntimeError('Compatible flood receiver not ready')
         sleep(5)
@@ -30,7 +31,7 @@ def check_request(path=None, *, three_day=True):
     request=json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(request,dict) or set(request)!={'request_id','source_id','operation'}:
         raise ValueError('Invalid publication request')
-    if not three_day or request['source_id']!='gistda' or request['operation'] not in ['publish_thailand_3days','publish_thailand_windows','verify_thailand_windows']:
+    if not three_day or request['source_id']!='gistda' or request['operation'] not in ['publish_thailand_3days','publish_thailand_windows','verify_thailand_windows','repack_thailand_windows']:
         raise ValueError('Invalid fixed publication scope')
     if not isinstance(request['request_id'],str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}-\d{2}',request['request_id']):
         raise ValueError('Invalid publication request ID')
@@ -63,7 +64,7 @@ def main():
                     feed=manifest['feed'];stage='publish';pointer=publisher.publish(manifest,directory)
                 completed=utc_now();count=feed['record_count']
                 status.update(status='SUCCESS',last_success=completed,completed_at=completed,record_count=count,provider_number_matched=count,
-                              completeness=1,scope_area_id='TH',active_generation=pointer['active_generation'],storage_version='gzip-v1',
+                              completeness=1,scope_area_id='TH',active_generation=pointer['active_generation'],storage_version=CURRENT_VERSION,
                               compressed_bytes=pointer['compressed_bytes'],archive_evicted_count=pointer['archive_evicted_count'],
                               consecutive_empty_queries=0 if count else int(prior.get('consecutive_empty_queries',0))+1)
                 if count:status.update(last_nonempty_query_at=feed['fetched_at'],last_nonempty_count=count)

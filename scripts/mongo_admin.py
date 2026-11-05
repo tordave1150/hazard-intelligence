@@ -18,6 +18,7 @@ from pipelines.open_meteo.hourly import HourlyPublisher, check_hourly_batch
 from pipelines.gistda.chunks import ThreeDayPublisher, check_chunks
 from pipelines.gistda import limits as flood_limits
 from pipelines.gistda.streaming import WindowPublisher,WINDOWS as FLOOD_WINDOWS,LOCK as FLOOD_LOCK
+from pipelines.gistda.encoding import VERSIONS as FLOOD_VERSIONS
 from pipelines.thaiwater.publication import GaugePublisher,check_envelope as check_gauge_envelope
 from pipelines.thaiwater.rain_publication import RainPublisher,check_envelope as check_rain_envelope
 
@@ -38,7 +39,7 @@ def verify_database(db, include_retired=False,deep_flood=False):
                   ('gistda','flood_1day_thailand','satellite_flood_national_latest','snapshot_id','GistdaNationalFloodFeed',['latest'],check_national_envelope)]
     result=[]
     for source,product,collection,identity,kind,expected,check in specs:
-        compressed=db.snapshot_control.find_one({'_id':f'{source}:{product}','storage_version':'gzip-v1'}) if source=='gistda' else None
+        compressed=db.snapshot_control.find_one({'_id':f'{source}:{product}','storage_version':{'$in':FLOOD_VERSIONS}}) if source=='gistda' else None
         if compressed:
             # Existing legacy collections remain intact for explicit historical auditing.
             for window in FLOOD_WINDOWS:
@@ -87,13 +88,14 @@ def verify_database(db, include_retired=False,deep_flood=False):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('command',choices=['audit','verify','rollback','unlock'])
+    parser.add_argument('command',choices=['audit','verify','rollback','unlock','repack-flood','prune-flood'])
     parser.add_argument('--source',choices=['tmd_radar','open_meteo','hourly','rid','tmd','gistda','thaiwater','thaiwater_rain','gistda_1day','gistda_pilot'],default='open_meteo')
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
     parser.add_argument('--deep-flood',action='store_true',help='Also download/decompress every active compressed flood object')
     parser.add_argument('--flood-capacity',action='store_true',help='Read-only actual flood/database capacity report')
     parser.add_argument('--measure-flood',action='store_true',help='Measure lossless binary compression without writes or provider calls')
+    parser.add_argument('--flood-window',choices=FLOOD_WINDOWS,default='3days',help='GISTDA product selected for explicit rollback')
     args=parser.parse_args()
     with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
         db=client[os.getenv('MONGODB_DB_NAME','weather_db')]
@@ -111,10 +113,23 @@ def main():
             if args.flood_capacity or args.measure_flood:
                 from pipelines.gistda.capacity import capacity_report
                 print(json.dumps({'flood_capacity':capacity_report(db,measure=args.measure_flood)},indent=2))
+        elif args.command=='prune-flood':
+            publisher=WindowPublisher(db,create_indexes=False)
+            with publisher.lock():publisher._gc()
+            print('Expired managed flood representations pruned; active and previous queries retained.')
+        elif args.command=='repack-flood':
+            from tempfile import TemporaryDirectory
+            from pipelines.gistda.run import wait_for_receiver
+            wait_for_receiver()
+            publisher=WindowPublisher(db)
+            for window in FLOOD_WINDOWS:
+                with TemporaryDirectory(prefix='hazard-flood-repack-') as directory:
+                    print(json.dumps(publisher.repack(window,directory)))
         elif args.command=='rollback':
-            flood_pointer=db.snapshot_control.find_one({'_id':'gistda:'+flood_limits.PRODUCT}) if args.source=='gistda' else None
-            if flood_pointer and (flood_pointer.get('storage_version')=='gzip-v1' or (flood_pointer.get('previous') or {}).get('storage_version')=='gzip-v1'):
-                WindowPublisher(db).rollback();print('Retained compressed flood generation promoted.');return
+            flood_pointer=db.snapshot_control.find_one({'_id':'gistda:'+('flood_'+args.flood_window+'_thailand')}) if args.source=='gistda' else None
+            if flood_pointer and (flood_pointer.get('storage_version') in FLOOD_VERSIONS or (flood_pointer.get('previous') or {}).get('storage_version') in FLOOD_VERSIONS):
+                WindowPublisher(db).rollback(args.flood_window);print('Retained compressed flood generation promoted.');return
+            if args.source=='gistda' and args.flood_window!='3days':raise ValueError('No retained compressed product for this flood window')
             {'tmd_radar':RadarPublisher,'open_meteo':Publisher,'hourly':HourlyPublisher,'rid':DamPublisher,'tmd':WarningPublisher,'gistda':ThreeDayPublisher,'thaiwater':GaugePublisher,'thaiwater_rain':RainPublisher,'gistda_1day':NationalFloodPublisher,'gistda_pilot':FloodPublisher}[args.source](db).rollback()
             print('Previous validated slot promoted. Clear edge cache or wait up to 3 minutes.')
         else:

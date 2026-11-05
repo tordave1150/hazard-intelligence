@@ -1,6 +1,7 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import {createHash} from 'node:crypto';
 import {gzipSync} from 'node:zlib';
+import {encode} from '@msgpack/msgpack';
 import {areaById} from '../lib/geography';
 import {checkedWindowFeed,checkedWindowManifest,type FloodManifest} from '../lib/flood-window-contract';
 import {loadFloodSnapshot} from '../lib/flood-client';
@@ -27,6 +28,17 @@ function fixture(count:number,window:FloodWindow='30days'){
 }
 beforeEach(()=>{vi.clearAllMocks();mocks.uri=null;process.env.HAZARD_LOCAL_SNAPSHOT='1';});
 describe('Large GISTDA products and truthful area presentation',()=>{
+  it('reads binary doubles exactly and rejects truncated or mixed-codec objects',()=>{
+    const {manifest,objects}=fixture(1),original=manifest.chunks[0];
+    const rows=decodedFloodObject({payload:Buffer.from(objects[original.hash],'base64'),raw_bytes:original.raw_bytes,compressed_bytes:original.compressed_bytes},original);
+    const coords=rows[0].geometry.coordinates as number[][][];
+    coords[0][0]=[100.12345678912345,13.98765432198765];
+    const raw=Buffer.from(encode(rows)),packed=gzipSync(raw),hash=createHash('sha256').update(raw).digest('hex');
+    const descriptor={...original,hash,raw_bytes:raw.length,compressed_bytes:packed.length},object={payload:packed,raw_bytes:raw.length,compressed_bytes:packed.length};
+    expect(decodedFloodObject(object,descriptor,'msgpack-gzip-v1')).toEqual(rows);
+    expect(()=>decodedFloodObject(object,descriptor,'gzip-v1')).toThrow();
+    expect(()=>decodedFloodObject({...object,payload:packed.subarray(0,packed.length-4)},descriptor,'msgpack-gzip-v1')).toThrow();
+  });
   it('accepts independent historical metadata and rejects substituted dates/units/provenance',()=>{
     const {manifest}=fixture(25001);
     expect(checkedWindowManifest(manifest).feed.record_count).toBe(25001);

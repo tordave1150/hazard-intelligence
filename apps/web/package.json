@@ -13,6 +13,7 @@
     "@deck.gl/core": "9.4.0",
     "@deck.gl/layers": "9.4.0",
     "@deck.gl/mapbox": "9.4.0",
+    "@msgpack/msgpack": "3.1.2",
     "@vercel/blob": "2.4.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",

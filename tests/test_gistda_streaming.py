@@ -34,9 +34,9 @@ def getter(total=1,mutate=None):
     return get,calls
 
 
-def collect(path,total=1,window='3days',mutate=None):
+def collect(path,total=1,window='3days',mutate=None,storage_version='gzip-v1'):
     get,calls=getter(total,mutate)
-    result=stream.collect_window(KEY,window,path,get=get,now=lambda:NOW)
+    result=stream.collect_window(KEY,window,path,get=get,now=lambda:NOW,storage_version=storage_version)
     return result,calls
 
 
@@ -203,7 +203,7 @@ def test_compatible_reader_wait_requires_storage_protocol_and_is_bounded():
     class Response:
         status_code=200
         def __init__(self,protocol):self.protocol=protocol
-        def json(self):return {'storage_protocol':self.protocol}
+        def json(self):return {'storage_protocol':self.protocol,'storage_versions':['gzip-v1','msgpack-gzip-v1'] if self.protocol=='gistda-gzip-v1' else []}
     sleeps=[]
     wait_for_receiver(lambda *a,**k:Response('gistda-gzip-v1'),lambda _:pytest.fail('Ready reader must not wait'))
     with pytest.raises(RuntimeError):wait_for_receiver(lambda *a,**k:Response('old-reader'),sleeps.append)
@@ -242,3 +242,64 @@ def test_capacity_measurement_is_read_only_and_preserves_double_precision(tmp_pa
     assert report['windows'][0]['record_count']==201
     assert report['windows'][0]['measured_compressed_bytes']>0
     assert {name:list(db[name].find({})) for name in db.list_collection_names()}==before
+
+
+def test_binary_collector_retains_every_coordinate_and_checks_corrupt_payloads(tmp_path):
+    import struct
+    legacy,_=collect(tmp_path/'json',101)
+    binary,_=collect(tmp_path/'binary',101,storage_version='msgpack-gzip-v1')
+    for left,right in zip(legacy['chunks'],binary['chunks']):
+        old=stream.checked_payload(left,(tmp_path/'json'/(left['hash']+'.gz')).read_bytes())
+        packed=(tmp_path/'binary'/(right['hash']+'.gz')).read_bytes()
+        rows=stream.checked_payload(right,packed,binary['storage_version'])
+        assert stream.encoded(rows)==stream.encoded(old)
+        assert struct.pack('>d',rows[0]['geometry']['coordinates'][0][0][0])==struct.pack('>d',old[0]['geometry']['coordinates'][0][0][0])
+        with pytest.raises(ValueError):stream.checked_payload(right,packed[:-5],binary['storage_version'])
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db)
+    p.publish(binary,tmp_path/'binary',check_database=False)
+    assert p.verify('3days')['active_records']==101
+
+
+def test_repack_preserves_query_time_previous_query_and_cached_old_objects(tmp_path):
+    from datetime import timedelta
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db)
+    older,_=collect(tmp_path/'older',1);p.publish(older,tmp_path/'older',check_database=False)
+    latest,_=collect(tmp_path/'latest',201);p.publish(latest,tmp_path/'latest',check_database=False)
+    db.source_status.insert_one({'_id':'gistda:flood_3days_thailand','last_success':NOW,'last_attempt':NOW,'status':'SUCCESS'})
+    result=p.repack('3days',tmp_path/'repack',check_database=False)
+    pointer=db.snapshot_control.find_one({'_id':'gistda:flood_3days_thailand'})
+    candidate=db.gistda_flood_manifests.find_one({'_id':pointer['active_generation']})
+    assert candidate['feed']==latest['feed'] and candidate['areas']==latest['areas']
+    assert result['record_count']==201 and candidate['query_identity']==latest['_id']
+    assert pointer['previous']['active_generation']==older['_id']
+    assert db.source_status.find_one({'_id':pointer['_id']})['last_attempt']==NOW
+    old=db.gistda_flood_manifests.find_one({'_id':latest['_id']})
+    p._verify_objects(old,True)  # Old cached generation remains readable during grace.
+    assert old['replaced_by']==candidate['_id']
+    p.rollback();assert p.verify('3days')['active_records']==1
+    p.rollback();assert p.verify('3days')['active_records']==201
+    db.gistda_flood_manifests.update_one({'_id':latest['_id']},{'$set':{'retire_after':(datetime.now(timezone.utc)-timedelta(minutes=1)).isoformat().replace('+00:00','Z')}})
+    p._gc();assert db.gistda_flood_manifests.find_one({'_id':latest['_id']}) is None
+    assert p.verify('3days')['active_records']==201
+
+
+def test_three_binary_generations_for_all_windows_reuse_unchanged_data_and_rollback(tmp_path):
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db)
+    for window in stream.WINDOWS:
+        for i in range(3):
+            m,_=collect(tmp_path/window/str(i),301,window,storage_version='msgpack-gzip-v1')
+            p.publish(m,tmp_path/window/str(i),check_database=False)
+        assert p.verify(window)['active_records']==301
+        p.rollback(window);assert p.verify(window)['active_records']==301
+    # All windows can reuse identical normalized records, without conflating their clocks/products.
+    assert db.gistda_flood_objects.count_documents({})==4
+
+
+def test_repack_budget_failure_leaves_original_active_and_previous_untouched(tmp_path,monkeypatch):
+    db=mongomock.MongoClient().db;p=stream.WindowPublisher(db)
+    m,_=collect(tmp_path/'old',201);p.publish(m,tmp_path/'old',check_database=False)
+    before=db.snapshot_control.find_one({'_id':'gistda:flood_3days_thailand'})
+    monkeypatch.setattr(stream,'OBJECT_BUDGET_BYTES',m['compressed_bytes'])
+    with pytest.raises(CandidateError):p.repack('3days',tmp_path/'new',check_database=False)
+    assert db.snapshot_control.find_one({'_id':before['_id']})==before
+    assert p.verify('3days')['active_records']==201

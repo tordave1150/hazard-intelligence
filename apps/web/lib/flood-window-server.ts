@@ -4,19 +4,22 @@ import {gunzipSync} from 'node:zlib';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {Binary} from 'mongodb';
+import {decode} from '@msgpack/msgpack';
 import {mongoDatabase,mongoUri} from './mongo';
 import {areaById,areas} from './geography';
 import {floodQueryFreshness} from './floods';
-import {checkedWindowManifest,checkedWindowRows,floodBrowserLimit,floodWindows,type FloodDescriptor,type FloodManifest} from './flood-window-contract';
+import {checkedWindowManifest,checkedWindowRows,floodBrowserLimit,floodWindows,floodStorageVersions,type FloodStorageVersion,type FloodDescriptor,type FloodManifest} from './flood-window-contract';
 import type {Area,FloodSnapshot,FloodWindow} from './types';
 
-export function decodedFloodObject(value:unknown,descriptor:FloodDescriptor){
+export function decodedFloodObject(value:unknown,descriptor:FloodDescriptor,version:FloodStorageVersion='gzip-v1'){
   const row=value as {payload?:unknown;compressed_bytes?:number;raw_bytes?:number};
   const bytes=row?.payload instanceof Binary?Buffer.from(row.payload.value()):Buffer.isBuffer(row?.payload)?row.payload:null;
   if(!bytes||bytes.length!==descriptor.compressed_bytes||row.raw_bytes!==descriptor.raw_bytes||row.compressed_bytes!==descriptor.compressed_bytes)throw Error('Invalid compressed flood object');
   const raw=gunzipSync(bytes,{maxOutputLength:1048576});
   if(raw.length!==descriptor.raw_bytes||createHash('sha256').update(raw).digest('hex')!==descriptor.hash)throw Error('Flood object identity mismatch');
-  return checkedWindowRows(JSON.parse(raw.toString('utf8')),descriptor);
+  if(!floodStorageVersions.includes(version))throw Error('Unsupported flood encoding');
+  const rows=version==='gzip-v1'?JSON.parse(raw.toString('utf8')):decode(raw,{maxStrLength:256,maxBinLength:0,maxExtLength:0,maxArrayLength:131072,maxMapLength:8});
+  return checkedWindowRows(rows,descriptor);
 }
 const healthKeys=['status','last_attempt','last_success','completed_at','record_count','provider_number_matched','completeness','scope_area_id','error_summary','failure_stage',
   'last_failure_at','last_failure_reason','last_nonempty_query_at','last_nonempty_count','consecutive_empty_queries','run_url','compressed_bytes','archive_evicted_count'];
@@ -26,7 +29,7 @@ const manifestCache=new Map<string,{until:number;value:FloodManifest}>();
 async function catalog(){
   if(catalogCache&&catalogCache.until>Date.now())return catalogCache.value;
   const db=await mongoDatabase(),pointers=await db.collection('snapshot_control').find({_id:{$in:floodWindows.map(w=>'gistda:flood_'+w+'_thailand') as never}}).toArray();
-  const entries=await Promise.all(pointers.filter(p=>p.storage_version==='gzip-v1').map(async pointer=>{
+  const entries=await Promise.all(pointers.filter(p=>floodStorageVersions.includes(p.storage_version)).map(async pointer=>{
     const m=await db.collection('gistda_flood_manifests').findOne({_id:pointer.active_generation},{projection:{product_window:1,'feed.record_count':1,'feed.fetched_at':1,geometry_available:1},maxTimeMS:5000});
     return !m||!floodWindows.includes(m.product_window)||!Number.isInteger(m.feed?.record_count)||m.feed.record_count!==pointer.feature_count?null:
       {window:m.product_window as FloodWindow,record_count:m.feed.record_count as number,fetched_at:m.feed.fetched_at as string,generation:String(m._id),status:'AVAILABLE',geometry_available:m.geometry_available===true};
@@ -49,7 +52,7 @@ export async function readWindowSnapshot(window:FloodWindow,area:Area,mode:'summ
     if(mongoUri()){
       const db=await mongoDatabase(),key='gistda:flood_'+window+'_thailand';
       const [pointer,status]=await Promise.all([db.collection('snapshot_control').findOne({_id:key as never},{maxTimeMS:5000}),db.collection('source_status').findOne({_id:key as never},{maxTimeMS:5000})]);
-      if(!pointer||pointer.storage_version!=='gzip-v1')return window==='3days'?null:{...result,health:status?Object.fromEntries(healthKeys.map(k=>[k,status[k]??null])):null,window_catalog:await catalog()};
+      if(!pointer||!floodStorageVersions.includes(pointer.storage_version))return window==='3days'?null:{...result,health:status?Object.fromEntries(healthKeys.map(k=>[k,status[k]??null])):null,window_catalog:await catalog()};
       result.storage='mongo';activeGeneration=pointer.active_generation;
       const id=generation??activeGeneration!;
       if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id))throw Error('Invalid flood generation');
@@ -67,7 +70,7 @@ export async function readWindowSnapshot(window:FloodWindow,area:Area,mode:'summ
       if(id===activeGeneration&&(pointer.feature_count!==manifest.feed.record_count||pointer.record_count!==manifest.chunks.length))throw Error('Incomplete flood pointer');
       if(status)health=Object.fromEntries(healthKeys.map(k=>[k,status[k]??null]));
       const [rows,runs,windowsValue]=await Promise.all([
-        db.collection('gistda_flood_manifests').find({product_window:window,state:'PUBLISHED'},{projection:{'feed.fetched_at':1,'feed.record_count':1,geometry_available:1},maxTimeMS:5000}).sort('feed.fetched_at',-1).limit(33).toArray(),
+        db.collection('gistda_flood_manifests').find({product_window:window,state:'PUBLISHED',replaced_by:{$exists:false}},{projection:{'feed.fetched_at':1,'feed.record_count':1,geometry_available:1},maxTimeMS:5000}).sort('feed.fetched_at',-1).limit(33).toArray(),
         db.collection('gistda_flood_runs').find({product_id:'flood_'+window+'_thailand'},{projection:{_id:0,status:1,completed_at:1,record_count:1,provider_number_matched:1,error_summary:1,run_url:1},maxTimeMS:5000}).sort('completed_at',-1).limit(5).toArray(),
         catalog()]);
       history=rows.map(row=>({generation:String(row._id),fetched_at:row.feed.fetched_at,record_count:row.feed.record_count,geometry_available:row.geometry_available===true}));
@@ -90,7 +93,7 @@ export async function readWindowSnapshot(window:FloodWindow,area:Area,mode:'summ
     const summary=presentation==='summary'||presentation==='metadata_only',count=summary?1:Math.max(1,entry.chunks.length);
     if(chunk>=count||chunk<0||summary&&chunk!==0)throw Error('Invalid flood page');
     const descriptor=!summary&&entry.chunks.length?manifest.chunks[entry.chunks[chunk]]:null;
-    const records=descriptor?decodedFloodObject(await object(descriptor),descriptor):[];
+    const records=descriptor?decodedFloodObject(await object(descriptor),descriptor,manifest.storage_version):[];
     result={...result,feed,records,health,freshness:'UNKNOWN',query_freshness:floodQueryFreshness(feed,Date.now(),health?.status==='FAILED'),
       scope:{area_id:area.id,record_count:entry.count,mode},presentation,child_areas:children(area,manifest),
       area_counts:Object.fromEntries(Object.entries(manifest.areas).filter(([id])=>id.startsWith('TH-P-')).map(([id,v])=>[id,v.count])),

@@ -51,18 +51,32 @@ jobs:
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m scripts.mongo_admin verify
       - name: Publish separate complete 3/7/30-day products in compressed chunks
-        if: steps.request.outputs.operation != 'verify_thailand_windows'
+        if: steps.request.outputs.operation != 'verify_thailand_windows' && steps.request.outputs.operation != 'repack_thailand_windows'
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: python -m pipelines.gistda.run --publish --all-windows --wait-for-receiver
+      - name: Repack the same complete queries without provider requests
+        if: steps.request.outputs.operation == 'repack_thailand_windows'
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: python -m scripts.mongo_admin repack-flood
+      - name: Reclaim expired representations after reader cache grace
+        if: steps.request.outputs.operation == 'repack_thailand_windows'
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+        run: |
+          sleep 130
+          python -m scripts.mongo_admin prune-flood
       - name: Verify active products and retained compressed objects
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: |
-          if [ '${{ steps.request.outputs.operation }}' = 'verify_thailand_windows' ]; then
+          if [ '${{ steps.request.outputs.operation }}' = 'verify_thailand_windows' ] || [ '${{ steps.request.outputs.operation }}' = 'repack_thailand_windows' ]; then
             python -m scripts.mongo_admin verify --deep-flood --flood-capacity --measure-flood
           else
             python -m scripts.mongo_admin verify
