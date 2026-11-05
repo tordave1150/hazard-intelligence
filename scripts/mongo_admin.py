@@ -92,6 +92,8 @@ def main():
     parser.add_argument('--stopped-run-token',help='Exact lock token; verify the process has stopped before recovery')
     parser.add_argument('--include-retired',action='store_true',help='Explicitly audit historical stored products as well as active products')
     parser.add_argument('--deep-flood',action='store_true',help='Also download/decompress every active compressed flood object')
+    parser.add_argument('--flood-capacity',action='store_true',help='Read-only actual flood/database capacity report')
+    parser.add_argument('--measure-flood',action='store_true',help='Measure lossless binary compression without writes or provider calls')
     args=parser.parse_args()
     with MongoClient(os.environ['MONGODB_URI'],serverSelectionTimeoutMS=10000) as client:
         db=client[os.getenv('MONGODB_DB_NAME','weather_db')]
@@ -106,6 +108,9 @@ def main():
             print(json.dumps(stats,default=str,indent=2))
         elif args.command=='verify':
             print(json.dumps(verify_database(db,include_retired=args.include_retired,deep_flood=args.deep_flood),default=str,indent=2))
+            if args.flood_capacity or args.measure_flood:
+                from pipelines.gistda.capacity import capacity_report
+                print(json.dumps({'flood_capacity':capacity_report(db,measure=args.measure_flood)},indent=2))
         elif args.command=='rollback':
             flood_pointer=db.snapshot_control.find_one({'_id':'gistda:'+flood_limits.PRODUCT}) if args.source=='gistda' else None
             if flood_pointer and (flood_pointer.get('storage_version')=='gzip-v1' or (flood_pointer.get('previous') or {}).get('storage_version')=='gzip-v1'):

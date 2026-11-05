@@ -224,3 +224,21 @@ def test_migration_rollback_can_restore_legacy_and_return_to_compressed_generati
     assert ThreeDayPublisher(db).read()[0]['feed']['record_count']==1
     publisher.rollback();assert publisher.verify('3days')['active_records']==2
     assert db.satellite_flood_3days_latest.count_documents({})==1
+
+
+def test_capacity_measurement_is_read_only_and_preserves_double_precision(tmp_path,monkeypatch):
+    from pipelines.gistda.capacity import capacity_report
+    from pipelines.gistda.encoding import binary_rows,unpacked,CURRENT_VERSION
+    import struct
+    values=[100.12345678912345,13.98765432198765,-0.0,100,13.0]
+    restored=unpacked(binary_rows(values),CURRENT_VERSION)
+    assert [struct.pack('>d',v) for v in values]==[struct.pack('>d',v) for v in restored]
+    db=mongomock.MongoClient().db;m,_=collect(tmp_path,201,window='30days');p=stream.WindowPublisher(db)
+    p.publish(m,tmp_path,check_database=False)
+    before={name:list(db[name].find({})) for name in db.list_collection_names()}
+    monkeypatch.setattr(db,'command',lambda *a,**k:{'dataSize':12345,'indexSize':1000,'storageSize':20000})
+    report=capacity_report(db,measure=True)
+    assert report['database_headroom_bytes']==stream.DATABASE_CEILING_BYTES-13345
+    assert report['windows'][0]['record_count']==201
+    assert report['windows'][0]['measured_compressed_bytes']>0
+    assert {name:list(db[name].find({})) for name in db.list_collection_names()}==before

@@ -63,7 +63,7 @@ jobs:
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: |
           if [ '${{ steps.request.outputs.operation }}' = 'verify_thailand_windows' ]; then
-            python -m scripts.mongo_admin verify --deep-flood
+            python -m scripts.mongo_admin verify --deep-flood --flood-capacity --measure-flood
           else
             python -m scripts.mongo_admin verify
           fi

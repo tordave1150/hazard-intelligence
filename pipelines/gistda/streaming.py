@@ -21,6 +21,7 @@ from pipelines.shared.time_units import utc_now,instant
 from scripts.gistda_common import CandidateError,_strict_object
 from scripts.gistda_sample_quality import administrative_quality,geometry_quality
 from scripts.probe_gistda_features import page_metadata
+from .encoding import VERSIONS,CURRENT_VERSION,checked_raw,unpacked
 
 WINDOWS=('3days','7days','30days')
 PAGE_SIZE=1000
@@ -175,12 +176,8 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
     finally:database.close()
 
 
-def checked_payload(descriptor,data):
-    if len(data)!=descriptor['compressed_bytes'] or descriptor['raw_bytes']>CHUNK_RAW_BYTES:raise ValueError('Invalid compressed chunk size')
-    import zlib
-    decoder=zlib.decompressobj(16+zlib.MAX_WBITS);raw=decoder.decompress(data,CHUNK_RAW_BYTES+1)
-    if len(raw)!=descriptor['raw_bytes'] or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail or hashlib.sha256(raw).hexdigest()!=descriptor['hash']:raise ValueError('Invalid compressed chunk identity')
-    rows=json.loads(raw)
+def checked_payload(descriptor,data,version='gzip-v1'):
+    rows=unpacked(checked_raw(descriptor,data),version)
     if len(rows)!=descriptor['count']:raise ValueError('Invalid chunk accounting')
     return rows
 
