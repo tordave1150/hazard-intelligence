@@ -189,3 +189,55 @@ def test_cli_schema_failure_logs_contract_path_without_source_values(tmp_path,mo
     assert diagnostic['stage']=='collect' and diagnostic['validator']=='pattern'
     assert diagnostic['schema_path']==['properties','area_ids','items','pattern']
     assert 'private source value' not in output and not (tmp_path/'unused.json').exists()
+
+
+def test_real_invalid_polygon_preserves_all_source_rings_and_warning_text_without_a_repaired_outline(cap_feed):
+    from pipelines.tmd.transform import NS
+    raw=(FIXTURES/'alert-2026-11-05-invalid-polygon.xml').read_bytes()
+    source=[p.text for p in xml(raw).findall('.//c:polygon',NS)]
+    row=normalize(raw,'https://www.tmd.go.th/uploads/CAP/CAPTMD20261105175255_2.xml','2026-11-06T11:00:00Z')
+    assert row['geometry'] is None and row['geometry_quality']=='INVALID_PROVIDER_GEOMETRY'
+    assert row['source_polygons']==source and len(source)==73
+    assert row['geometry_issues']==[{'polygon_index':2,'reason':'INVALID_COORDINATES'}]
+    assert source[2].split()[0]!=source[2].split()[-1]
+    assert row['description'] and row['area_ids'] and row['sender']=='TMD'
+    feed=make_feed([{'id':row['warning_id'],'url':row['content_ref']}],'2026-11-06T11:00:00Z',[row],'2026-11-06T11:00:00Z')
+    db=mongomock.MongoClient().test;p=WarningPublisher(db);p.publish([cap_feed],['latest']);p.publish([feed],['latest'])
+    assert p.read()[0]['records']==[row] and p.read()[0]['feed_item_count']==1
+    for changes in [{'geometry':cap_feed['records'][0]['geometry']},{'geometry_quality':'VALID'},{'geometry_issues':[]},{'source_polygons':[source[0]]}]:
+        with pytest.raises((ValueError,ValidationError)):validate_record('AgencyWarning',{**row,**changes})
+    p.rollback();assert p.read()==[cap_feed]
+
+
+def test_a_bad_document_still_fails_the_entire_collection_with_a_safe_document_id():
+    from pipelines.tmd.geometry import CapDataError
+    raw=(FIXTURES/'feed-2026-10-26.xml').read_bytes()
+    session=Session([Response(200,raw),Response(200,b'<alert>private source payload</alert>')])
+    with pytest.raises(CapDataError) as error:collect(session,lambda _:None)
+    assert error.value.reason=='CAP_INVALID_DOCUMENT' and error.value.document_id=='TMD20261025055042_2'
+    assert 'private' not in str(error.value) and session.calls==2
+
+
+def test_oversized_geometry_cannot_be_quarantined_to_bypass_the_product_bound():
+    from pipelines.tmd.geometry import inspect_polygons
+    with pytest.raises(ValueError,match='CAP_GEOMETRY_SIZE_LIMIT'):inspect_polygons(['8,99 '*20001])
+
+
+def test_unclosed_and_crossed_rings_are_flagged_without_source_repairs():
+    from pipelines.tmd.geometry import inspect_polygons
+    for raw,reason in [('8,99 8,100 9,100 9,99','UNCLOSED_RING'),('8,99 9,100 8,100 9,99 8,99','INVALID_TOPOLOGY')]:
+        polygons,issues=inspect_polygons([raw])
+        assert issues==[{'polygon_index':0,'reason':reason}]
+        assert len(polygons[0][0])==len(raw.split())
+
+
+def test_cap_publication_waits_for_a_reader_that_accepts_geometry_qualifications():
+    from pipelines.tmd.receiver import wait_for_receiver
+    class R:
+        status_code=200
+        def __init__(self,value):self.value=value
+        def json(self):return self.value
+    sleeps=[]
+    wait_for_receiver(lambda *a,**k:R({'geometry_protocol':'tmd-cap-geometry-v1'}),lambda _:pytest.fail('Already ready'))
+    with pytest.raises(RuntimeError):wait_for_receiver(lambda *a,**k:R({}),sleeps.append)
+    assert len(sleeps)==71

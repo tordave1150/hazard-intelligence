@@ -5,6 +5,7 @@ from datetime import timezone
 from pipelines.shared.time_units import instant,utc_now
 from pipelines.shared.schemas import validate_record
 from .data import SOURCE,PRODUCT,MAX_ITEMS,allowed_document,mapped_provinces,warning_time_quality
+from .geometry import inspect_polygons
 
 NS={'c':'urn:oasis:names:tc:emergency:cap:1.2'}
 
@@ -52,14 +53,16 @@ def normalize(raw,content_ref,fetched_at):
     refs=[]
     for ref in (text(root,'references') or '').split():
         sender,identity,sent=ref.split(',');refs.append({'sender':sender,'warning_id':identity,'issued_at':utc(sent)})
-    areas=[];polygons=[]
+    areas=[];source_polygons=[]
     for area in info.findall('c:area',NS) if info is not None else []:
         if area.find('c:circle',NS) is not None:raise ValueError('CAP circles require separate product acceptance')
         geocodes=[{'value_name':text(g,'valueName'),'value':text(g,'value')} for g in area.findall('c:geocode',NS)]
         areas.append({'description':text(area,'areaDesc'),'geocodes':geocodes})
         for polygon in area.findall('c:polygon',NS):
-            # CAP lists latitude,longitude; GeoJSON requires longitude,latitude.
-            polygons.append([[[float(pair.split(',')[1]),float(pair.split(',')[0])] for pair in polygon.text.split()]])
+            source_polygons.append(polygon.text or '')
+    # Any invalid source part suppresses the entire message outline. Preserve
+    # every original CAP polygon string; never repair a ring or draw a subset.
+    polygons,geometry_issues=inspect_polygons(source_polygons)
     row={'schema_version':'2.0','source_id':'tmd','product_id':PRODUCT,'data_state':'agency_warning',
         'warning_id':text(root,'identifier'),'sender':text(root,'sender'),'message_type':kind,'status':'Actual','scope':'Public',
         'references':refs,'issued_at':issued,'fetched_at':fetched_at,'ingested_at':utc_now(),
@@ -69,9 +72,11 @@ def normalize(raw,content_ref,fetched_at):
         'language':get('language'),'event':get('event'),'headline':get('headline') or get('event'),
         'description':get('description'),'instruction':get('instruction'),'agency_severity':get('severity'),
         'urgency':get('urgency'),'certainty':get('certainty'),'area_ids':sorted(mapped_provinces(areas)),'source_areas':areas,
-        'geometry':{'type':'MultiPolygon','coordinates':polygons} if polygons else None,
+        'geometry':{'type':'MultiPolygon','coordinates':polygons} if polygons and not geometry_issues else None,
         'content_ref':content_ref,'source_url':SOURCE,'terms_url':'https://www.tmd.go.th/content/copyright'}
     row['time_quality']=warning_time_quality(row)
+    row['geometry_quality']='INVALID_PROVIDER_GEOMETRY' if geometry_issues else 'VALID' if polygons else 'NOT_SUPPLIED'
+    if geometry_issues:row.update(source_polygons=source_polygons,geometry_issues=geometry_issues)
     return validate_record('AgencyWarning',row)
 
 

@@ -17,6 +17,7 @@ export type FloodManifest={_id:string;storage_version:FloodStorageVersion;produc
 export function checkedWindowFeed(value:unknown){
   if(!metadata(value))throw Error('Invalid flood window metadata');
   const feed=value as Omit<FloodFeed,'records'>;
+  if(feed.page_limits&&(feed.page_limits.length!==feed.page_count||feed.record_count>feed.page_limits.reduce((n,v)=>n+v,0)))throw Error('Invalid accepted source page accounting');
   if(feed.product_id!=='flood_'+feed.product_window+'_thailand'||feed.source_url!=='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/'+feed.product_window||
     Date.parse(feed.response_at)>Date.parse(feed.fetched_at)+300000||Date.parse(feed.fetched_at)>Date.parse(feed.ingested_at))throw Error('Invalid flood provenance or clocks');
   return feed;

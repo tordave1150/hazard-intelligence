@@ -71,7 +71,7 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
-        run: python -m pipelines.tmd.run --publish
+        run: python -m pipelines.tmd.run --publish --wait-for-receiver
       - name: Verify coverage, unique indexes and bounded retention
         if: steps.refresh.outputs.due == 'true'
         env:

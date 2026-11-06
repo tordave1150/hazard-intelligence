@@ -9,10 +9,11 @@ export async function GET(request:Request){
   if([...params.keys()].some(key=>key!=='area_id'))return invalid('Invalid warning query');
   const area=areaById.get(params.get('area_id')??'TH');if(!area)return invalid('Unknown area',404);
   const snapshot=await readWarningSnapshot();const records=snapshot.records.filter(r=>warningInArea(r,area,areas));
-  return json({...snapshot,records,status:snapshot.freshness,
+  return json({...snapshot,records,status:snapshot.freshness,geometry_protocol:'tmd-cap-geometry-v1',
     source_id:'tmd',integration_status:'accepted',current_count:records.filter(r=>warningState(r,snapshot.records)==='CURRENT').length,
     message_states:Object.fromEntries(records.map(row=>[row.warning_id,warningState(row,snapshot.records)])),
     geography_issues:{scope:'Entire latest feed; unresolved codes are not assigned to the requested area',
+      invalid_geometry:snapshot.records.filter(row=>row.geometry_quality==='INVALID_PROVIDER_GEOMETRY').map(row=>({warning_id:row.warning_id,issues:row.geometry_issues})),
       unmapped_geocodes:snapshot.records.flatMap(row=>warningUnmappedCodes(row).map(code=>({warning_id:row.warning_id,...code})))},
     coverage:'Latest public CAP feed only; absence does not establish safe conditions or complete warning coverage. Province filters use recognized codes only; unmapped agency codes are retained without inferring a province or region.'});
 }

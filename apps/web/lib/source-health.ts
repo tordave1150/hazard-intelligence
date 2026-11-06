@@ -57,6 +57,11 @@ export function healthError(health:Record<string,unknown>|null){
     upstream_unavailable:'บริการต้นทางไม่พร้อมใช้งาน',transport_error:'เชื่อมต่อต้นทางไม่สำเร็จ',http_error:'ต้นทางตอบปฏิเสธคำขอ',
     http_permanent:'ต้นทางตอบปฏิเสธคำขอ',invalid_json:'รูปแบบคำตอบจากต้นทางไม่ถูกต้อง',
     ValueError:'ข้อมูลไม่ผ่านการตรวจรูปแบบหรือความครบถ้วน',ValidationError:'ข้อมูลไม่ผ่านสัญญาข้อมูล',
+    CAP_INVALID_DOCUMENT:'ประกาศ CAP ต้นทางไม่ผ่านการตรวจข้อมูล ดูรหัสเอกสารในผลรัน',CAP_INVALID_INDEX:'รายการเอกสาร CAP ต้นทางไม่ผ่านการตรวจ',
+    CAP_INVALID_FEED:'ชุดประกาศ CAP ไม่ผ่านการตรวจความครบถ้วน',CAP_GEOMETRY_SIZE_LIMIT:'พิกัด CAP เกินขนาดที่รองรับ',
+    SOURCE_PAGE_RESPONSE_TOO_LARGE:'หน้าข้อมูล GISTDA ยังมีขนาดเกินขีดจำกัดหลังลดจำนวนต่อหน้า',
+    SOURCE_RESPONSE_BUDGET_EXCEEDED:'ขนาดข้อมูล GISTDA รวมเกินงบการเก็บข้อมูล',
+    SOURCE_PAGE_BUDGET_EXCEEDED:'ใช้จำนวนหน้าที่กำหนดครบก่อนเก็บ GISTDA ได้ครบ',
     collection_deadline:'ดึงข้อมูลไม่เสร็จภายในเวลาที่กำหนด'};
   return reasons[String(health.error_summary)]??'ดูรายละเอียดของรอบที่ล้มเหลวใน GitHub Actions';
 }

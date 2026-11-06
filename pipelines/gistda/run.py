@@ -19,7 +19,7 @@ def wait_for_receiver(get=None,sleep=None):
     for attempt in range(72):
         try:
             response=get('https://hazard-intelligence-lime.vercel.app/api/flood-products?view=summary',timeout=10)
-            if response.status_code==200 and CURRENT_VERSION in response.json().get('storage_versions',[]):return
+            if response.status_code==200 and CURRENT_VERSION in response.json().get('storage_versions',[]) and response.json().get('collection_protocol')=='gistda-adaptive-pages-v1':return
         except (requests.RequestException,ValueError):pass
         if attempt==71:raise RuntimeError('Compatible flood receiver not ready')
         sleep(5)
@@ -61,25 +61,27 @@ def main():
             try:
                 with TemporaryDirectory(prefix='hazard-gistda-') as directory:
                     manifest=collect_window(os.getenv('GISTDA_API_KEY',''),window,directory,page_budget=budget)
-                    feed=manifest['feed'];stage='publish';pointer=publisher.publish(manifest,directory)
+                    feed=manifest['feed'];status['collection_stats']=manifest.get('collection_stats',{});stage='publish';pointer=publisher.publish(manifest,directory)
                 completed=utc_now();count=feed['record_count']
                 status.update(status='SUCCESS',last_success=completed,completed_at=completed,record_count=count,provider_number_matched=count,
                               completeness=1,scope_area_id='TH',active_generation=pointer['active_generation'],storage_version=CURRENT_VERSION,
                               compressed_bytes=pointer['compressed_bytes'],archive_evicted_count=pointer['archive_evicted_count'],
                               consecutive_empty_queries=0 if count else int(prior.get('consecutive_empty_queries',0))+1)
+                status['collection_stats']=manifest.get('collection_stats',{})
                 if count:status.update(last_nonempty_query_at=feed['fetched_at'],last_nonempty_count=count)
                 db.source_status.update_one({'_id':key,'etl_run_id':run},{'$set':status,'$unset':{'error_summary':'','failure_stage':''}})
                 print(json.dumps({'source_id':'gistda','status':'SUCCESS','records':count,'product_id':product(window),'product_window':window,
                                   'page_count':feed['page_count'],'stored_documents':pointer['record_count'],'compressed_bytes':pointer['compressed_bytes'],
-                                  'area_id':'TH','observed_at':None,'complete_provider_query':True}),flush=True)
+                                  'area_id':'TH','observed_at':None,'complete_provider_query':True,'collection_stats':status['collection_stats']}),flush=True)
             except Exception as error:
                 failed=True;reason=error.reason if isinstance(error,CandidateError) else type(error).__name__;completed=utc_now()
                 count=getattr(error,'provider_count',None)
                 if type(count) is not int or not 0<=count<=2**53-1:count=None
                 status.update(status='FAILED',completed_at=completed,error_summary=reason,failure_stage=stage,last_failure_at=completed,last_failure_reason=reason,provider_number_matched=count,consecutive_empty_queries=0)
+                status['collection_stats']=getattr(error,'collection_stats',status.get('collection_stats',{}))
                 db.source_status.update_one({'_id':key,'etl_run_id':run},{'$set':status})
-                print(json.dumps({'source_id':'gistda','product_window':window,'status':'FAILED','stage':stage,'reason':reason,'provider_number_matched':count}),flush=True)
-            event={k:status[k] for k in ['source_id','product_id','etl_run_id','last_attempt','completed_at','status','record_count','provider_number_matched','error_summary','failure_stage','run_url'] if k in status}
+                print(json.dumps({'source_id':'gistda','product_window':window,'status':'FAILED','stage':stage,'reason':reason,'provider_number_matched':count,'collection_stats':status['collection_stats']}),flush=True)
+            event={k:status[k] for k in ['source_id','product_id','etl_run_id','last_attempt','completed_at','status','record_count','provider_number_matched','error_summary','failure_stage','run_url','collection_stats'] if k in status}
             db.gistda_flood_runs.insert_one(event)
             keep=[r['_id'] for r in db.gistda_flood_runs.find({},{'_id':1}).sort('completed_at',-1).limit(100)]
             db.gistda_flood_runs.delete_many({'_id':{'$nin':keep}})

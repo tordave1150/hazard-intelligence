@@ -20,7 +20,8 @@ class Response:
     def __init__(self,payload):self.payload=json.dumps(payload).encode()
     def __enter__(self):return self
     def __exit__(self,*_):pass
-    def iter_content(self,_):yield self.payload
+    def iter_content(self,size):
+        for start in range(0,len(self.payload),size):yield self.payload[start:start+size]
 
 
 def getter(total=1,mutate=None):
@@ -68,6 +69,61 @@ def test_duplicate_geometry_with_distinct_provider_identities_remains_distinct_e
     manifest,_=collect(tmp_path,2,window='30days')
     rows=stream.checked_payload(manifest['chunks'][0],(tmp_path/(manifest['chunks'][0]['hash']+'.gz')).read_bytes())
     assert rows[0]['geometry']==rows[1]['geometry'] and rows[0]['id']!=rows[1]['id']
+
+
+def test_oversized_page_retries_exact_offset_and_preserves_all_original_geometry(tmp_path,monkeypatch):
+    control,_=collect(tmp_path/'control',1001)
+    monkeypatch.setattr(stream,'MAX_PAGE_BYTES',220000)
+    get,calls=getter(1001);budget={'remaining':10}
+    result=stream.collect_window(KEY,'3days',tmp_path/'adaptive',get=get,now=lambda:NOW,storage_version='gzip-v1',with_spatial=False,page_budget=budget)
+    assert [(c[1]['params']['offset'],c[1]['params']['limit']) for c in calls]==[(0,1000),(0,500),(500,500),(1000,500)]
+    assert result['feed']['record_count']==1001 and result['feed']['page_limits']==[500,500,500]
+    assert [c['hash'] for c in result['chunks']]==[c['hash'] for c in control['chunks']]
+    assert result['collection_stats']['page_resize_count']==1 and result['collection_stats']['source_requests']==4 and budget['remaining']==6
+    assert result['source_bytes']>control['source_bytes'] and KEY not in json.dumps(result)
+
+
+def test_even_minimum_page_overflow_has_distinct_bounded_diagnostics(tmp_path,monkeypatch):
+    monkeypatch.setattr(stream,'MAX_PAGE_BYTES',1024)
+    get,calls=getter(1,lambda p,o:p.update(padding='x'*70000))
+    with pytest.raises(CandidateError) as failure:stream.collect_window(KEY,'30days',tmp_path,get=get)
+    error=failure.value
+    assert error.reason=='SOURCE_PAGE_RESPONSE_TOO_LARGE' and len(calls)==5
+    assert [c[1]['params']['limit'] for c in calls]==list(stream.PAGE_LIMITS)
+    assert error.collection_stats['failed_offset']==0 and error.collection_stats['failed_limit']==100
+    assert error.collection_stats['source_bytes']>stream.MAX_PAGE_BYTES and KEY not in json.dumps(error.collection_stats)
+
+
+def test_total_response_limit_is_not_bypassed_by_reducing_pages(tmp_path,monkeypatch):
+    monkeypatch.setattr(stream,'MAX_SOURCE_BYTES',200)
+    get,calls=getter(1)
+    with pytest.raises(CandidateError) as failure:stream.collect_window(KEY,'30days',tmp_path,get=get)
+    assert failure.value.reason=='SOURCE_RESPONSE_BUDGET_EXCEEDED' and len(calls)==1
+    assert failure.value.collection_stats['page_resize_count']==0 and failure.value.collection_stats['source_bytes']>200
+
+
+def test_discarded_oversize_requests_still_consume_shared_and_per_window_allowances(tmp_path,monkeypatch):
+    monkeypatch.setattr(stream,'MAX_PAGE_BYTES',1024)
+    get,calls=getter(1,lambda p,o:p.update(padding='x'*70000));budget={'remaining':1}
+    with pytest.raises(CandidateError) as failure:stream.collect_window(KEY,'30days',tmp_path/'shared',get=get,page_budget=budget)
+    assert failure.value.reason=='SOURCE_REQUEST_BUDGET_EXCEEDED' and len(calls)==1 and budget['remaining']==0
+    monkeypatch.setattr(stream,'MAX_PAGES',1)
+    get,calls=getter(1,lambda p,o:p.update(padding='x'*70000))
+    with pytest.raises(CandidateError) as failure:stream.collect_window(KEY,'30days',tmp_path/'window',get=get)
+    assert failure.value.reason=='SOURCE_PAGE_BUDGET_EXCEEDED' and len(calls)==1
+
+
+def test_resize_does_not_relax_source_consistency_checks(tmp_path,monkeypatch):
+    monkeypatch.setattr(stream,'MAX_PAGE_BYTES',500000)
+    calls=[]
+    def get(url,**options):
+        q=options['params'];calls.append(dict(q));offset=q['offset'];limit=q['limit']
+        payload={'type':'FeatureCollection','numberMatched':1501 if limit==1000 else 1502,'features':[feature(i) for i in range(offset,min(1501,offset+limit))],'timeStamp':NOW}
+        payload['numberReturned']=len(payload['features'])
+        if offset==1000 and limit==1000:payload['padding']='x'*700000
+        return Response(payload)
+    with pytest.raises(CandidateError,match='PROVIDER_COUNT_CHANGED'):stream.collect_window(KEY,'30days',tmp_path,get=get)
+    assert calls[-2:]==[{'offset':1000,'limit':1000},{'offset':1000,'limit':500}]
 
 
 def test_single_chunk_corruption_and_decompression_bombs_fail_before_publication(tmp_path):
@@ -204,7 +260,7 @@ def test_compatible_reader_wait_requires_storage_protocol_and_is_bounded():
     class Response:
         status_code=200
         def __init__(self,protocol):self.protocol=protocol
-        def json(self):return {'storage_protocol':self.protocol,'storage_versions':['gzip-v1','msgpack-gzip-v1'] if self.protocol=='gistda-gzip-v1' else []}
+        def json(self):return {'storage_protocol':self.protocol,'storage_versions':['gzip-v1','msgpack-gzip-v1'] if self.protocol=='gistda-gzip-v1' else [],'collection_protocol':'gistda-adaptive-pages-v1'}
     sleeps=[]
     wait_for_receiver(lambda *a,**k:Response('gistda-gzip-v1'),lambda _:pytest.fail('Ready reader must not wait'))
     with pytest.raises(RuntimeError):wait_for_receiver(lambda *a,**k:Response('old-reader'),sleeps.append)
@@ -216,6 +272,7 @@ def test_migration_rollback_can_restore_legacy_and_return_to_compressed_generati
     from pipelines.gistda.chunks import ThreeDayPublisher,split_feed
     manifest,_=collect(tmp_path,2);db=mongomock.MongoClient().db
     original=deepcopy(manifest['feed']);original.update(schema_version='2.0',query={'limit':100,'offset':0},record_count=1)
+    original.pop('page_limits',None) # This fixture explicitly represents the legacy v2 feed.
     geometry=feature()['geometry'];digest=hashlib.sha256(json.dumps(geometry,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     original['records']=[{'type':'Feature','id':digest[:24]+'-0','geometry':geometry,'properties':None,'area_ids':['TH-P-10','TH-D-1001']}]
     chunks=split_feed(original);ThreeDayPublisher(db).publish(chunks,['0000'])

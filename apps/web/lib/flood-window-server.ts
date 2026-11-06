@@ -95,7 +95,7 @@ export async function readFloodViewport(window:FloodWindow,area:Area,bbox:FloodB
   return result;
 }
 const healthKeys=['status','last_attempt','last_success','completed_at','record_count','provider_number_matched','completeness','scope_area_id','error_summary','failure_stage',
-  'last_failure_at','last_failure_reason','last_nonempty_query_at','last_nonempty_count','consecutive_empty_queries','run_url','compressed_bytes','archive_evicted_count'];
+  'last_failure_at','last_failure_reason','last_nonempty_query_at','last_nonempty_count','consecutive_empty_queries','run_url','compressed_bytes','archive_evicted_count','collection_stats'];
 function empty():FloodSnapshot{return {feed:null,records:[],health:null,freshness:'UNAVAILABLE',query_freshness:'UNAVAILABLE',storage:mongoUri()?'mongo':'unconfigured',error:null};}
 let catalogCache:{until:number;value:NonNullable<FloodSnapshot['window_catalog']>}|null=null;
 const manifestCache=new Map<string,{until:number;value:FloodManifest}>();

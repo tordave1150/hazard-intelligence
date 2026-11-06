@@ -5,6 +5,7 @@ import {warningState,warningFreshness,warningMapRecords,warningInArea,warningUnm
 import {validatedForecast,validatedWarningFeed,validatedFloodFeed} from '../lib/contracts';
 import {floodInArea,floodQueryFreshness,floodColor,floodRecordsInArea,floodResponse,floodRefreshFailure} from '../lib/floods';
 import floodFixture from '../../../tests/fixtures/gistda/synthetic-national-feed.json';
+import qualifiedCap from '../../../tests/fixtures/tmd/geometry-qualified-feed.json';
 import {monitorSource,healthError} from '../lib/source-health';
 
 describe('Source health separates collection, scheduling and source quality',()=>{
@@ -134,6 +135,15 @@ describe('GISTDA district query versus observation semantics',()=>{
   });
 });
 describe('CAP validity and feed freshness',()=>{
+  it('reads the real geometry-qualified Python fixture and never renders its original malformed polygons',()=>{
+    const feed=validatedWarningFeed(qualifiedCap),row=feed.records[0];
+    expect(row.geometry).toBeNull();expect(row.source_polygons).toHaveLength(73);
+    expect(row.geometry_issues).toEqual([{polygon_index:2,reason:'INVALID_COORDINATES'}]);
+    expect(warningMapRecords(feed.records,row.warning_id,'FRESH',Date.parse(feed.fetched_at))).toEqual([]);
+    expect(()=>validatedWarningFeed({...feed,records:[{...row,geometry:{type:'MultiPolygon',coordinates:[[[[99,8],[100,8],[100,9],[99,8]]]]}}]})).toThrow();
+    expect(()=>validatedWarningFeed({...feed,records:[{...row,source_polygons:undefined}]})).toThrow();
+    expect(()=>validatedWarningFeed({...feed,records:[{...row,geometry_issues:[{polygon_index:73,reason:'INVALID_COORDINATES'}]}]})).toThrow();
+  });
   const now=Date.parse('2026-10-26T08:00:00Z');
   const message=(changes:Partial<AgencyWarning>={})=>({sender:'TMD',warning_id:'TMD-a',message_type:'Alert',references:[],issued_at:'2026-10-26T06:00:00Z',
     effective_start:'2026-10-26T06:00:00Z',expires_at:'2026-10-26T09:00:00Z',area_ids:['TH-P-80'],

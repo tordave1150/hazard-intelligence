@@ -49,6 +49,12 @@ function spatialFixture(count:number,spread=true){
 }
 
 describe('Viewport-only historical flood geometry',()=>{
+  it('accepts actual adaptive page limits only when their counts account for the pinned query',()=>{
+    const f=fixture(101);f.manifest.feed.page_limits=[500];
+    expect(checkedWindowFeed(f.manifest.feed).record_count).toBe(101);
+    expect(()=>checkedWindowFeed({...f.manifest.feed,page_limits:[100]})).toThrow();
+    expect(()=>checkedWindowFeed({...f.manifest.feed,page_limits:[1000,500]})).toThrow();
+  });
   const box:FloodBounds=[100.499,13.699,100.509,13.701];
   it('returns only source shapes whose exact bounding boxes meet the view, with the pinned original clock',async()=>{
     const f=spatialFixture(101);mocks.readFile.mockResolvedValue(JSON.stringify(f.local));

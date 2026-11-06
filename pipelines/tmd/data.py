@@ -2,7 +2,7 @@ import json
 import re
 from pathlib import Path
 from datetime import timedelta
-from shapely.geometry import Polygon
+from .geometry import checked_warning_geometry
 from pipelines.shared.time_units import instant
 
 SOURCE='https://www.tmd.go.th/api/xml/CAP'
@@ -49,14 +49,7 @@ def check_warning(row):
         raise ValueError('Invalid CAP effective interval must be explicitly flagged')
     codes=mapped_provinces(row['source_areas'])
     if codes!=set(row['area_ids']) or not codes<=PROVINCES:raise ValueError('Unverified CAP province code')
-    if row['geometry']:
-        total=0
-        for rings in row['geometry']['coordinates']:
-            ring=rings[0];total+=len(ring)
-            if ring[0]!=ring[-1] or any(not (96<=lon<=107 and 5<=lat<=22) for lon,lat in ring):raise ValueError('Invalid CAP WGS84 polygon')
-            polygon=Polygon(ring)
-            if not polygon.is_valid or polygon.area<=0:raise ValueError('Invalid CAP polygon topology')
-        if total>100000:raise ValueError('CAP geometry exceeds product bound')
+    checked_warning_geometry(row)
 
 
 def check_feed(feed):

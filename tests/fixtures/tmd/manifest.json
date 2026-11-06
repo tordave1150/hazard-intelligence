@@ -50,6 +50,12 @@
       "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261028172215_2.xml",
       "captured_date": "2026-10-29",
       "sha256": "9cbffaa10121bab5c3f1a00ef58fa319303bb9f0fd94d4fed92c4fa72ab8f106"
+    },
+    {
+      "file": "alert-2026-11-05-invalid-polygon.xml",
+      "source_url": "https://www.tmd.go.th/uploads/CAP/CAPTMD20261105175255_2.xml",
+      "retrieved_date": "2026-11-06",
+      "sha256": "c5c0f264699d26109a8de94e3a5a053c2d8d497c0998a8dbd7f6e395a2ed16ac"
     }
   ]
 }

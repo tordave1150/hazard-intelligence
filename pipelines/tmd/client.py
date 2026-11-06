@@ -1,8 +1,10 @@
-import time
+import time,re
 import requests
+from jsonschema import ValidationError
 from pipelines.shared.time_units import utc_now
 from .data import SOURCE,allowed_document
 from .transform import feed_index,normalize,make_feed
+from .geometry import CapDataError
 
 
 class ProviderRequestError(RuntimeError):
@@ -51,15 +53,23 @@ def request(url,session,sleep=time.sleep,deadline=None):
 def collect(session=None,sleep=time.sleep):
     session=session or requests.Session()
     deadline=time.monotonic()+300
-    raw,_=request(SOURCE,session,sleep,deadline);items,generated=feed_index(raw)
+    def checked(parse,document_id,fallback):
+        try:return parse()
+        except (ValueError,ValidationError,TypeError,AttributeError,IndexError,SyntaxError,OverflowError) as exc:
+            error=exc if isinstance(exc,CapDataError) else CapDataError(fallback)
+            error.document_id=document_id if document_id=='rss_index' or len(document_id)<=128 and re.fullmatch(r'TMD[0-9A-Za-z_-]+',document_id) else 'cap_document'
+            if isinstance(exc,ValidationError):error.validator=exc.validator;error.schema_path=list(exc.absolute_schema_path)
+            raise error from None
+    raw,_=request(SOURCE,session,sleep,deadline)
+    items,generated=checked(lambda:feed_index(raw),'rss_index','CAP_INVALID_INDEX')
     records=[];ignored=0;size=len(raw)
     for item in items:
         if time.monotonic()>=deadline:raise ProviderRequestError('collection_deadline')
         sleep(1)
         raw,fetched=request(item['url'],session,sleep,deadline);size+=len(raw)
         if size>4*1024*1024:raise ProviderRequestError('feed_size_bound')
-        row=normalize(raw,item['url'],fetched)
+        row=checked(lambda:normalize(raw,item['url'],fetched),item['id'],'CAP_INVALID_DOCUMENT')
         if row is None:ignored+=1
         else:records.append(row)
     if time.monotonic()>=deadline:raise ProviderRequestError('collection_deadline')
-    return make_feed(items,generated,records,utc_now(),ignored)
+    return checked(lambda:make_feed(items,generated,records,utc_now(),ignored),'rss_index','CAP_INVALID_FEED')

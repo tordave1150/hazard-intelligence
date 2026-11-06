@@ -128,6 +128,11 @@ export function validatedWarningFeed(value:unknown):WarningFeed{
     const codes=new Set(sourceCodes.filter(code=>/^TH-[0-9]{2}$/.test(code))
       .map(code=>'TH-P-'+code.slice(3)).filter(id=>areaById.get(id)?.level==='province'));
     if(codes.size!==row.area_ids.length||row.area_ids.some(id=>!codes.has(id)||areaById.get(id)?.level!=='province'))throw new Error('Unverified CAP province');
+    if(row.geometry_quality==='INVALID_PROVIDER_GEOMETRY'){
+      if(row.geometry!==null||!row.source_polygons?.length||!row.geometry_issues?.length)throw Error('Invalid CAP geometry qualification');
+      const indices=row.geometry_issues.map(i=>i.polygon_index);
+      if(new Set(indices).size!==indices.length||indices.some(i=>i>=row.source_polygons!.length)||row.source_polygons.reduce((n,p)=>n+p.trim().split(/\s+/).length,0)>100000)throw Error('Invalid CAP source polygon accounting');
+    }else if(row.source_polygons!==undefined||row.geometry_issues!==undefined||row.geometry_quality!==undefined&&row.geometry_quality!==(row.geometry?'VALID':'NOT_SUPPLIED'))throw Error('Invalid CAP geometry qualification');
     let vertices=0;
     for(const [ring] of row.geometry?.coordinates??[]){
       vertices+=ring.length;

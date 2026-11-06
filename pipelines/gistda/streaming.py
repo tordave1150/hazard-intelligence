@@ -28,6 +28,8 @@ from .spatial import build_spatial,checked_spatial,validate_spatial_descriptor,S
 
 WINDOWS=('3days','7days','30days')
 PAGE_SIZE=1000
+PAGE_LIMITS=(1000,500,250,125,100)
+MAX_PAGE_BYTES=8*1024*1024
 MAX_FEATURES=250_000
 MAX_PAGES=250
 MAX_SOURCE_BYTES=768*1024*1024
@@ -57,6 +59,7 @@ def product(window):
 def validate_manifest(manifest):
     if manifest.get('spatial_index_version') not in (None,1):raise ValueError('Unsupported spatial index')
     feed=manifest['feed'];VALIDATE.validate(feed);window=manifest['product_window']
+    if 'page_limits' in feed and (len(feed['page_limits'])!=feed['page_count'] or feed['record_count']>sum(feed['page_limits'])):raise ValueError('Invalid accepted source page accounting')
     if manifest.get('storage_version') not in VERSIONS or window not in WINDOWS or feed['product_window']!=window or feed['product_id']!=product(window) or feed['source_url']!='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/'+window:raise ValueError('Invalid flood provenance')
     if instant(feed['response_at'])>instant(feed['fetched_at'])+timedelta(minutes=5) or instant(feed['fetched_at'])>instant(feed['ingested_at']):raise ValueError('Invalid flood clocks')
     if len(manifest['chunks'])>MAX_CHUNKS:raise ValueError('Flood chunk budget exceeded')
@@ -100,7 +103,8 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
     database=sqlite3.connect(directory/'spool.sqlite')
     database.execute('CREATE TABLE features (identity TEXT PRIMARY KEY, id TEXT UNIQUE, district TEXT, data BLOB)')
     endpoint='https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/'+window
-    matched=None;count=source_bytes=raw_bytes=positions=0;stamps=[];deadline=clock()+MAX_SECONDS
+    matched=None;count=source_bytes=raw_bytes=positions=0;stamps=[];page_limits=[];deadline=clock()+MAX_SECONDS
+    limit_index=small_pages=requests_made=resizes=page_bytes=max_page_bytes=offset=0;limit=PAGE_SIZE
     if page_budget and 'deadline' in page_budget:deadline=min(deadline,page_budget['deadline'])
     fetched_at=None
     try:
@@ -109,15 +113,24 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
             if page_budget is not None:
                 if page_budget['remaining']<=0:raise CandidateError('SOURCE_REQUEST_BUDGET_EXCEEDED')
                 page_budget['remaining']-=1
-            with (get or requests.get)(endpoint,params={'limit':PAGE_SIZE,'offset':count},headers={'Accept':'application/json','API-Key':api_key},timeout=(5,25),allow_redirects=False,stream=True) as response:
+            limit=PAGE_LIMITS[limit_index];offset=count;requests_made+=1;page_bytes=0;oversized=False
+            with (get or requests.get)(endpoint,params={'limit':limit,'offset':offset},headers={'Accept':'application/json','API-Key':api_key},timeout=(5,25),allow_redirects=False,stream=True) as response:
                 if response.status_code in (401,403):raise CandidateError('AUTHENTICATION_OR_ENTITLEMENT_ERROR')
                 if response.status_code!=200:raise CandidateError('HTTP_ERROR_NOT_AN_EMPTY_COLLECTION')
-                parts=[];page_bytes=0
+                parts=[]
                 for block in response.iter_content(65536):
                     source_bytes+=len(block);page_bytes+=len(block)
-                    if page_bytes>8*1024*1024 or source_bytes>MAX_SOURCE_BYTES:raise CandidateError('RESPONSE_TOO_LARGE')
+                    max_page_bytes=max(max_page_bytes,page_bytes)
+                    if source_bytes>MAX_SOURCE_BYTES:raise CandidateError('SOURCE_RESPONSE_BUDGET_EXCEEDED')
                     if clock()>deadline:raise CandidateError('DEADLINE_EXCEEDED')
+                    if page_bytes>MAX_PAGE_BYTES:oversized=True;break
                     parts.append(block)
+                if oversized:
+                    if limit_index+1==len(PAGE_LIMITS):raise CandidateError('SOURCE_PAGE_RESPONSE_TOO_LARGE')
+                    limit_index+=1;resizes+=1;small_pages=0
+                    # Retry this exact offset with a smaller supported page.
+                    # The discarded bytes and request still count toward every budget.
+                    continue
                 try:
                     def reject_constant(_):raise ValueError('Non-finite JSON')
                     payload=json.loads(b''.join(parts).decode('utf-8-sig'),object_pairs_hook=_strict_object,parse_constant=reject_constant)
@@ -125,7 +138,7 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
             fetched_at=now() if now else utc_now()
             if isinstance(payload,dict) and (payload.get('error') or any(type(payload.get(k)) is int and payload[k]>=400 for k in ['status','statusCode','status_code'])):raise CandidateError('PROVIDER_ERROR_NOT_AN_OBSERVATION')
             try:
-                meta=page_metadata(payload,limit=PAGE_SIZE)
+                meta=page_metadata(payload,limit=limit)
                 stamp=datetime.fromisoformat(meta['response_timestamp'].replace('Z','+00:00'))
                 fetched=datetime.fromisoformat(fetched_at.replace('Z','+00:00'))
                 if fetched.utcoffset()!=timedelta(0) or stamp>fetched+timedelta(minutes=5):raise ValueError()
@@ -134,7 +147,7 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
             if matched is None:matched=meta['number_matched']
             if meta['number_matched']!=matched:raise CandidateError('PROVIDER_COUNT_CHANGED_DURING_PAGINATION')
             if matched>MAX_FEATURES:raise CandidateError('NATIONAL_FEATURE_BUDGET_EXCEEDED')
-            stamps.append(meta['response_timestamp'])
+            stamps.append(meta['response_timestamp']);page_limits.append(limit)
             for feature in payload['features']:
                 identity,row,n=normalized_feature(feature,api_key);data=encoded(row)
                 raw_bytes+=len(data);positions+=n
@@ -146,7 +159,9 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
             if count>matched:raise CandidateError('INVALID_COLLECTION_METADATA')
             if count==matched:break
             if not payload['features']:raise CandidateError('INCOMPLETE_QUERY_NOT_PUBLISHABLE')
-        else:raise CandidateError('INCOMPLETE_QUERY_NOT_PUBLISHABLE')
+            small_pages=small_pages+1 if page_bytes<MAX_PAGE_BYTES//4 else 0
+            if small_pages>=2 and limit_index:limit_index-=1;small_pages=0
+        else:raise CandidateError('SOURCE_PAGE_BUDGET_EXCEEDED')
         chunks=[];index={};batch=[];batch_bytes=2;district=None;compressed_bytes=0
         def flush():
             nonlocal batch,batch_bytes,compressed_bytes
@@ -172,18 +187,21 @@ def collect_window(api_key,window,directory,get=None,clock=time.monotonic,now=No
             district=current;batch.append(data);batch_bytes+=len(data)+1
         flush()
         feed={'schema_version':'3.0','source_id':'gistda','product_id':product(window),'product_window':window,'data_state':'satellite_observation','snapshot_id':'latest',
-              'area_id':'TH','query':{'limit':PAGE_SIZE,'offset':0},'page_count':len(stamps),'pagination_consistency':'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN',
+              'area_id':'TH','query':{'limit':PAGE_SIZE,'offset':0},'page_count':len(stamps),'page_limits':page_limits,'pagination_consistency':'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN',
               'source_url':endpoint,'attribution':'GISTDA Disaster Platform','response_at':min(stamps,key=lambda s:datetime.fromisoformat(s.replace('Z','+00:00'))),
               'fetched_at':fetched_at,'ingested_at':now() if now else utc_now(),'observed_at':None,'observation_time_status':'NOT_SUPPLIED','complete_provider_query':True,'record_count':count,
               'coverage':f'Unfiltered provider {window} query; valid satellite coverage and clear observations unknown',
               'area_metrics':'NOT_USED_UNITS_UNVERIFIED','interpretation':'Retrospective footprints; current flood state unknown. Empty is not an all-clear.'}
         manifest={'_id':str(uuid4()),'storage_version':storage_version,'source_id':'gistda','product_window':window,'feed':feed,'chunks':chunks,'areas':index,
-                  'geometry_available':True,'compressed_bytes':compressed_bytes,'source_bytes':source_bytes,'normalized_bytes':raw_bytes,'positions':positions}
+                  'geometry_available':True,'compressed_bytes':compressed_bytes,'source_bytes':source_bytes,'normalized_bytes':raw_bytes,'positions':positions,
+                  'collection_stats':{'source_requests':requests_made,'completed_pages':len(stamps),'page_resize_count':resizes,'source_bytes':source_bytes,'largest_page_read_bytes':max_page_bytes}}
         if with_spatial:manifest['spatial_index_version']=1
         if len(BSON.encode(manifest))>1024*1024:raise CandidateError('MANIFEST_SIZE_EXCEEDED')
         validate_manifest(manifest);return manifest
     except CandidateError as error:
         error.provider_count=matched
+        error.collection_stats={'source_requests':requests_made,'completed_pages':len(stamps),'page_resize_count':resizes,'source_bytes':source_bytes,
+                                'largest_page_read_bytes':max_page_bytes,'failed_offset':offset,'failed_limit':limit,'failed_page_read_bytes':page_bytes}
         raise
     except requests.RequestException:raise CandidateError('TRANSPORT_FAILURE') from None
     finally:database.close()

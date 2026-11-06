@@ -39,7 +39,7 @@ export function warningMapRecords(records:AgencyWarning[],selected:string|null,f
   // Keep issued validity-window boundaries visible as gray references when a
   // refresh is delayed; freshness still controls whether agency colors apply.
   const chosen=selected?records.filter(r=>r.warning_id===selected):records.filter(r=>warningState(r,records,now)==='CURRENT');
-  return chosen.filter(r=>r.geometry).map(row=>({...row,display_state:warningState(row,records,now),
+  return chosen.filter(r=>r.geometry&&r.geometry_quality!=='INVALID_PROVIDER_GEOMETRY').map(row=>({...row,display_state:warningState(row,records,now),
     archived:warningState(row,records,now)!=='CURRENT'||freshness!=='FRESH'}));
 }
 export const warningColor=(row:WarningDisplay)=>row.archived?'#7a8088':row.agency_severity==='Extreme'?'#b94741':row.agency_severity==='Severe'?'#bd6b30':'#a47d29';

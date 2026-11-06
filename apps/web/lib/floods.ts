@@ -15,6 +15,9 @@ export function floodRefreshFailure(health:FloodSnapshot['health']):string|null{
     case 'SPATIAL_STORAGE_BUDGET_EXCEEDED':
     case 'DATABASE_STORAGE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh exceeded the reserved storage budget; the last complete query is retained.';
     case 'SOURCE_REQUEST_BUDGET_EXCEEDED':return 'Latest GISTDA refresh reached its bounded source request allowance.';
+    case 'SOURCE_PAGE_BUDGET_EXCEEDED':return 'Latest GISTDA refresh reached its bounded page allowance before completing the query.';
+    case 'SOURCE_PAGE_RESPONSE_TOO_LARGE':return 'A GISTDA response page exceeded the size limit even at the smallest supported page size.';
+    case 'SOURCE_RESPONSE_BUDGET_EXCEEDED':return 'The total GISTDA response bytes exceeded the collection allowance; no incomplete query was published.';
     case 'RESPONSE_TOO_LARGE':
     case 'CANDIDATE_GEOMETRY_LIMIT':return 'Latest GISTDA refresh exceeded the supported map data size.';
     case 'DEADLINE_EXCEEDED':return 'Latest GISTDA refresh could not finish within the collection time limit.';

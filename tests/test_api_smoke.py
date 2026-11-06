@@ -136,12 +136,16 @@ def test_dam_endpoint_has_independent_report_semantics():
 
 def test_cap_messages_keep_expiry_separate_from_feed_freshness():
     response=requests.get(BASE+'/api/warnings',timeout=15);assert response.status_code==200
-    value=response.json();assert value['source_id']=='tmd'
+    value=response.json();assert value['source_id']=='tmd' and value['geometry_protocol']=='tmd-cap-geometry-v1'
     assert set(value['message_states'])=={r['warning_id'] for r in value['records']}
     assert 'absence does not establish safe conditions' in value['coverage']
     assert all(r['status']=='Actual' and r['scope']=='Public' and r['source_url']=='https://www.tmd.go.th/api/xml/CAP' for r in value['records'])
     issues=value['geography_issues']['unmapped_geocodes']
     assert isinstance(issues,list) and 'not assigned' in value['geography_issues']['scope']
+    qualified=[r for r in value['records'] if r.get('geometry_quality')=='INVALID_PROVIDER_GEOMETRY']
+    assert len(value['geography_issues']['invalid_geometry'])==len(qualified)
+    for row in qualified:
+        assert row['geometry'] is None and row['source_polygons'] and row['geometry_issues']
     for issue in issues:
         row=next(r for r in value['records'] if r['warning_id']==issue['warning_id'])
         assert any(c=={'value_name':issue['value_name'],'value':issue['value']} for a in row['source_areas'] for c in a['geocodes'])
@@ -244,7 +248,10 @@ def test_radar_publication_requires_scoped_workflow_authentication():
 def test_flood_viewport_is_pinned_and_wide_views_do_not_download_geometry():
     for window in ['3days','7days','30days']:
         summary=requests.get(BASE+'/api/flood-products',params={'window':window,'view':'summary'},timeout=25).json()
-        assert summary['viewport_protocol']=='gistda-viewport-v1' and not summary['records']
+        assert summary['viewport_protocol']=='gistda-viewport-v1' and summary['collection_protocol']=='gistda-adaptive-pages-v1' and not summary['records']
+        if summary['feed'] and 'page_limits' in summary['feed']:
+            assert len(summary['feed']['page_limits'])==summary['feed']['page_count']
+            assert summary['feed']['record_count']<=sum(summary['feed']['page_limits'])
         if not summary['feed']:continue
         generation=summary['pagination']['generation']
         response=requests.get(BASE+'/api/flood-products/viewport',params={'window':window,'generation':generation,'bbox':'97,5,106,21'},timeout=25)

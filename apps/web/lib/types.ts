@@ -57,6 +57,8 @@ export type AgencyWarning={schema_version:'2.0';source_id:'tmd';product_id:'cap_
   references:{sender:string;warning_id:string;issued_at:string}[];issued_at:string;fetched_at:string;ingested_at:string;
   effective_start:string|null;expires_at:string|null;effective_time_source:'CAP effective'|'CAP sent'|'not supplied';
   time_quality?:'VALID_INTERVAL'|'NOT_SUPPLIED'|'INVALID_PROVIDER_INTERVAL';
+  geometry_quality?:'VALID'|'NOT_SUPPLIED'|'INVALID_PROVIDER_GEOMETRY';
+  source_polygons?:string[];geometry_issues?:{polygon_index:number;reason:'INVALID_COORDINATES'|'UNCLOSED_RING'|'OUTSIDE_ACCEPTED_BOUNDS'|'INVALID_TOPOLOGY'}[];
   language:string|null;event:string|null;headline:string|null;description:string|null;instruction:string|null;
   agency_severity:'Extreme'|'Severe'|'Moderate'|'Minor'|'Unknown'|null;urgency:string|null;certainty:string|null;
   area_ids:string[];source_areas:{description:string;geocodes:{value_name:string;value:string}[]}[];
@@ -72,7 +74,7 @@ export type FloodFeature={type:'Feature';id:string;geometry:import('geojson').Po
 export type FloodWindow='3days'|'7days'|'30days';
 export type FloodFeed={schema_version:'2.0'|'3.0';source_id:'gistda';product_id:'flood_1day_thailand'|'flood_3days_thailand'|'flood_7days_thailand'|'flood_30days_thailand';data_state:'satellite_observation';
   snapshot_id:'latest';product_window:'1day'|FloodWindow;area_id:'TH';query:{limit:100|1000;offset:0};
-  page_count?:number;pagination_consistency?:'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN';
+  page_count?:number;page_limits?:number[];pagination_consistency?:'COUNT_AND_DUPLICATES_CHECKED_NO_VERSION_TOKEN';
   source_url:string;attribution:'GISTDA Disaster Platform';response_at:string;fetched_at:string;ingested_at:string;
   observed_at:null;observation_time_status:'NOT_SUPPLIED';complete_provider_query:true;record_count:number;
   records:FloodFeature[];coverage:string;area_metrics:'NOT_USED_UNITS_UNVERIFIED';interpretation:string};
