@@ -1,4 +1,5 @@
 import {effectiveBackground,backgroundAvailable} from '../lib/map-layer-state';
+import {datePresentation,visibleInspector,workspaceBackgroundAvailable,type InspectorId} from '../lib/workspace';
 import {orderMapLayers,mapLayerAnchors} from '../lib/map-layer-order';
 import {describe,it,expect,vi} from 'vitest';
 import {dashboardDates,dashboardMode} from '../lib/dashboard-mode';
@@ -15,6 +16,45 @@ import threeDayFixture from '../../../tests/fixtures/gistda/synthetic-three-day-
 import {buildFloodAreaIndex} from '../lib/flood-area-index';
 import {floodResultCount} from '../lib/floods';
 import {areaById} from '../lib/geography';
+
+describe('Desktop workspace navigation constraints',()=>{
+  const today='2026-11-06';
+  it('returns to Situation on Today and selects daily forecasts for future calendar days',()=>{
+    const current=datePresentation(today,today,'administrative')!;
+    expect(dashboardMode(today,today,current.todayMode)).toBe('situation');
+    expect(current.showRadar).toBe(false);expect(current.rainfall).toBe(false);
+    for(const day of ['2026-11-07','2026-11-08','2026-11-09']){
+      const future=datePresentation(day,today,'administrative')!;
+      expect(effectiveBackground(dashboardMode(day,today,future.todayMode),future.rainfall,'administrative',future.showRadar)).toBe('daily');
+      expect(future.inspector).toBe('forecast');
+    }
+  });
+  it('keeps retrospective windows and selected observation layers outside date navigation',()=>{
+    for(const date of [today,'2026-11-07']){
+      const update=datePresentation(date,today,'administrative')!;
+      expect(Object.keys(update).sort()).toEqual(['inspector','rainfall','selectedDate','showRadar','todayMode']);
+    }
+  });
+  it('offers observed radar and hourly only on Today without removing source overlays',()=>{
+    for(const geography of ['administrative','basin'] as const){
+      expect(workspaceBackgroundAvailable('radar',today,today,geography)).toBe(true);
+      expect(workspaceBackgroundAvailable('radar','2026-11-07',today,geography)).toBe(false);
+      expect(workspaceBackgroundAvailable('hourly','2026-11-07',today,geography)).toBe(false);
+      expect(workspaceBackgroundAvailable('off','2026-11-07',today,geography)).toBe(true);
+    }
+  });
+  it('preserves accepted basin constraints for dates and forecast fills',()=>{
+    expect(datePresentation('2026-11-07',today,'basin')).toBeNull();
+    expect(workspaceBackgroundAvailable('daily',today,today,'basin')).toBe(false);
+    expect(workspaceBackgroundAvailable('hourly',today,today,'basin')).toBe(false);
+  });
+  it('shows one requested enabled context and falls back to Area when its overlay is disabled',()=>{
+    const enabled:InspectorId[]=['tmd','gistda','rid','thaiwater','thaiwater_rain'];
+    for(const source of enabled){expect(visibleInspector(source,enabled)).toBe(source);expect(visibleInspector(source,enabled.filter(id=>id!==source))).toBe('area');}
+    expect(visibleInspector('forecast',enabled)).toBe('area');
+    expect(visibleInspector('forecast',[...enabled,'forecast'])).toBe('forecast');
+  });
+});
 
 describe('Complete three-day GISTDA loading',()=>{
   const full=threeDayFixture as FloodFeed;

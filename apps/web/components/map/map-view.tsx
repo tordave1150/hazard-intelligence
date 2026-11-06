@@ -52,6 +52,10 @@ export default function MapView(props:Props){
         center:[101.05,13.1],zoom:4.65,minZoom:3,maxZoom:16,maxPitch:70,
         attributionControl:false,bounds:[[97.1,5.4],[105.8,20.7]],fitBoundsOptions:{padding:35}});
       map.current=instance;
+      // Panes change the canvas width without a browser-window resize. Resize
+      // the existing map; do not reset the user's camera or rebuild its layers.
+      const containerResize=new ResizeObserver(()=>instance.resize());
+      containerResize.observe(container.current);
       const notifyViewport=(settled:boolean)=>{const b=instance.getBounds();latest.current.onViewportChange?.({bbox:[Math.max(-180,b.getWest()),Math.max(-90,b.getSouth()),Math.min(180,b.getEast()),Math.min(90,b.getNorth())],zoom:instance.getZoom(),settled});};
       instance.on('movestart',()=>notifyViewport(false));instance.on('moveend',()=>notifyViewport(true));instance.on('resize',()=>notifyViewport(true));
       instance.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:
@@ -167,7 +171,7 @@ export default function MapView(props:Props){
         else if(message.includes('terrain')||message.includes('mapterhorn'))setError('Terrain tiles are unavailable; flat geography remains available.');
       });
       instance.on('webglcontextlost',()=>setError('Map graphics were interrupted. Reload to restore the map; area data remains available.'));
-      return ()=>{clearTimeout(fallback);overlay.current=null;instance.remove();map.current=null;};
+      return ()=>{clearTimeout(fallback);containerResize.disconnect();overlay.current=null;instance.remove();map.current=null;};
     } catch {setError('WebGL is unavailable on this device. Area search, navigation and forecasts remain available.');}
   },[]);
   useEffect(()=>{

@@ -1,6 +1,6 @@
 # Improvement proposal implementation status
 
-Updated 5 November 2026, Asia/Bangkok. This tracks accepted increments against the user's proposal; it is not a claim that the entire proposal is implemented.
+Updated 6 November 2026, Asia/Bangkok. This tracks accepted increments against the user's proposal; it is not a claim that the entire proposal is implemented.
 
 | Part | State | Evidence / remaining scope |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Updated 5 November 2026, Asia/Bangkok. This tracks accepted increments against t
 | C4 rainfall polygons | Deferred | No station-to-province rainfall fill without an accepted method |
 | D dam photos | Deferred | Per-image permission/attribution review still required |
 
-Further map fit and mobile/layout work is explicitly deferred by the user to a later combined pass. Existing release screenshots are historical verification, not evidence of new layout work in this increment.
+The separately approved [desktop workspace increment](desktop-workspace-release-2026-11-06.md) implements compact navigation, rail controls, one contextual inspector, a unified time dock and on-demand province comparison. Further map fit and mobile refinement remain deferred. Pixel-level visual QA could not be completed because browser screenshot capture timed out; existing screenshots are historical evidence, not screenshots of this redesign.
 
 The separate [GISTDA storage/history increment](gistda-window-release-2026-11-05.md) is deployed: disk-spooled national 3/7/30-day products, compressed storage, query archives and bounded area display. The [production receipt](gistda-window-production-2026-11-05.json) records 0 / 50,219 / 132,962 returned records, a successful complete payload audit, 326 Python tests, 124 web tests and 29 production HTTP checks. It preserves unknown current flood state and does not convert historical water evidence into a new observation. Actual query history starts with retained snapshots, and the compressed storage guards can reject future larger candidates. Radar automatic scheduling has executed, but continuous 30-minute delivery remains unproven; cleanup of two empty Blob stores still requires dashboard access. Numerical QPE and nowcasting retain the source-acceptance gates above.
 
