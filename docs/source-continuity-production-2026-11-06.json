@@ -1,0 +1,234 @@
+{
+  "application_commit": "037816b4da517675121faed0c55deacf73c1143c",
+  "publication_request_commit": "824d3878690282fcd6c65cd7e38811835ca79033",
+  "application_ci": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42209053591",
+  "publication_ci": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42209317180",
+  "validation": {
+    "python_tests": 354,
+    "web_tests": 135,
+    "local_http_checks": 31,
+    "production_http_checks": 31,
+    "typecheck": "passed",
+    "production_build": "passed"
+  },
+  "tmd": {
+    "action_url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42209317258",
+    "conclusion": "success",
+    "fetched_at": "2026-11-06T11:19:45.415818Z",
+    "freshness": "FRESH",
+    "retained_messages": 5,
+    "listed_items": 5,
+    "geometry_issue_messages": [
+      {
+        "warning_id": "TMD20261105175255_2",
+        "geometry": null,
+        "source_polygon_count": 73,
+        "issues": [
+          {
+            "polygon_index": 2,
+            "reason": "INVALID_COORDINATES"
+          }
+        ],
+        "source_polygons_sha256": "3e0d955e9ff0ef162058f3b8c9d5c0e6ddff670fdd3ef078e75054d5086421c1"
+      }
+    ],
+    "exact_source_records_compared": [
+      "TMD20261106170451_2",
+      "TMD20261106055630_2",
+      "TMD20261105054947_2",
+      "TMD20261105175255_2",
+      "TMD20261104060212_2"
+    ],
+    "browser_console_errors": 0,
+    "screenshots": [
+      "artifacts/tmd-cap-recovery-production.png",
+      "artifacts/tmd-cap-qualified-geometry-production.png"
+    ]
+  },
+  "post_publication_api_verification": {
+    "verified_at": "2026-11-06T11:35:43.389008+00:00",
+    "flood": [
+      {
+        "window": "3days",
+        "generation": "7addff0a-47fb-4376-be0d-b47883501049",
+        "fetched_at": "2026-11-06T11:19:40.435102Z",
+        "record_count": 0,
+        "page_count": 1,
+        "page_limit_counts": {
+          "1000": 1
+        },
+        "collection_stats": {
+          "source_requests": 1,
+          "completed_pages": 1,
+          "page_resize_count": 0,
+          "source_bytes": 575,
+          "largest_page_read_bytes": 575
+        }
+      },
+      {
+        "window": "7days",
+        "generation": "bd48e6d6-f79d-4086-8252-323ea9c967b1",
+        "fetched_at": "2026-11-06T11:23:48.948404Z",
+        "record_count": 48866,
+        "page_count": 49,
+        "page_limit_counts": {
+          "1000": 49
+        },
+        "collection_stats": {
+          "source_requests": 49,
+          "completed_pages": 49,
+          "page_resize_count": 0,
+          "source_bytes": 147633545,
+          "largest_page_read_bytes": 3497547
+        },
+        "geometry_sample": {
+          "area_id": "TH-D-1402",
+          "viewport_count": 6,
+          "status": "AVAILABLE",
+          "exact_record_equality": true,
+          "record_id": "019c53de2b9c218c5ec7d7a1b89a51040ddabccd5e70304e680b2845e3406772",
+          "geometry_sha256": "e86bd7f178f4939124bacb67b5c1255f2fb8c44597914f37c462d3d6eade8835"
+        }
+      },
+      {
+        "window": "30days",
+        "generation": "13a44515-df44-4e11-9e14-d0a04a870149",
+        "fetched_at": "2026-11-06T11:34:10.410845Z",
+        "record_count": 127299,
+        "page_count": 128,
+        "page_limit_counts": {
+          "1000": 128
+        },
+        "collection_stats": {
+          "source_requests": 128,
+          "completed_pages": 128,
+          "page_resize_count": 0,
+          "source_bytes": 553444839,
+          "largest_page_read_bytes": 5686606
+        },
+        "geometry_sample": {
+          "area_id": "TH-D-6012",
+          "viewport_count": 3,
+          "status": "AVAILABLE",
+          "exact_record_equality": true,
+          "record_id": "1534fb20d9a6352855209ba4f16c256280e24a3b9e4e59e65cc725985bb18c15",
+          "geometry_sha256": "ba77bad138059505aafac7e6d64344b0fa7736cd37c1cbc3cf9c11d0c1fb2d0f"
+        }
+      }
+    ],
+    "tmd": {
+      "fetched_at": "2026-11-06T11:19:45.415818Z",
+      "freshness": "FRESH",
+      "record_count": 5,
+      "feed_item_count": 5,
+      "exact_source_record_comparisons": [
+        "TMD20261106170451_2",
+        "TMD20261106055630_2",
+        "TMD20261105054947_2",
+        "TMD20261105175255_2",
+        "TMD20261104060212_2"
+      ],
+      "geometry_issues": [
+        {
+          "warning_id": "TMD20261105175255_2",
+          "issues": [
+            {
+              "polygon_index": 2,
+              "reason": "INVALID_COORDINATES"
+            }
+          ]
+        }
+      ],
+      "health_status": "SUCCESS"
+    },
+    "shared_source_requests": 178
+  },
+  "gistda_action": {
+    "url": "https://github.com/tordave1150/hazard-intelligence/actions/runs/42209317391",
+    "conclusion": "success",
+    "publications": [
+      {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 0,
+        "product_id": "flood_3days_thailand",
+        "product_window": "3days",
+        "page_count": 1,
+        "stored_documents": 0,
+        "compressed_bytes": 0,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true,
+        "collection_stats": {
+          "source_requests": 1,
+          "completed_pages": 1,
+          "page_resize_count": 0,
+          "source_bytes": 575,
+          "largest_page_read_bytes": 575
+        }
+      },
+      {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 48866,
+        "product_id": "flood_7days_thailand",
+        "product_window": "7days",
+        "page_count": 49,
+        "stored_documents": 540,
+        "compressed_bytes": 33894555,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true,
+        "collection_stats": {
+          "source_requests": 49,
+          "completed_pages": 49,
+          "page_resize_count": 0,
+          "source_bytes": 147633545,
+          "largest_page_read_bytes": 3497547
+        }
+      },
+      {
+        "source_id": "gistda",
+        "status": "SUCCESS",
+        "records": 127299,
+        "product_id": "flood_30days_thailand",
+        "product_window": "30days",
+        "page_count": 128,
+        "stored_documents": 1397,
+        "compressed_bytes": 98759987,
+        "area_id": "TH",
+        "observed_at": null,
+        "complete_provider_query": true,
+        "collection_stats": {
+          "source_requests": 128,
+          "completed_pages": 128,
+          "page_resize_count": 0,
+          "source_bytes": 553444839,
+          "largest_page_read_bytes": 5686606
+        }
+      }
+    ]
+  },
+  "live_page_resize_observed": false,
+  "page_resize_failure_paths": "Verified by deterministic regression tests; live pages in this run remained under 8 MiB.",
+  "shared_gistda_source_requests": 178,
+  "remaining_source_limits": [
+    "Malformed CAP outlines remain suppressed until the provider supplies valid polygons; original text/codes/clocks/polygon strings remain available.",
+    "The historical shared RESPONSE_TOO_LARGE code cannot retrospectively distinguish its per-page and total-byte branches.",
+    "Live collection did not trigger page resizing; the bounded adaptive paths are covered by regression tests.",
+    "Satellite acquisition/valid coverage/current flood state remain unknown; 3/7/30-day products are separate retrospective queries.",
+    "No fit/mobile work."
+  ],
+  "gistda_browser_verification": {
+    "window": "30days",
+    "national_record_count": 127299,
+    "retrieved_ict": "2026-11-06 18:34 ICT",
+    "earliest_api_response_ict": "2026-11-06 18:24 ICT",
+    "accepted_pages": 128,
+    "sample_area_id": "TH-D-6012",
+    "loaded_records": 3,
+    "complete": true,
+    "console_errors": 0,
+    "acquisition_time_and_current_flood_state": "UNKNOWN"
+  }
+}

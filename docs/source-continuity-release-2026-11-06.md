@@ -38,4 +38,22 @@ The real public CAP feed was recollected locally: **5 listed items, 5 retained m
 
 Regression tests exercise exact-offset retry with unchanged final geometry hashes, aggregate-byte and minimum-page failures, charging discarded requests to shared/per-window allowances, and changed provider totals after a retry. CAP regressions cover original malformed coordinates, unclosed and crossed rings, source retention, rejection of forged geometry qualifications, publication/rollback and whole-feed failure for invalid document metadata. The historical malformed CAP file is a fixture, never a production fallback.
 
-Local validation: **354 Python tests**, **135 web tests**, TypeScript and production build passed. Running-app and production receipts are appended after publication verification.
+Local validation: **354 Python tests**, **135 web tests**, TypeScript and production build passed. Both local and production running-app checks passed **31 HTTP tests**. The compatible application and publication-request commits passed GitHub checks and Vercel deployments. See the [production receipt](source-continuity-production-2026-11-06.json).
+
+## Production result
+
+The [TMD Action](https://github.com/tordave1150/hazard-intelligence/actions/runs/42209317258) completed successfully. The public feed is FRESH, retrieved at **18:19 ICT**, with five listed/retained messages and one geometry-qualified message. All five records were compared with the independently captured public source (excluding only retrieval/ingestion clocks), including text, issue/validity times, codes and original geometry data. The browser showed the affected previous warning and its no-outline explanation; valid current messages remained available. Console errors were zero.
+
+The [GISTDA Action](https://github.com/tordave1150/hazard-intelligence/actions/runs/42209317391) completed collection, publication and post-publication product/index/retention verification successfully:
+
+| Window | Returned records | Last accepted API retrieval, ICT | Accepted pages / requests | Largest page read, bytes |
+| --- | ---: | --- | ---: | ---: |
+| 3days | 0 | 6 Nov 18:19 | 1 / 1 | 575 |
+| 7days | 48,866 | 6 Nov 18:23 | 49 / 49 | 3,497,547 |
+| 30days | 127,299 | 6 Nov 18:34 | 128 / 128 | 5,686,606 |
+
+Total shared GISTDA requests: **178**, below 300. The 30-day source response totaled **553,444,839 bytes**, below the 768 MiB per-window guard. Compressed original geometry was 33,894,555 bytes for 7days and 98,759,987 for 30days. All three new query generations, exact clocks, accepted page-limit accounting and unknown acquisition time were verified through the public API. Pinned district viewport samples for 7/30days returned original records exactly equal to the manual area reader, including full geometry.
+
+The production browser read the new 18:34 ICT 30-day query and its 127,299-record national count, then loaded all three records in the sampled canonical district viewport. The original earliest API response clock (18:24 ICT), end-of-query retrieval clock (18:34 ICT), 128-page completeness and unknown satellite acquisition/current flood state remained separate. Browser console errors were zero; the map fit/layout implementation was unchanged.
+
+**No live page resizing was needed in this run**: the largest observed page was below 8 MiB. The resize and terminal page/total/request-budget failure paths are verified by deterministic regression tests, not claimed as an observed live recovery of the historical failure. Changes in retrospective source counts do not establish rising/receding water or a new acquisition time.
